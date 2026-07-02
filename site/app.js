@@ -155,7 +155,14 @@ function renderPage() {
     sections = renderNav(false) + renderHero(false) + renderFeatures() + renderInstalacao() + renderFooter();
   }
 
-  return sections;
+  return sections + renderFloatingDownload();
+}
+
+function renderFloatingDownload() {
+  return '<a href="https://github.com/ojuniormartelli/WABOT/releases/latest" target="_blank" class="fixed bottom-6 right-6 z-50 flex items-center gap-2 px-5 py-3 bg-gray-900 text-white rounded-full shadow-lg hover:bg-gray-800 transition-all text-sm font-medium" title="Baixar instalador">' +
+    '<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>' +
+    'Baixar WaBot' +
+  '</a>';
 }
 
 // ─── Nav ─────────────────────────────────────────
@@ -182,6 +189,10 @@ function renderNav(online) {
           (online
             ? '<button onclick="abrirPainelLocal()" class="px-3 py-1.5 bg-emerald-600 text-white rounded-lg text-xs font-medium hover:bg-emerald-700 transition-colors">Abrir Painel</button>'
             : '') +
+          '<a href="https://github.com/ojuniormartelli/WABOT/releases/latest" target="_blank" class="px-3 py-1.5 bg-gray-800 text-white rounded-lg text-xs font-medium hover:bg-gray-700 transition-colors whitespace-nowrap">' +
+            '<svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="inline mr-1"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>' +
+            'Baixar WaBot' +
+          '</a>' +
           '<button onclick="refrescar()" class="p-2 text-gray-400 hover:text-gray-600 rounded-lg hover:bg-gray-100 transition-colors" title="Atualizar status">' +
             '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg>' +
           '</button>' +
