@@ -325,11 +325,10 @@ function renderPasso(num, id, titulo, descricao, concluido) {
         '<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>' +
         'Baixar Node.js' +
       '</a>' +
-      '<button onclick="verificarNode()" class="inline-flex items-center gap-1.5 px-4 py-2 border border-gray-300 bg-white text-gray-600 rounded-lg text-sm font-medium hover:bg-gray-50 transition-colors">' +
-        '<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg>' +
-        (concluido === true ? 'OK' : 'Verificar') +
-      '</button>' +
-      (concluido === true ? '' : '<button onclick="confirmarNodeJs()" class="inline-flex items-center gap-1.5 px-4 py-2 border border-emerald-300 bg-emerald-50 text-emerald-700 rounded-lg text-sm font-medium hover:bg-emerald-100 transition-colors">' +
+      (concluido === true ? '<span class="inline-flex items-center gap-1.5 px-4 py-2 bg-emerald-100 text-emerald-700 rounded-lg text-sm font-medium">' +
+        '<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>' +
+        'Instalado' +
+      '</span>' : '<button onclick="confirmarNodeJs()" class="inline-flex items-center gap-1.5 px-4 py-2 border border-emerald-300 bg-emerald-50 text-emerald-700 rounded-lg text-sm font-medium hover:bg-emerald-100 transition-colors">' +
         '<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>' +
         'Já instalei' +
       '</button>') +
@@ -479,16 +478,6 @@ function renderFooter() {
 }
 
 // ─── Ações ──────────────────────────────────────
-
-window.verificarNode = function() {
-  STATE.checking = true;
-  render();
-  checkNodeJs().then(function() {
-    STATE.checking = false;
-    render();
-    scrollPara('instalacao');
-  });
-};
 
 window.verificarDocker = function() {
   STATE.checking = true;

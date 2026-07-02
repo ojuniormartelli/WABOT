@@ -95,30 +95,22 @@ Type: files; Name: "{app}\wabot.log"
 [Code]
 function IsNodeInstalled: Boolean;
 var
-  NodeVersion: String;
   ResultCode: Integer;
 begin
   Result := False;
 
-  if RegKeyExists(HKLM, 'SOFTWARE\Node.js') then
+  // 1 — Registro do Windows (instalação oficial .msi/.exe)
+  if RegKeyExists(HKLM, 'SOFTWARE\Node.js') then begin Result := True; Exit; end;
+  if RegKeyExists(HKCU, 'SOFTWARE\Node.js') then begin Result := True; Exit; end;
+
+  // 2 — Caminhos comuns de instalação
+  if FileExists(ExpandConstant('{pf}\nodejs\node.exe')) then begin Result := True; Exit; end;
+  if FileExists(ExpandConstant('{pf32}\nodejs\node.exe')) then begin Result := True; Exit; end;
+  // 3 — PATH do usuário via ExecAsOriginalUser (funciona com nvm, chocolatey, portable)
+  if ExecAsOriginalUser('cmd.exe', '/c "node --version"', '', SW_HIDE, ewWaitUntilTerminated, ResultCode) and (ResultCode = 0) then
   begin
     Result := True;
     Exit;
-  end;
-
-  if RegKeyExists(HKCU, 'SOFTWARE\Node.js') then
-  begin
-    Result := True;
-    Exit;
-  end;
-
-  if Exec('cmd.exe', '/c node --version', '', SW_HIDE, ewWaitUntilTerminated, ResultCode) then
-  begin
-    if ResultCode = 0 then
-    begin
-      Result := True;
-      Exit;
-    end;
   end;
 end;
 
