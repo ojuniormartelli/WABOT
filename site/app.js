@@ -4,6 +4,7 @@ var STATE = {
   botOnline: null,
   botStatus: null,
   dockerOnline: null,
+  nodeOnline: null,
   whatsappOnline: null,
   checking: false,
   versaoLocal: null,
@@ -56,6 +57,18 @@ function checkLocalDocker() {
     })
     .catch(function() {
       STATE.dockerOnline = false;
+      return false;
+    });
+}
+
+function checkNodeJs() {
+  return fetch('http://localhost:3001/api/health', { mode: 'cors', signal: AbortSignal.timeout(3000) })
+    .then(function(r) {
+      STATE.nodeOnline = r.status === 200;
+      return STATE.nodeOnline;
+    })
+    .catch(function() {
+      STATE.nodeOnline = false;
       return false;
     });
 }
@@ -271,6 +284,7 @@ function featureCard(icon, title, desc) {
 
 function renderInstalacao() {
   var dockerOk = STATE.dockerOnline;
+  var nodeOk = STATE.nodeOnline;
   var botOk = STATE.botOnline;
 
   return '<section id="instalacao" class="py-16 sm:py-20 bg-gray-50">' +
@@ -279,8 +293,9 @@ function renderInstalacao() {
       '<p class="text-gray-500 text-center mb-10 max-w-lg mx-auto">Siga os passos abaixo para instalar o WaBot no seu computador.</p>' +
       '<div class="space-y-4">' +
         renderPasso(1, 'docker', 'Docker Desktop', 'Necessário para rodar a Evolution API (conexão com WhatsApp).', dockerOk) +
-        renderPasso(2, 'wabot', 'WaBot', 'Baixe e extraia o WaBot. Execute o instalador para configurar.', botOk) +
-        renderPasso(3, 'whatsapp', 'WhatsApp', 'Conecte seu WhatsApp escaneando o QR Code no painel do WaBot.', STATE.whatsappOnline) +
+        renderPasso(2, 'nodejs', 'Node.js', 'Necessário para rodar o WaBot. Se não tiver instalado, baixe e instale antes.', nodeOk) +
+        renderPasso(3, 'wabot', 'WaBot', 'Baixe e extraia o WaBot. Execute o instalador para configurar.', botOk) +
+        renderPasso(4, 'whatsapp', 'WhatsApp', 'Conecte seu WhatsApp escaneando o QR Code no painel do WaBot.', STATE.whatsappOnline) +
       '</div>' +
       renderVersaoInfo() +
     '</div>' +
@@ -294,7 +309,18 @@ function renderPasso(num, id, titulo, descricao, concluido) {
     : '<span>' + num + '</span>';
   var acoesHtml = '';
 
-  if (id === 'docker') {
+  if (id === 'nodejs') {
+    acoesHtml = '<div class="flex flex-wrap gap-2">' +
+      '<a href="https://nodejs.org/" target="_blank" class="inline-flex items-center gap-1.5 px-4 py-2 bg-green-700 text-white rounded-lg text-sm font-medium hover:bg-green-800 transition-colors">' +
+        '<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>' +
+        'Baixar Node.js' +
+      '</a>' +
+      '<button onclick="verificarNode()" class="inline-flex items-center gap-1.5 px-4 py-2 border border-gray-300 bg-white text-gray-600 rounded-lg text-sm font-medium hover:bg-gray-50 transition-colors">' +
+        '<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg>' +
+        (concluido === true ? 'OK' : 'Verificar') +
+      '</button>' +
+    '</div>';
+  } else if (id === 'docker') {
     acoesHtml = '<div class="flex flex-wrap gap-2">' +
       '<a href="https://www.docker.com/products/docker-desktop/" target="_blank" class="inline-flex items-center gap-1.5 px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700 transition-colors">' +
         '<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>' +
@@ -440,6 +466,16 @@ function renderFooter() {
 
 // ─── Ações ──────────────────────────────────────
 
+window.verificarNode = function() {
+  STATE.checking = true;
+  render();
+  checkNodeJs().then(function() {
+    STATE.checking = false;
+    render();
+    scrollPara('instalacao');
+  });
+};
+
 window.verificarDocker = function() {
   STATE.checking = true;
   render();
@@ -503,6 +539,7 @@ function checkAll() {
   Promise.all([
     checkLocalBot(),
     checkLocalDocker(),
+    checkNodeJs(),
     checkLocalVersao(),
     checkLatestVersao(),
   ]).then(function() {
