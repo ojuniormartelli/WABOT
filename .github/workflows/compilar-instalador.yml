@@ -22,12 +22,20 @@ jobs:
         with:
           ref: ${{ github.event.release.tag_name || github.ref }}
 
+      - name: Extrair versão da tag
+        id: version
+        shell: pwsh
+        run: |
+          $tag = "${{ github.event.release.tag_name || inputs.tag }}"
+          $ver = $tag -replace '^v', ''
+          echo "VERSION=$ver" | Out-File -FilePath $env:GITHUB_ENV -Append
+
       - name: Instalar Inno Setup
         run: choco install innosetup --no-progress -y
 
       - name: Compilar instalador
         run: |
-          & "C:\Program Files (x86)\Inno Setup 6\ISCC.exe" installer\wabot-installer.iss
+          & "C:\Program Files (x86)\Inno Setup 6\ISCC.exe" /dMyAppVersion="$env:VERSION" installer\wabot-installer.iss
 
       - name: Descobrir nome do .exe
         id: vars

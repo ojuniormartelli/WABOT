@@ -2,7 +2,9 @@
 ; Build with Inno Setup 6+ (https://jrsoftware.org/isinfo.php)
 
 #define MyAppName "WaBot"
+#ifndef MyAppVersion
 #define MyAppVersion "1.0.0"
+#endif
 #define MyAppPublisher "WaBot"
 #define MyAppURL "https://github.com/ojuniormartelli/WABOT"
 #define MyAppExeName "start-wabot.bat"
