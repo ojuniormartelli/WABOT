@@ -1,0 +1,53 @@
+name: Compilar Instalador WaBot
+
+on:
+  release:
+    types: [published, edited]
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: "Tag da release (ex: v1.0.0)"
+        required: true
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: windows-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.release.tag_name || github.ref }}
+
+      - name: Instalar Inno Setup
+        run: choco install innosetup --no-progress -y
+
+      - name: Compilar instalador
+        run: |
+          & "C:\Program Files (x86)\Inno Setup 6\ISCC.exe" installer\wabot-installer.iss
+
+      - name: Descobrir nome do .exe
+        id: vars
+        shell: pwsh
+        run: |
+          $exe = Get-ChildItem -Path . -Filter "WaBot-Setup-*.exe" | Select-Object -First 1
+          echo "EXE_PATH=$($exe.FullName)" | Out-File -FilePath $env:GITHUB_ENV -Append
+          echo "EXE_NAME=$($exe.Name)" | Out-File -FilePath $env:GITHUB_ENV -Append
+
+      - name: Upload para a release
+        if: github.event_name == 'release'
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release upload "${{ github.event.release.tag_name }}" "$env:EXE_PATH"
+
+      - name: Upload como artefato (workflow_dispatch)
+        if: github.event_name == 'workflow_dispatch'
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ env.EXE_NAME }}
+          path: ${{ env.EXE_PATH }}
