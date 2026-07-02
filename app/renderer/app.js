@@ -44,11 +44,38 @@ I.download = function(s, c) { return ic('<path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0
 I.camera = function(s, c) { return ic('<path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/>', s, c); };
 I.zap = function(s, c) { return ic('<polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/>', s, c); };
 
-// ─── Estado global ─────────────────────────────────
+var HELP = {
+  credenciais: [
+    'Aqui você configura as conexões externas do WaBot:',
+    ['Provedor de IA', 'Escolha entre Gemini (Google) ou Groq. Ambos são gratuitos. Gere uma chave de API no site do provedor escolhido.'],
+    ['Evolution API', 'Gerencia a conexão com o WhatsApp via Docker. Clique em "Conectar WhatsApp" para escanear o QR Code.'],
+    ['Instância Evolution', 'Se você já tem uma instância Evolution rodando, pode informar a URL e a chave de API. Caso contrário, mantenha o padrão.'],
+  ],
+  regras: [
+    'Regras definem o COMPORTAMENTO do bot.',
+    ['Como funciona', 'Escreva instruções em linguagem natural. A IA lê todas as regras ativas antes de responder cada mensagem.'],
+    ['Quando usar', 'Tom de voz, limites do que o bot pode falar, proibições, instruções de atendimento, políticas do negócio.'],
+    ['Dica', 'Seja específico. Em vez de "seja educado", prefira "trate o cliente como senhor/senhora e agradeça ao final".'],
+  ],
+  aprendizado: [
+    'Aprendizado é a BASE DE CONHECIMENTO do bot — perguntas e respostas do seu negócio.',
+    ['Pendentes', 'Perguntas que o bot recebeu e não soube responder. Você ensina a resposta e ele aprende.'],
+    ['Aprendidas', 'Todas as perguntas e respostas que o bot já aprendeu. Pode editar ou excluir.'],
+    ['Novo Conhecimento', 'Adicione manualmente perguntas e respostas que o bot deve saber, com palavras-chave para ajudar na busca.'],
+  ],
+  configuracoes: [
+    'Configure os dados do seu negócio para o bot personalizar as respostas.',
+    ['Dados Básicos', 'Nome, endereço, telefone e links que o bot usará para informar clientes.'],
+    ['Horários', 'Defina os dias e horários de funcionamento. Fora do horário, o bot usa a mensagem de ausência.'],
+    ['Mensagens Padrão', 'Personalize as mensagens automáticas: saudação, ausência, quando não sabe responder e agradecimento.'],
+  ],
+};
+
 var state = {
   currentPage: 'dashboard',
   dockerStatus: null,
   setupCompleto: null,
+  pageHelp: false,
   sidebar: { collapsed: false },
   setup: {
     creds: { evolution: { api_key: '', base_url: 'http://localhost:8081', instance_name: '' }, gemini: { api_key: '', model: 'gemini-2.0-flash' } },
@@ -111,6 +138,39 @@ function navegar(page) {
   state.currentPage = page;
   render();
 }
+
+// ─── Help ────────────────────────────────────────
+
+function toggleHelp() {
+  state.pageHelp = !state.pageHelp;
+  if (HELP[state.currentPage]) render();
+}
+
+function renderHelp(pageId) {
+  if (!state.pageHelp) return '';
+  var items = HELP[pageId];
+  if (!items) return '';
+  var title = items[0];
+  var details = items.slice(1);
+  var html = '<div class="bg-blue-50 border border-blue-200 rounded-xl p-5 mb-6 text-sm">' +
+    '<div class="flex items-start gap-3">' +
+      '<div class="w-8 h-8 bg-blue-100 rounded-lg flex items-center justify-center flex-shrink-0">' + I.info(18, 'text-blue-600') + '</div>' +
+      '<div class="flex-1">' +
+        '<p class="text-blue-800 font-medium mb-3">' + esc(title) + '</p>';
+  for (var i = 0; i < details.length; i++) {
+    var d = details[i];
+    html += '<div class="mb-2 last:mb-0">' +
+      '<span class="font-medium text-blue-700">' + esc(d[0]) + ':</span> ' +
+      '<span class="text-blue-600">' + esc(d[1]) + '</span>' +
+    '</div>';
+  }
+  html += '</div>' +
+    '<button onclick="state.pageHelp=false;render()" class="text-blue-400 hover:text-blue-600 p-1 flex-shrink-0">' + I.x(18, '') + '</button>' +
+  '</div></div>';
+  return html;
+}
+
+// ─── Render ─────────────────────────────────────
 
 function render() {
   var app = elId('app');
@@ -377,9 +437,12 @@ function renderCredenciais() {
     : '<div class="ml-auto flex items-center gap-1.5 text-gray-400 text-xs font-medium bg-gray-50 px-3 py-1.5 rounded-full">' + I.circle(14, '') + ' Desconectado</div>';
 
   return '<div class="p-8 max-w-3xl mx-auto">' +
-    '<h1 class="text-2xl font-bold text-gray-800 mb-2">Credenciais</h1>' +
+    '<div class="flex items-center justify-between mb-2">' +
+      '<h1 class="text-2xl font-bold text-gray-800">Credenciais</h1>' +
+      '<button onclick="toggleHelp()" class="w-8 h-8 rounded-lg bg-gray-100 hover:bg-gray-200 flex items-center justify-center text-gray-500 hover:text-gray-700 transition-colors" title="Ajuda">' + I.info(18, '') + '</button>' +
+    '</div>' +
     '<p class="text-gray-500 mb-8">Configure as chaves de API e conecte seu WhatsApp.</p>' +
-
+    renderHelp('credenciais') +
     '<div class="bg-white rounded-xl border border-gray-200 p-6 mb-6">' +
       '<div class="flex items-center gap-3 mb-4">' +
         '<div class="w-10 h-10 bg-green-100 rounded-lg flex items-center justify-center">' + I.send(20, 'text-green-600') + '</div>' +
@@ -650,8 +713,10 @@ function renderConfiguracoes() {
   var btnLabel = state.configuracoes.saving ? 'Salvando...' : 'Salvar Configurações';
 
   return '<div class="p-8 max-w-4xl mx-auto">' +
-    '<h1 class="text-2xl font-bold text-gray-800 mb-8">Configurações do Negócio</h1>' +
-
+    '<div class="flex items-center gap-3 mb-8">' +
+      '<h1 class="text-2xl font-bold text-gray-800">Configurações do Negócio</h1>' +
+      '<button onclick="toggleHelp()" class="w-8 h-8 rounded-lg bg-gray-100 hover:bg-gray-200 flex items-center justify-center text-gray-500 hover:text-gray-700 transition-colors" title="Ajuda">' + I.info(18, '') + '</button>' +
+    '</div>' +
     '<div class="bg-white rounded-xl border border-gray-200 p-6 mb-6">' +
       '<h2 class="text-lg font-semibold text-gray-700 mb-5">Dados Básicos</h2>' +
       '<div class="grid grid-cols-2 gap-4">' +
@@ -1062,14 +1127,16 @@ function renderRegras() {
   }
   return '<div class="p-8 max-w-4xl mx-auto">' +
     '<div class="flex items-center justify-between mb-6">' +
-      '<div>' +
+      '<div class="flex items-center gap-3">' +
         '<h1 class="text-2xl font-bold text-gray-800">Regras do Bot</h1>' +
-        '<p class="text-sm text-gray-500 mt-1">Escreva em linguagem natural como o bot deve se comportar. A IA lê e decide a resposta automaticamente.</p>' +
+        '<button onclick="toggleHelp()" class="w-8 h-8 rounded-lg bg-gray-100 hover:bg-gray-200 flex items-center justify-center text-gray-500 hover:text-gray-700 transition-colors" title="Ajuda">' + I.info(18, '') + '</button>' +
       '</div>' +
       '<div class="flex gap-2">' +
         '<button onclick="addRegra()" class="flex items-center gap-2 px-4 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 text-sm font-medium">' + I.plus(18, '') + ' Nova Regra</button>' +
         '<button onclick="saveRegras()" class="flex items-center gap-2 px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 text-sm font-medium">' + I.save(18, '') + ' Salvar</button>' +
       '</div>' +
+    '</div>' +
+    renderHelp('regras') +
     '</div>' +
     '<div class="space-y-3">' + cardsHtml + '</div>' +
   '</div>';
@@ -1277,11 +1344,12 @@ function renderAprendizado() {
 
   return '<div class="p-8 max-w-4xl mx-auto">' +
     '<div class="flex items-center justify-between mb-6">' +
-      '<div>' +
+      '<div class="flex items-center gap-3">' +
         '<h1 class="text-2xl font-bold text-gray-800">Aprendizado Contínuo</h1>' +
-        '<p class="text-sm text-gray-500 mt-1">Ensine o bot a responder perguntas que ele ainda não sabe.</p>' +
+        '<button onclick="toggleHelp()" class="w-8 h-8 rounded-lg bg-gray-100 hover:bg-gray-200 flex items-center justify-center text-gray-500 hover:text-gray-700 transition-colors" title="Ajuda">' + I.info(18, '') + '</button>' +
       '</div>' +
     '</div>' +
+    renderHelp('aprendizado') +
     '<div class="flex gap-2 mb-6">' +
       '<button onclick="state.aprendizado.tab=\'pendencias\';render();bindAprendizado();loadAprendizado()" class="px-4 py-2 rounded-lg text-sm font-medium transition-colors ' + tabPendencias + '">' +
         I.helpCircle(16, 'inline mr-1') + ' Pendentes (' + pendentes.length + ')' +
