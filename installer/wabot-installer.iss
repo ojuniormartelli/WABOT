@@ -47,9 +47,6 @@ Source: "..\app\package.json"; DestDir: "{app}\app"; Flags: ignoreversion
 Source: "..\app\package-lock.json"; DestDir: "{app}\app"; Flags: ignoreversion
 Source: "..\app\Dockerfile"; DestDir: "{app}\app"; Flags: ignoreversion
 
-; App modules
-Source: "..\app\node_modules\*"; DestDir: "{app}\app\node_modules"; Flags: ignoreversion recursesubdirs createallsubdirs
-
 ; Docker
 Source: "..\app\docker\*"; DestDir: "{app}\app\docker"; Flags: ignoreversion recursesubdirs createallsubdirs
 
