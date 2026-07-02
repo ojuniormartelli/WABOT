@@ -93,13 +93,40 @@ Type: files; Name: "{app}\npm-debug.log"
 Type: files; Name: "{app}\wabot.log"
 
 [Code]
-function InitializeSetup: Boolean;
+function IsNodeInstalled: Boolean;
 var
+  NodeVersion: String;
   ResultCode: Integer;
+begin
+  Result := False;
+
+  if RegKeyExists(HKLM, 'SOFTWARE\Node.js') then
+  begin
+    Result := True;
+    Exit;
+  end;
+
+  if RegKeyExists(HKCU, 'SOFTWARE\Node.js') then
+  begin
+    Result := True;
+    Exit;
+  end;
+
+  if Exec('cmd.exe', '/c node --version', '', SW_HIDE, ewWaitUntilTerminated, ResultCode) then
+  begin
+    if ResultCode = 0 then
+    begin
+      Result := True;
+      Exit;
+    end;
+  end;
+end;
+
+function InitializeSetup: Boolean;
 begin
   Result := True;
 
-  if not RegKeyExists(HKLM, 'SOFTWARE\Node.js') then
+  if not IsNodeInstalled then
   begin
     if SuppressibleMsgBox(
       'Node.js não foi encontrado no sistema.'#13#13'Deseja continuar mesmo assim?'#13#13

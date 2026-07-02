@@ -62,15 +62,25 @@ function checkLocalDocker() {
 }
 
 function checkNodeJs() {
+  // Tenta detectar o WaBot (que só roda se Node.js estiver instalado)
   return fetch('http://localhost:3001/api/health', { mode: 'cors', signal: AbortSignal.timeout(3000) })
     .then(function(r) {
       STATE.nodeOnline = r.status === 200;
       return STATE.nodeOnline;
     })
     .catch(function() {
-      STATE.nodeOnline = false;
-      return false;
+      // Restaurar confirmação manual do localStorage
+      var manual = localStorage.getItem('nodejs_confirmado') === 'true';
+      STATE.nodeOnline = manual;
+      return manual;
     });
+}
+
+function confirmarNodeJs() {
+  localStorage.setItem('nodejs_confirmado', 'true');
+  STATE.nodeOnline = true;
+  render();
+  scrollPara('instalacao');
 }
 
 function checkLocalVersao() {
@@ -319,6 +329,10 @@ function renderPasso(num, id, titulo, descricao, concluido) {
         '<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg>' +
         (concluido === true ? 'OK' : 'Verificar') +
       '</button>' +
+      (concluido === true ? '' : '<button onclick="confirmarNodeJs()" class="inline-flex items-center gap-1.5 px-4 py-2 border border-emerald-300 bg-emerald-50 text-emerald-700 rounded-lg text-sm font-medium hover:bg-emerald-100 transition-colors">' +
+        '<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>' +
+        'Já instalei' +
+      '</button>') +
     '</div>';
   } else if (id === 'docker') {
     acoesHtml = '<div class="flex flex-wrap gap-2">' +
