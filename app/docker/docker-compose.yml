@@ -1,0 +1,44 @@
+services:
+  evolution:
+    image: evoapicloud/evolution-api:v2.3.7
+    container_name: wabot-evolution
+    ports:
+      - "8081:8080"
+    environment:
+      - AUTHENTICATION_API_KEY=wabot_evokey_2026
+      - AUTHENTICATION_EXPOSED_KEY=wabot_evokey_2026
+      - SERVER_PORT=8080
+      - STORE_MESSAGES=true
+      - DATABASE_ENABLED=true
+      - DATABASE_PROVIDER=postgresql
+      - DATABASE_CONNECTION_URI=postgresql://wabot:wabot@wabot-postgres:5432/wabot
+      - CACHE_REDIS_ENABLED=false
+      - CHROME_ARGS=--no-sandbox --disable-setuid-sandbox --disable-dev-shm-usage
+    shm_size: 256m
+    depends_on:
+      - postgres
+    volumes:
+      - evolution-data:/evolution/instances
+    restart: unless-stopped
+
+  postgres:
+    image: postgres:16-alpine
+    container_name: wabot-postgres
+    environment:
+      POSTGRES_USER: wabot
+      POSTGRES_PASSWORD: wabot
+      POSTGRES_DB: wabot
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U wabot"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  evolution-data:
+  postgres-data:

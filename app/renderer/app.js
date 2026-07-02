@@ -1,0 +1,1702 @@
+// ─── Ícones SVG ─────────────────────────────────────
+var I = {};
+
+function ic(path, size, cls) {
+  return '<svg xmlns="http://www.w3.org/2000/svg" width="' + size + '" height="' + size + '" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="' + (cls || '') + '">' + path + '</svg>';
+}
+
+I.bot = function(s, c) { return ic('<path d="M12 2a2 2 0 0 1 2 2c0 .74-.4 1.39-1 1.73V7h1a7 7 0 0 1 7 7h1a1 1 0 0 1 1 1v3a1 1 0 0 1-1 1h-1v1a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-1H2a1 1 0 0 1-1-1v-3a1 1 0 0 1 1-1h1a7 7 0 0 1 7-7h1V5.73c-.6-.34-1-.99-1-1.73a2 2 0 0 1 2-2ZM9 12v2m6-2v2m-6 4h6"/>', s, c); };
+I.layoutDashboard = function(s, c) { return ic('<rect x="3" y="3" width="7" height="9"/><rect x="14" y="3" width="7" height="5"/><rect x="14" y="12" width="7" height="9"/><rect x="3" y="16" width="7" height="5"/>', s, c); };
+I.messageSquare = function(s, c) { return ic('<path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>', s, c); };
+I.settings = function(s, c) { return ic('<circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/>', s, c); };
+I.fileText = function(s, c) { return ic('<path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/>', s, c); };
+I.shieldBan = function(s, c) { return ic('<path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><line x1="4.93" y1="4.93" x2="19.07" y2="19.07"/>', s, c); };
+I.clipboardList = function(s, c) { return ic('<rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><line x1="8" y1="12" x2="16" y2="12"/><line x1="8" y1="16" x2="16" y2="16"/><line x1="8" y1="8" x2="10" y2="8"/>', s, c); };
+I.externalLink = function(s, c) { return ic('<path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/>', s, c); };
+I.arrowLeft = function(s, c) { return ic('<line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/>', s, c); };
+I.arrowRight = function(s, c) { return ic('<line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/>', s, c); };
+I.pause = function(s, c) { return ic('<rect x="6" y="4" width="4" height="16"/><rect x="14" y="4" width="4" height="16"/>', s, c); };
+I.moon = function(s, c) { return ic('<path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>', s, c); };
+I.play = function(s, c) { return ic('<polygon points="5 3 19 12 5 21 5 3"/>', s, c); };
+I.userCircle = function(s, c) { return ic('<path d="M18 20a6 6 0 0 0-12 0"/><circle cx="12" cy="10" r="4"/><circle cx="12" cy="12" r="10"/>', s, c); };
+I.send = function(s, c) { return ic('<line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/>', s, c); };
+I.sparkles = function(s, c) { return ic('<path d="m12 3-1.912 5.813a2 2 0 0 1-1.275 1.275L3 12l5.813 1.912a2 2 0 0 1 1.275 1.275L12 21l1.912-5.813a2 2 0 0 1 1.275-1.275L21 12l-5.813-1.912a2 2 0 0 1-1.275-1.275L12 3Z"/><path d="M5 3v4"/><path d="M19 17v4"/><path d="M3 5h4"/><path d="M17 19h4"/>', s, c); };
+I.search = function(s, c) { return ic('<circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>', s, c); };
+I.save = function(s, c) { return ic('<path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/>', s, c); };
+I.eye = function(s, c) { return ic('<path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/>', s, c); };
+I.helpCircle = function(s, c) { return ic('<circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/>', s, c); };
+I.checkCircle2 = function(s, c) { return ic('<path d="M12 22c5.523 0 10-4.477 10-10S17.523 2 12 2 2 6.477 2 12s4.477 10 10 10z"/><path d="m9 12 2 2 4-4"/>', s, c); };
+I.circle = function(s, c) { return ic('<circle cx="12" cy="12" r="10"/>', s, c); };
+I.plus = function(s, c) { return ic('<line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>', s, c); };
+I.trash2 = function(s, c) { return ic('<path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/>', s, c); };
+I.toggleRight = function(s, c) { return ic('<rect x="1" y="5" width="22" height="14" rx="7" ry="7"/><circle cx="16" cy="12" r="3"/>', s, c); };
+I.toggleLeft = function(s, c) { return ic('<rect x="1" y="5" width="22" height="14" rx="7" ry="7"/><circle cx="8" cy="12" r="3"/>', s, c); };
+I.activity = function(s, c) { return ic('<polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/>', s, c); };
+I.square = function(s, c) { return ic('<rect x="3" y="3" width="18" height="18" rx="2" ry="2"/>', s, c); };
+I.refreshCw = function(s, c) { return ic('<polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/>', s, c); };
+I.loader2 = function(s, c) { return ic('<path d="M21 12a9 9 0 1 1-6.219-8.56"/>', s, c); };
+I.x = function(s, c) { return ic('<line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>', s, c); };
+I.info = function(s, c) { return ic('<circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/>', s, c); };
+I.globe = function(s, c) { return ic('<circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/>', s, c); };
+I.download = function(s, c) { return ic('<path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/>', s, c); };
+I.camera = function(s, c) { return ic('<path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/>', s, c); };
+I.zap = function(s, c) { return ic('<polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/>', s, c); };
+
+// ─── Estado global ─────────────────────────────────
+var state = {
+  currentPage: 'dashboard',
+  dockerStatus: null,
+  setupCompleto: null,
+  sidebar: { collapsed: false },
+  setup: {
+    passo: 'boas-vindas',
+    dockerInstalado: false,
+    instalandoDocker: false,
+    creds: { evolution: { api_key: '', base_url: 'http://localhost:8081', instance_name: '' }, gemini: { api_key: '', model: 'gemini-2.0-flash' } },
+    config: { nome_negocio: '', endereco: '', telefone: '', site: '', link_pedido_online: '' },
+  },
+  credenciais: {
+    creds: { evolution: { api_key: '', base_url: 'http://localhost:8081', instance_name: '' }, gemini: { api_key: '', model: 'gemini-2.0-flash-lite' }, llm: { provider: 'groq', api_key: '', model: 'llama-3.3-70b-versatile' } },
+    evoStatus: null,
+    saving: false,
+    saved: false,
+  },
+  configuracoes: {
+    config: { nome_negocio: '', endereco: '', telefone: '', site: '', redes_sociais: { instagram: '', facebook: '', ifood: '' }, link_pedido_online: '', observacoes_gerais: '', tipos_atendimento: [], horarios: {}, mensagem_saudacao: '', mensagem_ausencia: '', mensagem_regra_nao_encontrada: '', mensagem_agradecimento: '' },
+    saving: false,
+    saved: false,
+  },
+  conversas: {
+    contatos: [],
+    busca: '',
+    contatoSelecionado: null,
+  },
+  chat: {
+    mensagens: [],
+    texto: '',
+    status: 'bot',
+    sugerindo: false,
+    sugestaoIA: '',
+    enviando: false,
+  },
+  regras: [],
+  ignorados: [],
+  aprendizado: {
+    pendencias: [],
+    respostas: [],
+    tab: 'pendencias',
+    respondendoId: null,
+    respostaTexto: '',
+    novaPergunta: '',
+    novaResposta: '',
+    novasPalavrasChave: '',
+  },
+  dashboard: { checklist: [] },
+};
+
+// ─── Helpers ───────────────────────────────────────
+function el(sel) { return document.querySelector(sel); }
+function elId(id) { return document.getElementById(id); }
+
+function esc(str) {
+  if (!str) return '';
+  return String(str).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+}
+
+function loadingScreen() {
+  return '<div class="h-screen flex items-center justify-center bg-gray-50"><div class="text-center"><div class="w-12 h-12 border-4 border-emerald-200 border-t-emerald-600 rounded-full animate-spin mx-auto mb-4"></div><p class="text-gray-500">Preparando...</p></div></div>';
+}
+
+// ─── Roteador ──────────────────────────────────────
+function navegar(page) {
+  state.currentPage = page;
+  render();
+}
+
+function render() {
+  var app = elId('app');
+  if (!app) return;
+  if (state.setupCompleto === null) {
+    app.innerHTML = loadingScreen();
+    return;
+  }
+  if (!state.setupCompleto) {
+    app.innerHTML = renderSetupWizard();
+    bindSetupWizard();
+    return;
+  }
+  var sidebar = elId('sidebar');
+  var mainContent = elId('main-content');
+  if (sidebar && mainContent) {
+    mainContent.innerHTML = renderPage();
+    bindCurrentPage();
+    updateSidebarActive();
+  } else {
+    app.innerHTML = '<div class="flex h-screen bg-gray-50">' +
+      renderSidebar() +
+      '<main class="flex-1 overflow-auto" id="main-content">' + renderPage() + '</main>' +
+    '</div>';
+    bindSidebar();
+    bindCurrentPage();
+  }
+}
+
+function renderPage() {
+  switch (state.currentPage) {
+    case 'dashboard': return renderDashboard();
+    case 'credenciais': return renderCredenciais();
+    case 'configuracoes': return renderConfiguracoes();
+    case 'conversas': return renderConversas();
+    case 'regras': return renderRegras();
+    case 'ignorados': return renderIgnorados();
+    case 'aprendizado': return renderAprendizado();
+    default: return '';
+  }
+}
+
+function bindCurrentPage() {
+  switch (state.currentPage) {
+    case 'dashboard': bindDashboard(); break;
+    case 'credenciais': bindCredenciais(); break;
+    case 'configuracoes': bindConfiguracoes(); break;
+    case 'conversas': bindConversas(); break;
+    case 'regras': bindRegras(); break;
+    case 'ignorados': bindIgnorados(); break;
+    case 'aprendizado': bindAprendizado(); break;
+  }
+}
+
+// ─── SIDEBAR ───────────────────────────────────────
+function renderSidebar() {
+  var d = state.dockerStatus || {};
+  var evoOnline = d.evolutionRunning;
+  var dockerOk = d.dockerInstalled;
+  var statusColor = dockerOk ? (evoOnline ? 'bg-emerald-500' : 'bg-yellow-500') : 'bg-red-500';
+  var statusText = 'Evolution ' + (evoOnline ? 'Online' : (dockerOk ? 'Parado' : 'Offline'));
+  var collapsed = state.sidebar.collapsed;
+  var width = collapsed ? 'w-16' : 'w-64';
+
+  var items = [
+    { id: 'dashboard', label: 'Dashboard', icon: I.layoutDashboard(20, '') },
+    { id: 'conversas', label: 'Conversas', icon: I.messageSquare(20, '') },
+    { id: 'configuracoes', label: 'Configurações', icon: I.settings(20, '') },
+    { id: 'regras', label: 'Regras', icon: I.fileText(20, '') },
+    { id: 'ignorados', label: 'Ignorados', icon: I.shieldBan(20, '') },
+    { id: 'aprendizado', label: 'Aprendizado', icon: I.sparkles(20, '') },
+    { id: 'credenciais', label: 'Credenciais', icon: I.clipboardList(20, '') },
+  ];
+
+  var navItems = '';
+  for (var i = 0; i < items.length; i++) {
+    var item = items[i];
+    var active = state.currentPage === item.id;
+    navItems += '<button class="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors ' +
+      (active ? 'bg-emerald-50 text-emerald-700' : 'text-gray-600 hover:bg-gray-100') +
+      '" data-nav="' + item.id + '" title="' + item.label + '">' +
+      '<span class="flex-shrink-0">' + item.icon + '</span>' +
+      '<span class="sidebar-label truncate' + (collapsed ? ' hidden' : '') + '">' + esc(item.label) + '</span></button>';
+  }
+
+  var toggleIcon = collapsed
+    ? '<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>'
+    : '<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>';
+
+  return '<aside class="sidebar ' + width + ' bg-white border-r border-gray-200 flex flex-col flex-shrink-0 transition-all duration-200 overflow-hidden group' + (collapsed ? ' sidebar-collapsed' : '') + '" id="sidebar">' +
+    '<div class="p-5 border-b border-gray-200 flex items-center gap-2.5">' +
+      '<div class="w-9 h-9 bg-emerald-600 rounded-xl flex items-center justify-center flex-shrink-0">' +
+        I.bot(20, 'text-white') +
+      '</div>' +
+      '<div class="sidebar-label' + (collapsed ? ' hidden' : '') + '">' +
+        '<h1 class="text-lg font-bold text-gray-800 leading-tight whitespace-nowrap">WaBot</h1>' +
+        '<p class="text-xs text-gray-400 whitespace-nowrap">WhatsApp Bot Manager</p>' +
+      '</div>' +
+      '<button onclick="toggleSidebar()" class="ml-auto p-1 rounded-lg hover:bg-gray-100 text-gray-400 hover:text-gray-600 flex-shrink-0">' + toggleIcon + '</button>' +
+    '</div>' +
+    '<nav class="flex-1 p-3 space-y-1 overflow-hidden">' + navItems + '</nav>' +
+    '<div class="p-4 border-t border-gray-200 overflow-hidden">' +
+      '<div class="flex items-center gap-2 text-xs">' +
+        '<div class="w-2 h-2 rounded-full ' + statusColor + ' flex-shrink-0"></div>' +
+        '<span class="sidebar-label text-gray-500' + (collapsed ? ' hidden' : '') + '">Docker: ' + statusText + '</span>' +
+      '</div>' +
+    '</div>' +
+  '</aside>';
+}
+
+function bindSidebar() {
+  // Event delegation para navegação na sidebar
+  var sidebar = document.getElementById('sidebar');
+  if (!sidebar) return;
+  // Remove listener antigo se existir para evitar duplicatas
+  if (sidebar._navListener) {
+    sidebar.removeEventListener('click', sidebar._navListener);
+  }
+  sidebar._navListener = function(e) {
+    var btn = e.target.closest('[data-nav]');
+    if (btn) {
+      var page = btn.getAttribute('data-nav');
+      navegar(page);
+    }
+  };
+  sidebar.addEventListener('click', sidebar._navListener);
+}
+
+function updateSidebarActive() {
+  var sidebar = elId('sidebar');
+  if (!sidebar) return;
+  var buttons = sidebar.querySelectorAll('[data-nav]');
+  for (var i = 0; i < buttons.length; i++) {
+    var btn = buttons[i];
+    var page = btn.getAttribute('data-nav');
+    var isActive = page === state.currentPage;
+    btn.className = 'w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors ' +
+      (isActive ? 'bg-emerald-50 text-emerald-700' : 'text-gray-600 hover:bg-gray-100');
+  }
+}
+
+window.toggleSidebar = function() {
+  state.sidebar.collapsed = !state.sidebar.collapsed;
+  var sidebar = elId('sidebar');
+  if (!sidebar) { render(); return; }
+  var collapsed = state.sidebar.collapsed;
+  sidebar.className = 'sidebar ' + (collapsed ? 'w-16' : 'w-64') + ' bg-white border-r border-gray-200 flex flex-col flex-shrink-0 transition-all duration-200 overflow-hidden group' + (collapsed ? ' sidebar-collapsed' : '');
+  var labels = sidebar.querySelectorAll('.sidebar-label');
+  for (var i = 0; i < labels.length; i++) {
+    labels[i].style.display = collapsed ? 'none' : '';
+  }
+};
+
+// ─── DASHBOARD ─────────────────────────────────────
+function renderDashboard() {
+  var d = state.dockerStatus || {};
+  var checklist = state.dashboard.checklist;
+  var ready = checklist.length > 0 && checklist.every(function(c) { return c.done; });
+
+  var checklistHtml = '';
+  for (var i = 0; i < checklist.length; i++) {
+    var item = checklist[i];
+    checklistHtml += '<div class="flex items-center gap-3">' +
+      (item.done ? I.checkCircle2(20, 'text-emerald-500 flex-shrink-0') : I.circle(20, 'text-gray-300 flex-shrink-0')) +
+      '<span class="' + (item.done ? 'text-gray-400 line-through text-sm' : 'text-gray-700 text-sm') + '">' + esc(item.label) + '</span></div>';
+  }
+
+  var actionBtn = '';
+  if (d.evolutionRunning) {
+    actionBtn = '<button onclick="dashboardStop()" class="flex items-center gap-2 px-5 py-2.5 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors text-sm font-medium">' +
+      I.square(16, '') + ' Parar Docker</button>';
+  } else {
+    actionBtn = '<button onclick="dashboardStart()" class="flex items-center gap-2 px-5 py-2.5 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 transition-colors text-sm font-medium">' +
+      I.play(16, '') + ' Iniciar Docker</button>';
+  }
+
+  return '<div class="p-8 max-w-5xl mx-auto">' +
+    '<div class="flex items-center justify-between mb-8">' +
+      '<div>' +
+        '<h1 class="text-2xl font-bold text-gray-800">Dashboard</h1>' +
+        '<p class="text-sm text-gray-500 mt-1">' + (ready ? 'Sistema pronto para uso' : 'Configure os itens abaixo') + '</p>' +
+      '</div>' +
+      (ready ? '<div class="flex items-center gap-2 px-3 py-1.5 bg-emerald-50 text-emerald-700 rounded-full text-sm font-medium">' + I.checkCircle2(16, '') + ' Pronto</div>' : '') +
+    '</div>' +
+    '<div class="grid grid-cols-3 gap-5 mb-8">' +
+      '<div class="bg-white rounded-xl border border-gray-200 p-5">' +
+        '<div class="text-emerald-600 mb-3">' + I.messageSquare(22, '') + '</div>' +
+        '<div class="text-2xl font-bold text-gray-800">' + (state.conversas.contatos ? state.conversas.contatos.length : 0) + '</div>' +
+        '<div class="text-sm text-gray-500">Conversas Recentes</div>' +
+      '</div>' +
+      '<div class="bg-white rounded-xl border border-gray-200 p-5">' +
+        '<div class="text-emerald-600 mb-3">' + I.fileText(22, '') + '</div>' +
+        '<div class="text-2xl font-bold text-gray-800">' + state.regras.length + '</div>' +
+        '<div class="text-sm text-gray-500">Regras Ativas</div>' +
+      '</div>' +
+      '<div class="bg-white rounded-xl border border-gray-200 p-5">' +
+        '<div class="text-emerald-600 mb-3">' + I.bot(22, '') + '</div>' +
+        '<div class="text-2xl font-bold text-gray-800">' + (d.evolutionRunning ? 'Sim' : 'Não') + '</div>' +
+        '<div class="text-sm text-gray-500">Bot Online</div>' +
+      '</div>' +
+    '</div>' +
+    '<div class="bg-white rounded-xl border border-gray-200 p-6 mb-8">' +
+      '<h2 class="text-lg font-semibold text-gray-700 mb-4">Status do Sistema</h2>' +
+      '<div class="grid grid-cols-2 gap-4 mb-5">' +
+        '<div class="bg-gray-50 rounded-lg p-4 text-center">' +
+          '<div class="text-sm text-gray-500 mb-1">Docker</div>' +
+          '<div class="font-semibold ' + (d.dockerInstalled ? 'text-emerald-600' : 'text-red-600') + '">' + (d.dockerInstalled ? 'Instalado' : 'Ausente') + '</div></div>' +
+        '<div class="bg-gray-50 rounded-lg p-4 text-center">' +
+          '<div class="text-sm text-gray-500 mb-1">Evolution API</div>' +
+          '<div class="font-semibold ' + (d.evolutionRunning ? 'text-emerald-600' : 'text-yellow-600') + '">' + (d.evolutionRunning ? 'Online' : 'Parado') + '</div></div>' +
+        '</div>' +
+      '<div class="flex gap-2">' + actionBtn +
+        '<button onclick="checkDockerStatus(); render()" class="p-2.5 border border-gray-300 rounded-lg hover:bg-gray-50">' + I.refreshCw(18, 'text-gray-600') + '</button>' +
+      '</div>' +
+    '</div>' +
+    '<div class="bg-white rounded-xl border border-gray-200 p-6">' +
+      '<h2 class="text-lg font-semibold text-gray-700 mb-4">Checklist</h2>' +
+      '<div class="space-y-3">' + checklistHtml + '</div>' +
+    '</div></div>';
+}
+
+function bindDashboard() {
+  if (!state.dockerStatus) checkDockerStatus();
+  loadChecklist();
+}
+
+window.dashboardStart = async function() {
+  state.dashboard.installing = true;
+  render();
+  await wabot.dockerStart();
+  setTimeout(function() { checkDockerStatus(); render(); }, 5000);
+};
+
+window.dashboardStop = async function() {
+  await wabot.dockerStop();
+  setTimeout(function() { checkDockerStatus(); render(); }, 3000);
+};
+
+async function loadChecklist() {
+  try {
+    var creds = await wabot.configRead('credentials.json');
+    var config = await wabot.configRead('config.json');
+    state.dashboard.checklist = [
+      { label: 'API Key Gemini configurada', done: creds && creds.data && creds.data.gemini && creds.data.gemini.api_key && creds.data.gemini.api_key.length > 0 },
+      { label: 'WhatsApp conectado (Evolution)', done: creds && creds.data && creds.data.evolution && creds.data.evolution.instance_name },
+      { label: 'Dados do negócio preenchidos', done: config && config.data && config.data.nome_negocio && config.data.nome_negocio.length > 0 && config.data.nome_negocio !== 'Meu Negócio' },
+      { label: 'Evolution API rodando (Docker)', done: state.dockerStatus && state.dockerStatus.evolutionRunning },
+    ];
+    render();
+  } catch(e) {}
+}
+
+async function checkDockerStatus() {
+  try {
+    var status = await wabot.dockerStatus();
+    state.dockerStatus = status;
+  } catch (e) {
+    state.dockerStatus = { dockerInstalled: false, evolutionRunning: false };
+  }
+}
+
+// ─── CREDENCIAIS ───────────────────────────────────
+function renderCredenciais() {
+  var c = state.credenciais.creds;
+  var evoConnected = state.credenciais.evoStatus && state.credenciais.evoStatus.connected;
+  var saudeWhats = evoConnected
+    ? '<div class="ml-auto flex items-center gap-1.5 text-emerald-600 text-xs font-medium bg-emerald-50 px-3 py-1.5 rounded-full">' + I.checkCircle2(14, '') + ' Conectado</div>'
+    : '<div class="ml-auto flex items-center gap-1.5 text-gray-400 text-xs font-medium bg-gray-50 px-3 py-1.5 rounded-full">' + I.circle(14, '') + ' Desconectado</div>';
+
+  return '<div class="p-8 max-w-3xl mx-auto">' +
+    '<h1 class="text-2xl font-bold text-gray-800 mb-2">Credenciais</h1>' +
+    '<p class="text-gray-500 mb-8">Configure as chaves de API e conecte seu WhatsApp.</p>' +
+
+    '<div class="bg-white rounded-xl border border-gray-200 p-6 mb-6">' +
+      '<div class="flex items-center gap-3 mb-4">' +
+        '<div class="w-10 h-10 bg-green-100 rounded-lg flex items-center justify-center">' + I.send(20, 'text-green-600') + '</div>' +
+        '<div><h2 class="text-lg font-semibold text-gray-700">WhatsApp (Evolution API)</h2><p class="text-xs text-gray-400">Conexão via QR Code</p></div>' +
+        saudeWhats +
+      '</div>' +
+      '<div id="evo-status-area" class="mb-4">' +
+        '<div class="text-sm text-gray-500 text-center py-4">Verificando status...</div>' +
+      '</div>' +
+      '<div class="flex gap-3">' +
+        (evoConnected
+          ? '<button onclick="disconnectEvolution()" class="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors text-sm font-medium">' + I.x(16, '') + ' Desconectar</button>'
+          : '<button onclick="connectEvolution()" class="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors text-sm font-medium">' + I.refreshCw(16, '') + ' Conectar WhatsApp</button>') +
+        '<button onclick="checkEvolutionStatus()" class="px-4 py-2.5 border border-gray-300 text-gray-600 rounded-lg hover:bg-gray-50 transition-colors text-sm">Atualizar</button>' +
+      '</div>' +
+    '</div>' +
+
+    '<div class="bg-white rounded-xl border border-gray-200 p-6 mb-8">' +
+      '<div class="flex items-center gap-3 mb-4">' +
+        '<div class="w-10 h-10 bg-purple-100 rounded-lg flex items-center justify-center">' + I.externalLink(20, 'text-purple-600') + '</div>' +
+        '<div><h2 class="text-lg font-semibold text-gray-700">Inteligência Artificial</h2><p class="text-xs text-gray-400">IA que atende seus clientes</p></div>' +
+      '</div>' +
+      '<div class="space-y-4">' +
+        '<div><label class="block text-sm font-medium text-gray-700 mb-1">Provedor</label>' +
+          '<select onchange="mudarProvedorIA(this.value)" class="w-full px-3 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 text-sm">' +
+            '<option value="groq"' + (c.llm?.provider === 'groq' || !c.llm?.provider ? ' selected' : '') + '>Groq (grátis, Llama 3)</option>' +
+            '<option value="gemini"' + (c.llm?.provider === 'gemini' ? ' selected' : '') + '>Gemini (Google)</option>' +
+          '</select></div>' +
+        '<div id="campos-ia">' +
+          renderCamposGroq(c) +
+        '</div>' +
+        '<div>' +
+          '<button onclick="testarGemini()" id="btn-testar-gemini" class="flex items-center gap-2 px-4 py-2 bg-blue-50 text-blue-700 border border-blue-200 rounded-lg hover:bg-blue-100 transition-colors text-sm font-medium">' + I.zap(16, '') + ' Testar Conexão</button>' +
+          '<div id="resultado-teste-gemini" class="mt-2 text-xs"></div>' +
+        '</div>' +
+      '</div>' +
+    '</div>' +
+
+    '<button onclick="saveCredenciais()" ' + (state.credenciais.saving ? 'disabled' : '') + ' class="flex items-center gap-2 px-6 py-3 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 transition-colors font-medium text-sm disabled:opacity-50 shadow-lg shadow-emerald-200">' +
+      I.save(18, '') + ' ' + (state.credenciais.saving ? 'Salvando...' : 'Salvar Credenciais') +
+    '</button></div>';
+}
+
+window.toggleAjuda = function(btn) {
+  var content = btn.nextElementSibling;
+  if (content.classList.contains('hidden')) {
+    content.classList.remove('hidden');
+    btn.querySelector('span').textContent = 'Ocultar ajuda';
+  } else {
+    content.classList.add('hidden');
+    btn.querySelector('span').textContent = 'Como conseguir a chave Gemini?';
+  }
+};
+
+window.updateCredsField = function(path, value) {
+  var parts = path.split('.');
+  var obj = state.credenciais.creds;
+  for (var i = 0; i < parts.length - 1; i++) {
+    if (!obj[parts[i]]) obj[parts[i]] = {};
+    obj = obj[parts[i]];
+  }
+  obj[parts[parts.length - 1]] = value;
+};
+
+window.saveCredenciais = async function() {
+  state.credenciais.saving = true;
+  render();
+  await wabot.configWrite('credentials.json', state.credenciais.creds);
+  state.credenciais.saving = false;
+  state.credenciais.saved = true;
+  render();
+  setTimeout(function() { state.credenciais.saved = false; }, 3000);
+};
+
+function renderCamposGroq(c) {
+  var prov = c.llm?.provider || 'groq';
+  if (prov === 'groq') {
+    return '' +
+      '<div><label class="block text-sm font-medium text-gray-700 mb-1">API Key Groq</label>' +
+        '<div class="flex gap-2">' +
+          '<input type="text" value="' + esc(c.llm?.api_key || '') + '" oninput="updateCredsField(\'llm.api_key\', this.value)" class="flex-1 px-3 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 text-sm font-mono" placeholder="gsk_..." /></div>' +
+        '<div class="mt-2">' +
+          '<button onclick="window.open(\'https://console.groq.com/keys\')" class="text-xs text-emerald-600 hover:text-emerald-700 flex items-center gap-1">' + I.externalLink(12, '') + ' Criar chave no Groq</button>' +
+        '</div></div>' +
+      '<div><label class="block text-sm font-medium text-gray-700 mb-1">Modelo</label>' +
+        '<select onchange="updateCredsField(\'llm.model\', this.value)" class="w-full px-3 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 text-sm">' +
+          '<option value="llama-3.3-70b-versatile"' + (c.llm?.model === 'llama-3.3-70b-versatile' || !c.llm?.model ? ' selected' : '') + '>Llama 3.3 70B (recomendado)</option>' +
+          '<option value="llama-3.1-8b-instant"' + (c.llm?.model === 'llama-3.1-8b-instant' ? ' selected' : '') + '>Llama 3.1 8B (rápido)</option>' +
+          '<option value="mixtral-8x7b-32768"' + (c.llm?.model === 'mixtral-8x7b-32768' ? ' selected' : '') + '>Mixtral 8x7B</option>' +
+        '</select></div>';
+  }
+  return '' +
+    '<div><label class="block text-sm font-medium text-gray-700 mb-1">API Key Gemini</label>' +
+      '<input type="text" value="' + esc(c.gemini?.api_key || '') + '" oninput="updateCredsField(\'gemini.api_key\', this.value)" class="w-full px-3 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 text-sm font-mono" placeholder="AIzaSy..." /></div>' +
+    '<div><label class="block text-sm font-medium text-gray-700 mb-1">Modelo</label>' +
+      '<select onchange="updateCredsField(\'gemini.model\', this.value)" class="w-full px-3 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 text-sm">' +
+        '<option value="gemini-2.0-flash-lite"' + (c.gemini?.model === 'gemini-2.0-flash-lite' ? ' selected' : '') + '>Gemini 2.0 Flash Lite</option>' +
+        '<option value="gemini-2.0-flash"' + (c.gemini?.model === 'gemini-2.0-flash' ? ' selected' : '') + '>Gemini 2.0 Flash</option>' +
+        '<option value="gemini-1.5-flash"' + (c.gemini?.model === 'gemini-1.5-flash' ? ' selected' : '') + '>Gemini 1.5 Flash</option>' +
+      '</select></div>';
+}
+
+window.mudarProvedorIA = function(provider) {
+  if (!state.credenciais.creds.llm) state.credenciais.creds.llm = {};
+  state.credenciais.creds.llm.provider = provider;
+  render();
+};
+
+window.testarGemini = async function() {
+  var area = document.getElementById('resultado-teste-gemini');
+  var btn = document.getElementById('btn-testar-gemini');
+  if (!area || !btn) return;
+  btn.disabled = true;
+  btn.innerHTML = I.zap(16, 'animate-pulse') + ' Testando...';
+  area.innerHTML = '<span class="text-gray-400">Aguardando resposta...</span>';
+  try {
+    var resp = await fetch('/api/llm/test', { method: 'POST' }).then(r => r.json());
+    if (resp.success) {
+      area.innerHTML = '<span class="text-emerald-600 font-medium">OK</span><span class="text-gray-500 ml-1">— ' + esc(resp.resposta) + '</span>';
+    } else {
+      area.innerHTML = '<span class="text-red-600 font-medium">Falha</span><span class="text-gray-500 ml-1">— ' + esc(resp.error) + '</span>';
+    }
+  } catch(e) {
+    area.innerHTML = '<span class="text-red-600 font-medium">Erro</span><span class="text-gray-500 ml-1">— ' + esc(e.message) + '</span>';
+  }
+  btn.disabled = false;
+  btn.innerHTML = I.zap(16, '') + ' Testar Conexão';
+};
+
+function bindCredenciais() {
+  checkEvolutionStatus();
+}
+
+// ─── Evolution: Status e Conexão ──────────────────
+window.checkEvolutionStatus = async function() {
+  var area = document.getElementById('evo-status-area');
+  if (!area) return;
+  area.innerHTML = '<div class="text-sm text-gray-500 text-center py-4">Verificando...</div>';
+  try {
+    var status = await wabot.evolutionStatus();
+    state.credenciais.evoStatus = status;
+    var connected = status && status.connected;
+    var qrImg = status && status.qrcode && status.qrcode.base64;
+    if (connected) {
+      area.innerHTML = '<div class="flex items-center gap-2 text-emerald-700 bg-emerald-50 rounded-lg p-3"><div class="w-3 h-3 bg-emerald-500 rounded-full"></div><span class="text-sm font-medium">WhatsApp conectado</span><span class="text-xs text-emerald-500 ml-auto">' + (status.instanceName || '') + '</span></div>';
+    } else if (qrImg) {
+      area.innerHTML = '<div class="text-center py-3"><img src="' + qrImg + '" class="mx-auto w-48 h-48 border-2 border-gray-200 rounded-xl" alt="QR Code" /><p class="text-xs text-gray-400 mt-2">Escaneie com o WhatsApp do negócio</p></div>';
+      setTimeout(checkEvolutionStatus, 3000);
+    } else {
+      area.innerHTML = '<div class="text-sm text-gray-500 text-center py-4">WhatsApp desconectado. Clique em "Conectar WhatsApp".</div>';
+    }
+  } catch (e) {
+    area.innerHTML = '<div class="text-sm text-red-500 text-center py-4">Erro: ' + e.message + '</div>';
+  }
+};
+
+window.connectEvolution = async function() {
+  var area = document.getElementById('evo-status-area');
+  if (!area) return;
+
+  // Verificar se ja existe QR pendente antes de criar nova instancia
+  var statusCheck = await wabot.evolutionStatus();
+  if (statusCheck && statusCheck.qrcode && statusCheck.qrcode.base64) {
+    state.credenciais.evoStatus = statusCheck;
+    area.innerHTML = '<div class="text-center py-4"><img src="' + statusCheck.qrcode.base64 + '" class="mx-auto w-56 h-56 border-2 border-gray-200 rounded-xl" alt="QR Code" /><p class="text-xs text-gray-400 mt-3">Escaneie com o WhatsApp do seu negócio</p></div>';
+    return;
+  }
+
+  area.innerHTML = '<div class="text-sm text-gray-500 text-center py-4">Conectando...</div>';
+  try {
+    var result = await wabot.evolutionConnect();
+    if (result.success) {
+      var newCreds = JSON.parse(JSON.stringify(state.credenciais.creds));
+      newCreds.evolution = newCreds.evolution || {};
+      if (result.instanceName) newCreds.evolution.instance_name = result.instanceName;
+      await wabot.configWrite('credentials.json', newCreds);
+      state.credenciais.creds = newCreds;
+      if (result.qrcode && result.qrcode.base64) {
+        area.innerHTML = '<div class="text-center py-4"><img src="' + result.qrcode.base64 + '" class="mx-auto w-56 h-56 border-2 border-gray-200 rounded-xl" alt="QR Code" /><p class="text-xs text-gray-400 mt-3">Escaneie com o WhatsApp do seu negócio</p></div>';
+      } else {
+        area.innerHTML = '<div class="text-sm text-gray-500 text-center py-4">QR Code gerado, aguardando...</div>';
+      }
+      // Poll for connection
+      var attempts = 0;
+      var poll = setInterval(async function() {
+        attempts++;
+        var s = await wabot.evolutionStatus();
+        if (s && s.connected) {
+          clearInterval(poll);
+          state.credenciais.evoStatus = s;
+          render();
+          checkEvolutionStatus();
+        } else if (s && s.qrcode && s.qrcode.base64) {
+          area.innerHTML = '<div class="text-center py-4"><img src="' + s.qrcode.base64 + '" class="mx-auto w-56 h-56 border-2 border-gray-200 rounded-xl" alt="QR Code" /><p class="text-xs text-gray-400 mt-3">Escaneie com o WhatsApp do seu negócio</p></div>';
+        } else if (attempts > 30) {
+          clearInterval(poll);
+          area.innerHTML = '<div class="text-sm text-orange-500 text-center py-4">Tempo limite. Tente novamente.</div>';
+        }
+      }, 2000);
+    } else {
+      area.innerHTML = '<div class="text-sm text-red-500 text-center py-4">Erro: ' + (result.error || 'desconhecido') + '</div>';
+    }
+  } catch (e) {
+    area.innerHTML = '<div class="text-sm text-red-500 text-center py-4">Erro: ' + e.message + '</div>';
+  }
+};
+
+window.disconnectEvolution = async function() {
+  if (!confirm('Desconectar WhatsApp?')) return;
+  try { await wabot.evolutionDisconnect(); } catch(e) {}
+  state.credenciais.evoStatus = { connected: false };
+  render();
+};
+
+// ─── CONFIGURAÇÕES ─────────────────────────────────
+function renderConfiguracoes() {
+  var c = state.configuracoes.config;
+  var tipos = c.tipos_atendimento || [];
+  var horarios = c.horarios || {};
+  var redes = c.redes_sociais || {};
+
+  var tiposHtml = '';
+  var TIPOS = [
+    { id: 'retirada', label: 'Retirada no Local' },
+    { id: 'consumo_local', label: 'Consumo no Local' },
+    { id: 'delivery', label: 'Delivery' },
+  ];
+  for (var i = 0; i < TIPOS.length; i++) {
+    var t = TIPOS[i];
+    tiposHtml += '<label class="flex items-center gap-2 cursor-pointer">' +
+      '<input type="checkbox" ' + (tipos.indexOf(t.id) >= 0 ? 'checked' : '') + ' onchange="toggleTipo(\'' + t.id + '\')" class="w-4 h-4 text-emerald-600 rounded border-gray-300 focus:ring-emerald-500" />' +
+      '<span class="text-sm text-gray-700">' + t.label + '</span></label>';
+  }
+
+  var DIAS = ['segunda','terca','quarta','quinta','sexta','sabado','domingo'];
+  var LABELS = { 'segunda':'Segunda','terca':'Terça','quarta':'Quarta','quinta':'Quinta','sexta':'Sexta','sabado':'Sábado','domingo':'Domingo' };
+
+  var horariosHtml = '';
+  for (var i = 0; i < DIAS.length; i++) {
+    var d = DIAS[i];
+    var h = horarios[d] || {};
+    if (!h.periodos) {
+      h.periodos = (h.cozinha && h.cozinha.length) ? h.cozinha : [{ abertura: '11:00', fechamento: '23:00' }];
+    }
+    var fechado = h.fechado;
+    var periodos = h.periodos || [];
+    var periodosHtml = '';
+    for (var p = 0; p < periodos.length; p++) {
+      var per = periodos[p];
+      periodosHtml += '<div class="flex items-center gap-2">' +
+        '<input type="time" value="' + (per.abertura || '11:00') + '" onchange="updatePeriodo(\'' + d + '\',' + p + ',\'abertura\',this.value)" class="px-2 py-1.5 border border-gray-300 rounded-lg text-sm" />' +
+        '<span class="text-gray-400 text-sm">até</span>' +
+        '<input type="time" value="' + (per.fechamento || '23:00') + '" onchange="updatePeriodo(\'' + d + '\',' + p + ',\'fechamento\',this.value)" class="px-2 py-1.5 border border-gray-300 rounded-lg text-sm" />' +
+        (periodos.length > 1 ? '<button onclick="removePeriodo(\'' + d + '\',' + p + ')" class="text-red-400 hover:text-red-600 p-1">' + I.x(14, '') + '</button>' : '') +
+      '</div>';
+    }
+
+    horariosHtml += '<div class="flex flex-wrap items-center gap-2 p-3 bg-gray-50 rounded-lg">' +
+      '<div class="w-24 text-sm font-medium text-gray-700">' + LABELS[d] + '</div>' +
+      '<label class="flex items-center gap-2 cursor-pointer">' +
+        '<input type="checkbox" ' + (!fechado ? 'checked' : '') + ' onchange="updateHorario(\'' + d + '\',\'fechado\',!this.checked)" class="w-4 h-4 text-emerald-600 rounded border-gray-300 focus:ring-emerald-500" />' +
+        '<span class="text-sm text-gray-600">Aberto</span></label>' +
+      (!fechado ? '<div class="flex flex-col gap-1.5">' + periodosHtml +
+        '<button onclick="addPeriodo(\'' + d + '\')" class="flex items-center gap-1 text-xs text-emerald-600 hover:text-emerald-700">' + I.plus(12, '') + ' Novo período</button></div>' : '') +
+    '</div>';
+  }
+
+  var btnLabel = state.configuracoes.saving ? 'Salvando...' : 'Salvar Configurações';
+
+  return '<div class="p-8 max-w-4xl mx-auto">' +
+    '<h1 class="text-2xl font-bold text-gray-800 mb-8">Configurações do Negócio</h1>' +
+
+    '<div class="bg-white rounded-xl border border-gray-200 p-6 mb-6">' +
+      '<h2 class="text-lg font-semibold text-gray-700 mb-5">Dados Básicos</h2>' +
+      '<div class="grid grid-cols-2 gap-4">' +
+        '<div class="col-span-2">' +
+          campo('Nome do Negócio', 'configNome', c.nome_negocio, 'Ex: Casarão do Gui', 'updateConfig(\'nome_negocio\',this.value)') +
+        '</div>' +
+        '<div class="col-span-2">' +
+          campo('Endereço', 'configEnd', c.endereco, 'Ex: Rua 15 de Novembro, 184', 'updateConfig(\'endereco\',this.value)') +
+        '</div>' +
+        '<div>' +
+          campo('Telefone', 'configTel', c.telefone, '(19) 3843-1778', 'updateConfig(\'telefone\',this.value)') +
+        '</div>' +
+        '<div>' +
+          campo('Site', 'configSite', c.site, 'https://meusite.com.br', 'updateConfig(\'site\',this.value)') +
+        '</div>' +
+        '<div>' +
+          campo('Link Pedido Online', 'configLink', c.link_pedido_online, 'https://...', 'updateConfig(\'link_pedido_online\',this.value)') +
+        '</div>' +
+        '<div>' +
+          campo('Instagram', 'configInsta', redes.instagram, '@seuinstagram', 'updateRedes(\'instagram\',this.value)') +
+        '</div>' +
+        '<div>' +
+          campo('Facebook', 'configFace', redes.facebook, 'facebook.com/seupagina', 'updateRedes(\'facebook\',this.value)') +
+        '</div>' +
+        '<div>' +
+          campo('iFood', 'configIfood', redes.ifood, 'ifood.com.br/...', 'updateRedes(\'ifood\',this.value)') +
+        '</div>' +
+        '<div class="col-span-2">' +
+          '<label class="block text-sm font-medium text-gray-700 mb-1.5">Observações Gerais</label>' +
+          '<textarea rows="3" oninput="updateConfig(\'observacoes_gerais\',this.value)" class="w-full px-3 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 text-sm">' + esc(c.observacoes_gerais) + '</textarea>' +
+        '</div>' +
+      '</div>' +
+    '</div>' +
+
+    '<div class="bg-white rounded-xl border border-gray-200 p-6 mb-6">' +
+      '<h2 class="text-lg font-semibold text-gray-700 mb-4">Tipos de Atendimento</h2>' +
+      '<div class="flex gap-6">' + tiposHtml + '</div>' +
+    '</div>' +
+
+    '<div class="bg-white rounded-xl border border-gray-200 p-6 mb-6">' +
+      '<h2 class="text-lg font-semibold text-gray-700 mb-4">Horários de Funcionamento</h2>' +
+      '<div class="space-y-2">' + horariosHtml + '</div>' +
+    '</div>' +
+
+    '<div class="bg-white rounded-xl border border-gray-200 p-6 mb-8">' +
+      '<h2 class="text-lg font-semibold text-gray-700 mb-4">Mensagens Padrão</h2>' +
+      '<div class="space-y-4">' +
+        msgField('Mensagem de Saudação', 'mensagem_saudacao', c.mensagem_saudacao) +
+        msgField('Mensagem de Ausência (fora do horário)', 'mensagem_ausencia', c.mensagem_ausencia) +
+        msgField('Mensagem quando não encontrar resposta', 'mensagem_regra_nao_encontrada', c.mensagem_regra_nao_encontrada) +
+        msgField('Mensagem de Agradecimento', 'mensagem_agradecimento', c.mensagem_agradecimento) +
+      '</div>' +
+    '</div>' +
+
+    '<button onclick="saveConfiguracoes()" ' + (state.configuracoes.saving ? 'disabled' : '') + ' class="flex items-center gap-2 px-6 py-3 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 transition-colors font-medium text-sm disabled:opacity-50">' +
+      I.save(18, '') + ' ' + btnLabel +
+    '</button></div>';
+}
+
+function campo(label, id, value, placeholder, onchange) {
+  return '<div><label class="block text-sm font-medium text-gray-700 mb-1.5">' + label + '</label>' +
+    '<input type="text" id="' + id + '" value="' + esc(value) + '" placeholder="' + esc(placeholder || '') + '" oninput="' + onchange + '" class="w-full px-3 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 text-sm" /></div>';
+}
+
+function msgField(label, field, value) {
+  return '<div><label class="block text-sm font-medium text-gray-700 mb-1.5">' + label + '</label>' +
+    '<textarea rows="2" oninput="updateConfig(\'' + field + '\',this.value)" class="w-full px-3 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 text-sm">' + esc(value) + '</textarea></div>';
+}
+
+window.updateConfig = function(field, value) {
+  state.configuracoes.config[field] = value;
+};
+
+window.updateRedes = function(rede, value) {
+  if (!state.configuracoes.config.redes_sociais) state.configuracoes.config.redes_sociais = {};
+  state.configuracoes.config.redes_sociais[rede] = value;
+};
+
+window.toggleTipo = function(tipo) {
+  var tipos = state.configuracoes.config.tipos_atendimento;
+  var idx = tipos.indexOf(tipo);
+  if (idx >= 0) tipos.splice(idx, 1);
+  else tipos.push(tipo);
+};
+
+window.updateHorario = function(dia, campo, valor) {
+  if (!state.configuracoes.config.horarios[dia]) {
+    state.configuracoes.config.horarios[dia] = { fechado: false, periodos: [{ abertura: '11:00', fechamento: '23:00' }] };
+  }
+  state.configuracoes.config.horarios[dia][campo] = valor;
+};
+
+window.updatePeriodo = function(dia, idx, campo, valor) {
+  var h = state.configuracoes.config.horarios[dia];
+  if (h && h.periodos && h.periodos[idx]) h.periodos[idx][campo] = valor;
+};
+
+window.addPeriodo = function(dia) {
+  if (!state.configuracoes.config.horarios[dia]) {
+    state.configuracoes.config.horarios[dia] = { fechado: false, periodos: [] };
+  }
+  var h = state.configuracoes.config.horarios[dia];
+  if (!h.periodos) h.periodos = [];
+  h.periodos.push({ abertura: '18:00', fechamento: '23:00' });
+  render();
+  bindConfiguracoes();
+};
+
+window.removePeriodo = function(dia, idx) {
+  var h = state.configuracoes.config.horarios[dia];
+  if (h && h.periodos) {
+    h.periodos.splice(idx, 1);
+    if (h.periodos.length === 0) h.periodos.push({ abertura: '11:00', fechamento: '23:00' });
+    render();
+    bindConfiguracoes();
+  }
+};
+
+window.saveConfiguracoes = async function() {
+  state.configuracoes.saving = true;
+  render();
+  await wabot.configWrite('config.json', state.configuracoes.config);
+  state.configuracoes.saving = false;
+  render();
+};
+
+
+
+function bindConfiguracoes() {}
+
+// ─── CONVERSAS ─────────────────────────────────────
+function renderConversas() {
+  var contatos = state.conversas.contatos || [];
+  var busca = state.conversas.busca.toLowerCase();
+  var filtrados = contatos.filter(function(c) {
+    return c.nome.toLowerCase().indexOf(busca) >= 0 || c.telefone.indexOf(busca) >= 0;
+  });
+
+  var listaHtml = '';
+  for (var i = 0; i < filtrados.length; i++) {
+    var c = filtrados[i];
+    var sel = state.conversas.contatoSelecionado && state.conversas.contatoSelecionado.telefone === c.telefone;
+    var badgeColor = c.status === 'bot' ? 'bg-blue-100 text-blue-700' : c.status === 'pausado' ? 'bg-yellow-100 text-yellow-700' : 'bg-purple-100 text-purple-700';
+    listaHtml += '<button onclick="selectContato(\'' + c.telefone + '\')" class="w-full p-4 flex items-start gap-3 text-left transition-colors border-b border-gray-100 ' + (sel ? 'bg-emerald-50' : 'hover:bg-gray-50') + '">' +
+      '<div class="w-12 h-12 rounded-full bg-emerald-100 flex items-center justify-center flex-shrink-0">' + I.messageSquare(20, 'text-emerald-600') + '</div>' +
+      '<div class="flex-1 min-w-0">' +
+        '<div class="flex items-center justify-between mb-1">' +
+          '<span class="font-medium text-gray-800 text-sm truncate">' + esc(c.nome) + '</span>' +
+          '<span class="text-xs text-gray-400 flex-shrink-0 ml-2">' + esc(c.horario || '') + '</span>' +
+        '</div>' +
+        '<p class="text-sm text-gray-500 truncate">' + esc(c.ultima_msg) + '</p>' +
+        '<div class="flex items-center gap-2 mt-1.5">' +
+          '<span class="text-xs px-2 py-0.5 rounded-full font-medium ' + badgeColor + '">' + esc(c.status || 'bot') + '</span>' +
+          (c.nao_lidas > 0 ? '<span class="bg-emerald-500 text-white text-xs px-1.5 py-0.5 rounded-full">' + c.nao_lidas + '</span>' : '') +
+        '</div>' +
+      '</div>' +
+    '</button>';
+  }
+
+  if (filtrados.length === 0) {
+    listaHtml = '<div class="text-center py-12 text-gray-400 text-sm">Nenhuma conversa encontrada</div>';
+  }
+
+  var painelDireito = state.conversas.contatoSelecionado
+    ? renderChatView(state.conversas.contatoSelecionado)
+    : '<div class="flex-1 flex items-center justify-center bg-gray-50">' +
+        '<div class="text-center">' +
+          '<span class="text-gray-200 inline-block">' + I.messageSquare(64, '') + '</span>' +
+          '<p class="text-gray-400 mt-4">Selecione uma conversa</p>' +
+        '</div></div>';
+
+  return '<div class="flex h-full">' +
+    '<div class="w-96 bg-white border-r border-gray-200 flex flex-col flex-shrink-0">' +
+      '<div class="p-4 border-b border-gray-200">' +
+        '<h1 class="text-xl font-bold text-gray-800 mb-3">Conversas</h1>' +
+        '<div class="relative">' +
+          '<span class="absolute left-3 top-2.5 text-gray-400">' + I.search(18, '') + '</span>' +
+          '<input type="text" oninput="state.conversas.busca=this.value;render()" placeholder="Buscar..." class="w-full pl-10 pr-4 py-2.5 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-emerald-500" />' +
+        '</div>' +
+      '</div>' +
+      '<div class="flex-1 overflow-y-auto">' + listaHtml + '</div>' +
+    '</div>' + painelDireito + '</div>';
+}
+
+window.selectContato = function(telefone) {
+  var contatos = state.conversas.contatos || [];
+  for (var i = 0; i < contatos.length; i++) {
+    if (contatos[i].telefone === telefone) {
+      state.conversas.contatoSelecionado = contatos[i];
+      state.chat.mensagens = [];
+      state.chat.texto = '';
+      state.chat.sugestaoIA = '';
+      render();
+      bindChat();
+      loadMensagens();
+      return;
+    }
+  }
+};
+
+function bindConversas() {}
+
+// ─── CHAT VIEW ─────────────────────────────────────
+function renderChatView(contato) {
+  var mensagens = state.chat.mensagens;
+  var status = state.chat.status;
+  var sugestaoIA = state.chat.sugestaoIA;
+  var texto = state.chat.texto;
+
+  var badgeConfig = {
+    bot: { label: 'Bot Ativo', color: 'bg-blue-100 text-blue-700' },
+    pausado: { label: 'Pausado', color: 'bg-yellow-100 text-yellow-700' },
+    humano: { label: 'Humano', color: 'bg-purple-100 text-purple-700' },
+  };
+  var badge = badgeConfig[status] || { label: status, color: 'bg-gray-100 text-gray-700' };
+
+  var msgsHtml = '';
+  if (mensagens.length === 0) {
+    msgsHtml = '<div class="h-full flex items-center justify-center"><p class="text-gray-400 text-sm">Nenhum histórico disponível</p></div>';
+  }
+  for (var i = 0; i < mensagens.length; i++) {
+    var m = mensagens[i];
+    var isBot = m.de_bot;
+    msgsHtml += '<div class="flex ' + (isBot ? 'justify-start' : 'justify-end') + ' animate-fade-in">' +
+      '<div class="' + (isBot ? 'chat-bubble-bot' : 'chat-bubble-client') + '">';
+    if (isBot && m.origem && m.origem !== 'cliente') {
+      var origemLabel = m.origem === 'regra' ? 'Regra' : m.origem === 'ia' ? 'IA' : 'Você';
+      var origemColor = m.origem === 'regra' ? 'text-blue-600' : m.origem === 'ia' ? 'text-purple-600' : 'text-gray-500';
+      msgsHtml += '<div class="flex items-center gap-1 mb-1"><span class="text-xs font-medium ' + origemColor + '">' + origemLabel + '</span></div>';
+    }
+    msgsHtml += '<p class="text-sm whitespace-pre-wrap">' + esc(m.texto) + '</p>' +
+      '<p class="text-xs mt-1 ' + (isBot ? 'text-gray-400' : 'text-emerald-100') + '">' + esc(m.horario || '') + '</p>' +
+      '</div></div>';
+  }
+
+  var sugestaoHtml = '';
+  if (sugestaoIA) {
+    sugestaoHtml = '<div class="bg-purple-50 border-t border-purple-200 px-5 py-3 flex-shrink-0">' +
+      '<div class="flex items-start gap-3">' +
+        I.sparkles(18, 'text-purple-600 mt-0.5 flex-shrink-0') +
+        '<div class="flex-1 min-w-0">' +
+          '<p class="text-xs font-semibold text-purple-700 mb-1">Sugestão da IA</p>' +
+          '<p class="text-sm text-gray-700 whitespace-pre-wrap">' + esc(sugestaoIA) + '</p>' +
+        '</div>' +
+        '<div class="flex gap-1.5 flex-shrink-0">' +
+          '<button onclick="enviarSugestaoIA()" class="px-3 py-1.5 bg-purple-600 text-white text-xs rounded-lg hover:bg-purple-700 font-medium">Enviar</button>' +
+          '<button onclick="state.chat.sugestaoIA=\'\';render();bindChat()" class="px-3 py-1.5 text-gray-500 hover:text-gray-700 text-xs rounded-lg hover:bg-purple-100">X</button>' +
+        '</div>' +
+      '</div>' +
+    '</div>';
+  }
+
+  return '<div class="flex-1 flex flex-col h-full bg-gray-50">' +
+    '<div class="bg-white border-b border-gray-200 px-5 py-3 flex items-center gap-3 flex-shrink-0">' +
+      '<div class="w-10 h-10 rounded-full bg-emerald-100 flex items-center justify-center flex-shrink-0">' + I.userCircle(24, 'text-emerald-600') + '</div>' +
+      '<div class="flex-1 min-w-0">' +
+        '<h2 class="font-semibold text-gray-800 text-sm truncate">' + esc(contato.nome) + '</h2>' +
+        '<p class="text-xs text-gray-400">' + esc(contato.telefone) + '</p>' +
+      '</div>' +
+      '<span class="text-xs px-2.5 py-1 rounded-full font-medium whitespace-nowrap ' + badge.color + '">' + badge.label + '</span>' +
+    '</div>' +
+
+    '<div class="bg-white px-4 py-2 flex items-center gap-1.5 border-b border-gray-200 flex-shrink-0 overflow-x-auto">' +
+      '<button onclick="alterarStatus(\'humano\')" class="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-lg bg-white border border-gray-300 hover:bg-gray-50 disabled:opacity-40 whitespace-nowrap">' + I.pause(14, '') + ' Modo Humano</button>' +
+      '<button onclick="alterarStatus(\'bot\')" class="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-lg bg-white border border-gray-300 hover:bg-gray-50 disabled:opacity-40 whitespace-nowrap">' + I.play(14, '') + ' Reativar Bot</button>' +
+      '<span class="text-gray-300 mx-0.5">|</span>' +
+      '<button onclick="ignorarContato()" class="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-lg bg-white border border-red-200 text-red-600 hover:bg-red-50 whitespace-nowrap">' + I.shieldBan(14, '') + ' Ignorar</button>' +
+    '</div>' +
+
+    '<div class="flex-1 overflow-y-auto p-5 space-y-3" id="chat-messages">' + msgsHtml + '</div>' +
+    sugestaoHtml +
+
+    '<div class="bg-white border-t border-gray-200 px-5 py-3 flex-shrink-0">' +
+      '<div class="flex items-center gap-2">' +
+        '<button onclick="sugerirIA()" class="p-2.5 text-purple-600 hover:bg-purple-50 rounded-lg" title="Sugerir resposta">' + I.sparkles(20, state.chat.sugerindo ? 'animate-pulse' : '') + '</button>' +
+        '<input type="text" id="chat-input" value="' + esc(texto) + '" oninput="state.chat.texto=this.value" onkeydown="if(event.key===\'Enter\')enviarMsg()" placeholder="Digite sua resposta..." class="flex-1 px-4 py-2.5 border border-gray-300 rounded-full text-sm focus:ring-2 focus:ring-emerald-500 outline-none" />' +
+        '<button onclick="enviarMsg()" class="p-2.5 bg-emerald-600 text-white rounded-full hover:bg-emerald-700 disabled:opacity-50" id="chat-send-btn">' + I.send(18, '') + '</button>' +
+      '</div>' +
+    '</div></div>';
+}
+
+window.ignorarContato = async function() {
+  var contato = state.conversas.contatoSelecionado;
+  if (!contato || !contato.telefone) return;
+  if (!confirm('Ignorar ' + (contato.nome || contato.telefone) + '? O bot não responderá mais automaticamente.')) return;
+  var ignorados = [];
+  try {
+    var r = await wabot.configRead('ignorados.json');
+    if (r.success && Array.isArray(r.data)) ignorados = r.data;
+  } catch(e) {}
+  // Verificar se já existe
+  for (var i = 0; i < ignorados.length; i++) {
+    if (ignorados[i].telefone === contato.telefone) return;
+  }
+  ignorados.push({ id: 'ign-' + Date.now(), telefone: contato.telefone, nome: contato.nome || '' });
+  await wabot.configWrite('ignorados.json', ignorados);
+  state.ignorados = ignorados;
+  state.chat.status = 'pausado';
+  render();
+  bindChat();
+};
+
+window.alterarStatus = function(status) {
+  state.chat.status = status;
+  render();
+  bindChat();
+};
+
+window.sugerirIA = async function() {
+  var contato = state.conversas.contatoSelecionado;
+  if (!contato) return;
+  var ultimaMsgCliente = '';
+  var msgs = state.chat.mensagens || [];
+  for (var i = msgs.length - 1; i >= 0; i--) {
+    if (!msgs[i].de_bot) { ultimaMsgCliente = msgs[i].texto; break; }
+  }
+  if (!ultimaMsgCliente) return;
+  state.chat.sugerindo = true;
+  render();
+  bindChat();
+  try {
+    var result = await wabot.testIA(ultimaMsgCliente);
+    if (result.success && result.resposta) {
+      state.chat.sugestaoIA = result.resposta;
+    } else {
+      state.chat.sugestaoIA = 'Não foi possível gerar sugestão.';
+    }
+  } catch(e) {
+    state.chat.sugestaoIA = 'Erro ao consultar IA.';
+  }
+  state.chat.sugerindo = false;
+  render();
+  bindChat();
+};
+
+window.enviarMsg = async function() {
+  var texto = state.chat.texto.trim();
+  if (!texto) return;
+  var contato = state.conversas.contatoSelecionado;
+  if (!contato) return;
+  var hora = new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+  state.chat.mensagens.push({ id: Date.now().toString(), texto: texto, de_bot: true, origem: 'humano', horario: hora });
+  state.chat.texto = '';
+  render();
+  bindChat();
+  await wabot.sendMessage(contato.telefone, texto);
+  scrollChat();
+};
+
+window.enviarSugestaoIA = async function() {
+  var texto = state.chat.sugestaoIA.trim();
+  if (!texto) return;
+  var contato = state.conversas.contatoSelecionado;
+  var hora = new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+  state.chat.mensagens.push({ id: Date.now().toString(), texto: texto, de_bot: true, origem: 'ia', horario: hora });
+  state.chat.sugestaoIA = '';
+  render();
+  bindChat();
+  await wabot.sendMessage(contato.telefone, texto);
+  scrollChat();
+};
+
+function scrollChat() {
+  var container = document.getElementById('chat-messages');
+  if (container) setTimeout(function() { container.scrollTop = container.scrollHeight; }, 50);
+}
+
+function bindChat() {
+  scrollChat();
+}
+
+async function loadMensagens() {
+  var contato = state.conversas.contatoSelecionado;
+  if (!contato) return;
+  try {
+    var result = await wabot.evolutionHistory(contato.telefone);
+    if (result.success && Array.isArray(result.data)) {
+      state.chat.mensagens = result.data;
+    }
+  } catch(e) {}
+  render();
+  bindChat();
+}
+
+// ─── REGRAS ────────────────────────────────────────
+function renderRegras() {
+  var regras = state.regras;
+  var cardsHtml = '';
+  for (var i = 0; i < regras.length; i++) {
+    var r = regras[i];
+    cardsHtml += '<div class="bg-white rounded-xl border border-gray-200 p-5">' +
+      '<div class="flex items-start gap-3">' +
+        '<div class="flex-1">' +
+          '<div><label class="block text-xs font-medium text-gray-500 mb-1.5">Instrução para o bot</label>' +
+            '<textarea rows="3" oninput="updateRegra(\'' + r.id + '\',\'instrucao\',this.value)" class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-emerald-500" placeholder="Explique em linguagem natural como o bot deve agir...">' + esc(r.instrucao || '') + '</textarea></div>' +
+          '<div class="flex items-center justify-between mt-3">' +
+            '<button onclick="toggleRegraAtivo(\'' + r.id + '\')" class="flex items-center gap-1.5 text-sm ' + (r.ativo ? 'text-emerald-600' : 'text-gray-400') + '">' +
+              (r.ativo ? I.toggleRight(20, '') : I.toggleLeft(20, '')) + (r.ativo ? ' Ativo' : ' Inativo') +
+            '</button>' +
+            '<button onclick="removeRegra(\'' + r.id + '\')" class="text-red-400 hover:text-red-600 p-1">' + I.trash2(16, '') + '</button>' +
+          '</div>' +
+        '</div>' +
+      '</div>' +
+    '</div>';
+  }
+  if (regras.length === 0) {
+    cardsHtml = '<div class="text-center py-16 text-gray-400"><p class="text-sm">Nenhuma instrução cadastrada.</p><p class="text-xs mt-1">Clique em "Nova Instrução" para ensinar o bot.</p></div>';
+  }
+  return '<div class="p-8 max-w-4xl mx-auto">' +
+    '<div class="flex items-center justify-between mb-6">' +
+      '<div>' +
+        '<h1 class="text-2xl font-bold text-gray-800">Regras do Bot</h1>' +
+        '<p class="text-sm text-gray-500 mt-1">Escreva em linguagem natural como o bot deve se comportar. A IA lê e decide a resposta automaticamente.</p>' +
+      '</div>' +
+      '<div class="flex gap-2">' +
+        '<button onclick="addRegra()" class="flex items-center gap-2 px-4 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 text-sm font-medium">' + I.plus(18, '') + ' Nova Regra</button>' +
+        '<button onclick="saveRegras()" class="flex items-center gap-2 px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 text-sm font-medium">' + I.save(18, '') + ' Salvar</button>' +
+      '</div>' +
+    '</div>' +
+    '<div class="space-y-3">' + cardsHtml + '</div>' +
+  '</div>';
+}
+
+window.addRegra = function() {
+  var texto = prompt('Digite a instrução da nova regra:');
+  if (!texto || !texto.trim()) return;
+  state.regras.push({ id: 'reg-' + Date.now(), instrucao: texto.trim(), ativo: true });
+  render();
+  bindRegras();
+};
+
+window.updateRegra = function(id, campo, valor) {
+  for (var i = 0; i < state.regras.length; i++) {
+    if (state.regras[i].id === id) { state.regras[i][campo] = valor; return; }
+  }
+};
+
+window.toggleRegraAtivo = function(id) {
+  for (var i = 0; i < state.regras.length; i++) {
+    if (state.regras[i].id === id) {
+      state.regras[i].ativo = !state.regras[i].ativo;
+      render();
+      bindRegras();
+      return;
+    }
+  }
+};
+
+window.removeRegra = function(id) {
+  var novas = [];
+  for (var i = 0; i < state.regras.length; i++) {
+    if (state.regras[i].id !== id) novas.push(state.regras[i]);
+  }
+  state.regras = novas;
+  render();
+  bindRegras();
+};
+
+window.saveRegras = async function() {
+  await wabot.configWrite('regras.json', state.regras);
+  // Feedback visual
+  var btn = document.querySelector('button[onclick="saveRegras()"]');
+  if (btn) { btn.innerHTML = I.save(18, '') + ' Salvo!'; setTimeout(function() { btn.innerHTML = I.save(18, '') + ' Salvar'; }, 2000); }
+};
+
+function bindRegras() {}
+
+// ─── IGNORADOS ─────────────────────────────────────
+function renderIgnorados() {
+  var ignorados = state.ignorados;
+  function renderLista(lista) {
+    if (lista.length === 0) return '<div class="text-center py-8 text-gray-400 text-sm">Nenhum contato.</div>';
+    var h = '';
+    for (var j = 0; j < lista.length; j++) {
+      var item = lista[j];
+      h += '<div class="flex items-center gap-3 p-3 bg-gray-50 rounded-lg group">' +
+        '<div class="flex-1 grid grid-cols-[1fr_1fr] gap-2">' +
+          '<div><input type="text" value="' + esc(item.telefone) + '" onchange="updateIgnorado(\'' + item.id + '\',\'telefone\',this.value)" class="w-full px-2 py-1.5 border border-gray-300 rounded text-sm" placeholder="5511999999999" /></div>' +
+          '<div><input type="text" value="' + esc(item.nome || '') + '" onchange="updateIgnorado(\'' + item.id + '\',\'nome\',this.value)" class="w-full px-2 py-1.5 border border-gray-300 rounded text-sm" placeholder="Nome" /></div>' +
+        '</div>' +
+        '<button onclick="removeIgnorado(\'' + item.id + '\')" class="text-red-400 hover:text-red-600 p-1.5 opacity-0 group-hover:opacity-100">' + I.trash2(14, '') + '</button>' +
+      '</div>';
+    }
+    return h;
+  }
+
+  return '<div class="p-8 max-w-4xl mx-auto">' +
+    '<div class="flex items-center justify-between mb-6">' +
+      '<div>' +
+        '<h1 class="text-2xl font-bold text-gray-800">Contatos Ignorados</h1>' +
+        '<p class="text-sm text-gray-500 mt-1">Números que o bot não deve atender automaticamente.</p>' +
+      '</div>' +
+      '<div class="flex gap-2">' +
+        '<button onclick="addIgnorado()" class="flex items-center gap-2 px-4 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 text-sm font-medium">' + I.plus(18, '') + ' Novo</button>' +
+        '<button onclick="saveIgnorados()" class="flex items-center gap-2 px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 text-sm font-medium">' + I.save(18, '') + ' Salvar</button>' +
+      '</div>' +
+    '</div>' +
+    '<div class="bg-white rounded-xl border border-gray-200 p-5">' +
+      '<p class="text-xs text-gray-400 mb-3">Adicione números de fornecedores, contabilidade e outros contatos internos.</p>' +
+      '<div class="space-y-2">' + renderLista(ignorados) + '</div>' +
+    '</div></div>';
+}
+
+window.addIgnorado = function() {
+  state.ignorados.push({ id: 'ign-' + Date.now(), telefone: '', nome: '' });
+  render();
+  bindIgnorados();
+};
+
+window.updateIgnorado = function(id, campo, valor) {
+  for (var i = 0; i < state.ignorados.length; i++) {
+    if (state.ignorados[i].id === id) { state.ignorados[i][campo] = valor; return; }
+  }
+};
+
+window.removeIgnorado = function(id) {
+  var novas = [];
+  for (var i = 0; i < state.ignorados.length; i++) {
+    if (state.ignorados[i].id !== id) novas.push(state.ignorados[i]);
+  }
+  state.ignorados = novas;
+  render();
+  bindIgnorados();
+};
+
+window.saveIgnorados = async function() {
+  await wabot.configWrite('ignorados.json', state.ignorados);
+};
+
+function bindIgnorados() {}
+
+// ─── APRENDIZADO ──────────────────────────────────
+function renderAprendizado() {
+  var a = state.aprendizado;
+  var pendencias = a.pendencias || [];
+  var respostas = a.respostas || [];
+  var pendentes = pendencias.filter(function(p) { return !p.respondida; });
+  var respondidas = pendencias.filter(function(p) { return p.respondida; });
+
+  var pendentesHtml = '';
+  if (pendentes.length === 0) {
+    pendentesHtml = '<div class="text-center py-12 text-gray-400 text-sm">Nenhuma pergunta pendente. O bot está respondendo tudo! 🎉</div>';
+  }
+  for (var i = 0; i < pendentes.length; i++) {
+    var p = pendentes[i];
+    var respondendo = a.respondendoId === p.id;
+    pendentesHtml += '<div class="bg-white rounded-xl border border-gray-200 p-5">' +
+      '<div class="flex items-start gap-3">' +
+        '<div class="w-10 h-10 bg-amber-100 rounded-lg flex items-center justify-center flex-shrink-0">' + I.helpCircle(20, 'text-amber-600') + '</div>' +
+        '<div class="flex-1 min-w-0">' +
+          '<div class="flex items-center gap-2 mb-2">' +
+            '<span class="text-xs font-medium text-amber-600 bg-amber-50 px-2 py-0.5 rounded-full">Pendente</span>' +
+            '<span class="text-xs text-gray-400">' + esc(formatarData(p.data)) + '</span>' +
+          '</div>' +
+          '<p class="text-sm text-gray-700 font-medium mb-1">' + esc(p.mensagem) + '</p>' +
+          '<p class="text-xs text-gray-400">' + esc(p.telefone) + '</p>' +
+        '</div>' +
+      '</div>' +
+      (respondendo ? '' :
+        '<div class="flex gap-2 mt-3 pt-3 border-t border-gray-100">' +
+          '<button onclick="iniciarRespostaAprendizado(\'' + p.id + '\')" class="flex items-center gap-1.5 px-3 py-1.5 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 text-xs font-medium">' + I.checkCircle2(14, '') + ' Responder</button>' +
+          '<button onclick="ignorarPerguntaAprendizado(\'' + p.id + '\')" class="flex items-center gap-1.5 px-3 py-1.5 text-gray-500 hover:text-red-600 text-xs border border-gray-300 rounded-lg">' + I.x(14, '') + ' Ignorar</button>' +
+        '</div>'
+      ) +
+      (respondendo ? '' +
+        '<div class="mt-3 pt-3 border-t border-gray-100">' +
+          '<textarea id="resposta-aprendizado-' + p.id + '" rows="2" class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-emerald-500" placeholder="Digite como o bot deve responder..."></textarea>' +
+          '<div class="flex gap-2 mt-2">' +
+            '<button onclick="salvarRespostaAprendizado(\'' + p.id + '\')" class="flex items-center gap-1.5 px-3 py-1.5 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 text-xs font-medium">' + I.save(14, '') + ' Salvar Resposta</button>' +
+            '<button onclick="state.aprendizado.respondendoId=null;render();bindAprendizado()" class="px-3 py-1.5 text-gray-500 text-xs border border-gray-300 rounded-lg">Cancelar</button>' +
+          '</div>' +
+        '</div>'
+      : '') +
+    '</div>';
+  }
+
+  var respostasHtml = '';
+  if (respostas.length === 0) {
+    respostasHtml = '<div class="text-center py-8 text-gray-400 text-sm">Nenhuma resposta aprendida ainda.</div>';
+  }
+  for (var i = 0; i < respostas.length; i++) {
+    var r = respostas[i];
+    respostasHtml += '<div class="bg-white rounded-xl border border-gray-200 p-4 group hover:border-gray-300 transition-colors">' +
+      '<div class="flex items-start gap-3">' +
+        '<div class="w-9 h-9 bg-emerald-100 rounded-lg flex items-center justify-center flex-shrink-0">' + I.checkCircle2(18, 'text-emerald-600') + '</div>' +
+        '<div class="flex-1 min-w-0">' +
+          '<p class="text-xs font-medium text-gray-500 mb-1">Pergunta:</p>' +
+          '<p class="text-sm text-gray-700 font-medium mb-2">' + esc(r.pergunta) + '</p>' +
+          '<p class="text-xs font-medium text-gray-500 mb-1">Resposta:</p>' +
+          '<p class="text-sm text-gray-600 mb-2 whitespace-pre-wrap">' + esc(r.resposta) + '</p>' +
+          '<div class="flex items-center gap-3 text-xs text-gray-400">' +
+            '<span>Usos: ' + (r.usos || 0) + '</span>' +
+            '<span>Palavras-chave: ' + (Array.isArray(r.palavras_chave) ? r.palavras_chave.join(', ') : '') + '</span>' +
+          '</div>' +
+        '</div>' +
+        '<button onclick="removerRespostaAprendizada(\'' + r.id + '\')" class="text-red-300 hover:text-red-600 p-1 opacity-0 group-hover:opacity-100 transition-opacity">' + I.trash2(16, '') + '</button>' +
+      '</div>' +
+    '</div>';
+  }
+
+  var tabPendencias = a.tab === 'pendencias' ? 'bg-emerald-600 text-white' : 'bg-white text-gray-600 hover:bg-gray-50 border';
+  var tabRespostas = a.tab === 'respostas' ? 'bg-emerald-600 text-white' : 'bg-white text-gray-600 hover:bg-gray-50 border';
+  var tabNova = a.tab === 'nova' ? 'bg-emerald-600 text-white' : 'bg-white text-gray-600 hover:bg-gray-50 border';
+
+  var conteudoTab = '';
+  if (a.tab === 'pendencias') {
+    conteudoTab = '<div class="space-y-3">' + pendentesHtml + '</div>';
+  } else if (a.tab === 'respostas') {
+    conteudoTab = '<div class="space-y-3">' + respostasHtml + '</div>';
+  } else if (a.tab === 'nova') {
+    conteudoTab = '<div class="bg-white rounded-xl border border-gray-200 p-6">' +
+      '<h3 class="text-sm font-semibold text-gray-700 mb-4">Adicionar conhecimento manualmente</h3>' +
+      '<div class="space-y-4">' +
+        '<div><label class="block text-sm font-medium text-gray-700 mb-1">Pergunta (exemplo do que o cliente pode perguntar)</label>' +
+          '<input type="text" id="nova-pergunta" value="' + esc(a.novaPergunta) + '" oninput="state.aprendizado.novaPergunta=this.value" class="w-full px-3 py-2.5 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-emerald-500" placeholder="Ex: Vocês têm opções sem glúten?" /></div>' +
+        '<div><label class="block text-sm font-medium text-gray-700 mb-1">Resposta que o bot deve dar</label>' +
+          '<textarea rows="3" id="nova-resposta" oninput="state.aprendizado.novaResposta=this.value" class="w-full px-3 py-2.5 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-emerald-500" placeholder="Ex: Sim! Temos opções sem glúten no nosso cardápio. Você pode conferir pelo link...">' + esc(a.novaResposta) + '</textarea></div>' +
+        '<div><label class="block text-sm font-medium text-gray-700 mb-1">Palavras-chave (separadas por vírgula)</label>' +
+          '<input type="text" id="nova-palavras" value="' + esc(a.novasPalavrasChave) + '" oninput="state.aprendizado.novasPalavrasChave=this.value" class="w-full px-3 py-2.5 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-emerald-500" placeholder="Ex: glúten, gluten, sem glúten, celíaco" /></div>' +
+        '<button onclick="adicionarConhecimentoManual()" class="flex items-center gap-2 px-4 py-2.5 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 text-sm font-medium">' + I.plus(16, '') + ' Adicionar Conhecimento</button>' +
+      '</div></div>';
+  }
+
+  return '<div class="p-8 max-w-4xl mx-auto">' +
+    '<div class="flex items-center justify-between mb-6">' +
+      '<div>' +
+        '<h1 class="text-2xl font-bold text-gray-800">Aprendizado Contínuo</h1>' +
+        '<p class="text-sm text-gray-500 mt-1">Ensine o bot a responder perguntas que ele ainda não sabe.</p>' +
+      '</div>' +
+    '</div>' +
+    '<div class="flex gap-2 mb-6">' +
+      '<button onclick="state.aprendizado.tab=\'pendencias\';render();bindAprendizado();loadAprendizado()" class="px-4 py-2 rounded-lg text-sm font-medium transition-colors ' + tabPendencias + '">' +
+        I.helpCircle(16, 'inline mr-1') + ' Pendentes (' + pendentes.length + ')' +
+      '</button>' +
+      '<button onclick="state.aprendizado.tab=\'respostas\';render();bindAprendizado();loadAprendizado()" class="px-4 py-2 rounded-lg text-sm font-medium transition-colors ' + tabRespostas + '">' +
+        I.checkCircle2(16, 'inline mr-1') + ' Aprendidas (' + respostas.length + ')' +
+      '</button>' +
+      '<button onclick="state.aprendizado.tab=\'nova\';render();bindAprendizado()" class="px-4 py-2 rounded-lg text-sm font-medium transition-colors ' + tabNova + '">' +
+        I.plus(16, 'inline mr-1') + ' Novo Conhecimento' +
+      '</button>' +
+    '</div>' +
+    conteudoTab +
+  '</div>';
+}
+
+window.iniciarRespostaAprendizado = function(id) {
+  state.aprendizado.respondendoId = id;
+  render();
+  bindAprendizado();
+};
+
+window.salvarRespostaAprendizado = async function(id) {
+  var textarea = document.getElementById('resposta-aprendizado-' + id);
+  if (!textarea || !textarea.value.trim()) return;
+  var resposta = textarea.value.trim();
+  try {
+    var result = await fetch('/api/aprendizado/pendencias/' + id + '/responder', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ resposta: resposta }),
+    }).then(function(r) { return r.json(); });
+    if (result.success) {
+      state.aprendizado.respondendoId = null;
+      await loadAprendizado();
+      render();
+      bindAprendizado();
+    }
+  } catch(e) {
+    alert('Erro ao salvar: ' + e.message);
+  }
+};
+
+window.ignorarPerguntaAprendizado = async function(id) {
+  if (!confirm('Ignorar esta pergunta?')) return;
+  try {
+    await fetch('/api/aprendizado/pendencias/' + id, { method: 'DELETE' }).then(function(r) { return r.json(); });
+    await loadAprendizado();
+    render();
+    bindAprendizado();
+  } catch(e) {
+    alert('Erro: ' + e.message);
+  }
+};
+
+window.removerRespostaAprendizada = async function(id) {
+  if (!confirm('Remover esta resposta aprendida?')) return;
+  try {
+    await fetch('/api/aprendizado/respostas/' + id, { method: 'DELETE' }).then(function(r) { return r.json(); });
+    await loadAprendizado();
+    render();
+    bindAprendizado();
+  } catch(e) {
+    alert('Erro: ' + e.message);
+  }
+};
+
+window.adicionarConhecimentoManual = async function() {
+  var pergunta = state.aprendizado.novaPergunta.trim();
+  var resposta = state.aprendizado.novaResposta.trim();
+  var palavras = state.aprendizado.novasPalavrasChave.split(',').map(function(p) { return p.trim(); }).filter(function(p) { return p.length > 0; });
+  if (!pergunta || !resposta) { alert('Preencha pergunta e resposta'); return; }
+  try {
+    var result = await fetch('/api/aprendizado/respostas', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ pergunta: pergunta, resposta: resposta, palavras_chave: palavras.length > 0 ? palavras : undefined }),
+    }).then(function(r) { return r.json(); });
+    if (result.success) {
+      state.aprendizado.novaPergunta = '';
+      state.aprendizado.novaResposta = '';
+      state.aprendizado.novasPalavrasChave = '';
+      state.aprendizado.tab = 'respostas';
+      await loadAprendizado();
+      render();
+      bindAprendizado();
+    }
+  } catch(e) {
+    alert('Erro: ' + e.message);
+  }
+};
+
+function formatarData(iso) {
+  if (!iso) return '';
+  var d = new Date(iso);
+  return d.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' });
+}
+
+async function loadAprendizado() {
+  try {
+    var p = await fetch('/api/aprendizado/pendencias').then(function(r) { return r.json(); });
+    if (p.success && Array.isArray(p.data)) state.aprendizado.pendencias = p.data;
+    var r = await fetch('/api/aprendizado/respostas').then(function(r) { return r.json(); });
+    if (r.success && Array.isArray(r.data)) state.aprendizado.respostas = r.data;
+  } catch(e) {}
+}
+
+function bindAprendizado() {}
+
+// ─── SETUP WIZARD ──────────────────────────────────
+var PASSOS = ['boas-vindas','docker','whatsapp','gemini','dados','pronto'];
+var PASSO_INDICE = { 'boas-vindas':0, 'docker':1, 'whatsapp':2, 'gemini':3, 'dados':4, 'pronto':5 };
+var TOTAL_PASSOS = PASSOS.length - 1;
+
+function renderSetupWizard() {
+  var s = state.setup;
+  var passo = s.passo;
+  var passoAtual = PASSO_INDICE[passo];
+  var progresso = Math.round((passoAtual / TOTAL_PASSOS) * 100);
+
+  var labels = ['Docker','WhatsApp','Gemini','Dados'];
+  var labelStepHtml = '';
+  for (var i = 0; i < labels.length; i++) {
+    var idx = i + 1;
+    labelStepHtml += '<div class="text-xs ' + (idx <= passoAtual ? 'text-emerald-600 font-medium' : 'text-gray-300') + '">' + labels[i] + '</div>';
+  }
+
+  var contentHtml = '';
+
+  if (passo === 'boas-vindas') {
+    contentHtml = '<div class="text-center">' +
+      '<div class="w-20 h-20 bg-emerald-100 rounded-2xl flex items-center justify-center mx-auto mb-6">' + I.bot(48, 'text-emerald-600') + '</div>' +
+      '<h1 class="text-3xl font-bold text-gray-800 mb-3">Bem-vindo ao WaBot!</h1>' +
+      '<p class="text-gray-500 mb-2 max-w-md mx-auto">Vamos configurar seu atendente automático do WhatsApp com IA.</p>' +
+      '<p class="text-gray-400 text-sm mb-8 max-w-md mx-auto">Tudo roda 100% local no seu computador — sem custos mensais.</p>' +
+      '<div class="grid grid-cols-3 gap-4 mb-8">' +
+        '<div class="rounded-xl p-4 bg-blue-50 text-blue-600"><div class="font-semibold text-sm">Docker</div><div class="text-xs mt-1 opacity-75">Container pra rodar tudo</div></div>' +
+        '<div class="rounded-xl p-4 bg-green-50 text-green-600"><div class="font-semibold text-sm">WhatsApp</div><div class="text-xs mt-1 opacity-75">Evolution API local</div></div>' +
+        '<div class="rounded-xl p-4 bg-purple-50 text-purple-600"><div class="font-semibold text-sm">Gemini</div><div class="text-xs mt-1 opacity-75">IA do Google grátis</div></div>' +
+      '</div>' +
+      '<button onclick="wizardAvancar()" class="inline-flex items-center gap-2 px-8 py-3.5 bg-emerald-600 text-white rounded-xl hover:bg-emerald-700 transition-colors text-lg font-medium shadow-lg shadow-emerald-200">' +
+        'Começar' + I.arrowRight(22, '') +
+      '</button></div>';
+  }
+
+  else if (passo === 'docker') {
+    var dockerOk = s.dockerInstalado;
+    contentHtml = '<div class="flex items-center gap-4 mb-6">' +
+      '<div class="w-12 h-12 bg-blue-100 rounded-xl flex items-center justify-center">' + I.download(24, 'text-blue-600') + '</div>' +
+      '<div><h2 class="text-xl font-bold text-gray-800">Passo 1: Docker</h2><p class="text-sm text-gray-500">Necessário para rodar a Evolution API</p></div></div>';
+    if (dockerOk) {
+      contentHtml += '<div class="bg-emerald-50 border border-emerald-200 rounded-xl p-5 mb-6"><div class="flex items-center gap-3">' +
+        I.checkCircle2(24, 'text-emerald-600') + '<div><p class="font-medium text-emerald-800">Docker instalado!</p></div></div></div>';
+    } else {
+      contentHtml += '<div class="space-y-4 mb-6">' +
+        '<div class="bg-amber-50 border border-amber-200 rounded-xl p-4"><p class="text-sm text-amber-800">Docker não encontrado. Clique abaixo para baixar.</p></div>' +
+        '<button onclick="window.open(\'https://www.docker.com/products/docker-desktop/\')" class="w-full flex items-center justify-center gap-2 px-6 py-4 bg-blue-600 text-white rounded-xl hover:bg-blue-700 font-medium">' +
+          I.externalLink(22, '') + ' Baixar Docker Desktop' +
+        '</button></div>';
+    }
+  }
+
+  else if (passo === 'whatsapp') {
+    contentHtml = '<div class="flex items-center gap-4 mb-6">' +
+      '<div class="w-12 h-12 bg-green-100 rounded-xl flex items-center justify-center">' + I.send(24, 'text-green-600') + '</div>' +
+      '<div><h2 class="text-xl font-bold text-gray-800">Passo 2: WhatsApp</h2><p class="text-sm text-gray-500">Conecte seu WhatsApp via QR Code</p></div></div>' +
+      '<div class="bg-amber-50 border border-amber-200 rounded-xl p-5">' +
+        '<div class="flex items-start gap-3">' +
+          I.info(20, 'text-amber-600 flex-shrink-0 mt-0.5') +
+          '<div><p class="text-sm text-amber-800">A conexão do WhatsApp é feita pelo painel, na página <strong>Credenciais</strong>. Lá você escaneia o QR Code com o WhatsApp do seu negócio.</p>' +
+          '<p class="text-sm text-amber-700 mt-2">Você pode configurar o resto agora e conectar o WhatsApp depois.</p></div>' +
+        '</div>' +
+      '</div>';
+  }
+
+  else if (passo === 'gemini') {
+    contentHtml = '<div class="flex items-center gap-4 mb-6">' +
+      '<div class="w-12 h-12 bg-purple-100 rounded-xl flex items-center justify-center">' + I.externalLink(24, 'text-purple-600') + '</div>' +
+      '<div><h2 class="text-xl font-bold text-gray-800">Passo 3: Google Gemini</h2><p class="text-sm text-gray-500">IA que vai atender seus clientes</p></div></div>' +
+      '<div class="bg-gray-50 rounded-xl p-5 mb-6">' +
+        '<h3 class="font-semibold text-gray-700 mb-3 text-sm">Instruções:</h3>' +
+        '<ol class="space-y-2 text-sm text-gray-600 list-decimal list-inside">' +
+          '<li>Abra o Google AI Studio</li><li>Clique em "Get API Key"</li><li>Crie uma chave (grátis)</li><li>Cole no campo abaixo</li>' +
+        '</ol>' +
+        '<button onclick="window.open(\'https://aistudio.google.com\')" class="mt-3 w-full flex items-center justify-center gap-2 px-4 py-3 bg-purple-600 text-white rounded-xl hover:bg-purple-700 text-sm font-medium">' +
+          I.externalLink(16, '') + ' Abrir Google AI Studio' +
+        '</button>' +
+      '</div>' +
+      '<div class="space-y-4">' +
+        '<div><label class="block text-sm font-medium text-gray-700 mb-1">API Key</label>' +
+          '<input type="text" id="wiz-gem-key" value="' + esc(s.creds.gemini.api_key) + '" oninput="updateWizardCreds(\'gemini.api_key\',this.value)" class="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-emerald-500 text-sm font-mono" placeholder="AIzaSy..." /></div>' +
+        '<div><label class="block text-sm font-medium text-gray-700 mb-1">Modelo</label>' +
+          '<select onchange="updateWizardCreds(\'gemini.model\',this.value)" class="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-emerald-500 text-sm">' +
+            '<option value="gemini-2.0-flash"' + (s.creds.gemini.model === 'gemini-2.0-flash' ? ' selected' : '') + '>Gemini 2.0 Flash (recomendado)</option>' +
+            '<option value="gemini-2.0-pro"' + (s.creds.gemini.model === 'gemini-2.0-pro' ? ' selected' : '') + '>Gemini 2.0 Pro</option>' +
+          '</select></div>' +
+      '</div>';
+  }
+
+  else if (passo === 'dados') {
+    contentHtml = '<div class="flex items-center gap-4 mb-6">' +
+      '<div class="w-12 h-12 bg-amber-100 rounded-xl flex items-center justify-center">' + I.bot(24, 'text-amber-600') + '</div>' +
+      '<div><h2 class="text-xl font-bold text-gray-800">Passo 4: Dados do Negócio</h2><p class="text-sm text-gray-500">Informações que a IA vai usar</p></div></div>' +
+      '<div class="space-y-4">' +
+        '<div><label class="block text-sm font-medium text-gray-700 mb-1">Nome do Negócio</label>' +
+          '<input type="text" id="wiz-config-nome" value="' + esc(s.config.nome_negocio) + '" oninput="updateWizardConfig(\'nome_negocio\',this.value)" class="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-emerald-500 text-sm" placeholder="Ex: Casarão do Gui" /></div>' +
+        '<div><label class="block text-sm font-medium text-gray-700 mb-1">Endereço</label>' +
+          '<input type="text" value="' + esc(s.config.endereco) + '" oninput="updateWizardConfig(\'endereco\',this.value)" class="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-emerald-500 text-sm" placeholder="Ex: Rua 15 de Novembro, 184" /></div>' +
+        '<div class="grid grid-cols-2 gap-4">' +
+          '<div><label class="block text-sm font-medium text-gray-700 mb-1">Telefone</label>' +
+            '<input type="text" value="' + esc(s.config.telefone) + '" oninput="updateWizardConfig(\'telefone\',this.value)" class="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-emerald-500 text-sm" placeholder="(19) 3843-1778" /></div>' +
+          '<div><label class="block text-sm font-medium text-gray-700 mb-1">Link Pedido Online</label>' +
+            '<input type="text" value="' + esc(s.config.link_pedido_online) + '" oninput="updateWizardConfig(\'link_pedido_online\',this.value)" class="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-emerald-500 text-sm" placeholder="https://..." /></div>' +
+        '</div>' +
+      '</div>';
+  }
+
+  else if (passo === 'pronto') {
+    contentHtml = '<div class="text-center">' +
+      '<div class="w-20 h-20 bg-emerald-100 rounded-full flex items-center justify-center mx-auto mb-6">' + I.checkCircle2(48, 'text-emerald-600') + '</div>' +
+      '<h1 class="text-3xl font-bold text-gray-800 mb-3">Tudo pronto!</h1>' +
+      '<p class="text-gray-500 mb-8 max-w-md mx-auto">WaBot configurado. Acesse o Dashboard para gerenciar.</p>' +
+      '<button onclick="wizardConcluir()" class="inline-flex items-center gap-2 px-8 py-3.5 bg-emerald-600 text-white rounded-xl hover:bg-emerald-700 transition-colors text-lg font-medium shadow-lg shadow-emerald-200">' +
+        'Abrir Dashboard' + I.arrowRight(22, '') +
+      '</button></div>';
+  }
+
+  var navHtml = '';
+  if (passo !== 'boas-vindas' && passo !== 'pronto') {
+    navHtml = '<div class="flex items-center justify-between mt-8 pt-6 border-t border-gray-100">' +
+      '<button onclick="wizardVoltar()" class="flex items-center gap-2 px-4 py-2 text-gray-600 hover:text-gray-800">' + I.arrowLeft(18, '') + ' Voltar</button>' +
+      '<button id="wizard-avancar-btn" onclick="wizardAvancar()" ' + (wizardPassoCompleto() ? '' : 'disabled') + ' class="flex items-center gap-2 px-6 py-2.5 bg-emerald-600 text-white rounded-xl hover:bg-emerald-700 font-medium ' + (wizardPassoCompleto() ? '' : 'disabled:opacity-40') + '">' +
+        (wizardPassoCompleto() ? 'Avançar' : 'Complete esta etapa') + I.arrowRight(18, '') +
+      '</button></div>';
+  }
+
+  return '<div class="min-h-screen bg-gradient-to-br from-emerald-50 via-white to-emerald-50 flex items-center justify-center p-6">' +
+    '<div class="w-full max-w-2xl">' +
+      '<div class="mb-8">' +
+        '<div class="flex items-center justify-between mb-2">' +
+          '<span class="text-sm font-medium text-emerald-700">Passo ' + passoAtual + ' de ' + TOTAL_PASSOS + '</span>' +
+          '<span class="text-sm text-gray-500">' + progresso + '%</span>' +
+        '</div>' +
+        '<div class="w-full bg-gray-200 rounded-full h-2">' +
+          '<div class="bg-emerald-500 h-2 rounded-full transition-all duration-500" style="width:' + progresso + '%"></div>' +
+        '</div>' +
+        '<div class="flex justify-between mt-2">' + labelStepHtml + '</div>' +
+      '</div>' +
+      '<div class="bg-white rounded-2xl shadow-lg border border-gray-100 p-8">' + contentHtml + navHtml + '</div>' +
+    '</div></div>';
+}
+
+function atualizarBotaoWizard() {
+  var btn = document.getElementById('wizard-avancar-btn');
+  if (!btn) return;
+  var completo = wizardPassoCompleto();
+  if (completo) {
+    btn.removeAttribute('disabled');
+    btn.classList.remove('disabled:opacity-40');
+  } else {
+    btn.setAttribute('disabled', 'disabled');
+  }
+}
+
+function wizardPassoCompleto() {
+  var s = state.setup;
+  switch (s.passo) {
+    case 'boas-vindas': return true;
+    case 'docker': return s.dockerInstalado;
+    case 'whatsapp': return true;
+    case 'gemini': return !!s.creds.gemini.api_key;
+    case 'dados': return !!(s.config.nome_negocio);
+    case 'pronto': return true;
+    default: return false;
+  }
+}
+
+window.wizardAvancar = function() {
+  var i = PASSO_INDICE[state.setup.passo];
+  if (i < PASSOS.length - 1) {
+    state.setup.passo = PASSOS[i + 1];
+    render();
+    bindSetupWizard();
+  }
+};
+
+window.wizardVoltar = function() {
+  var i = PASSO_INDICE[state.setup.passo];
+  if (i > 0) {
+    state.setup.passo = PASSOS[i - 1];
+    render();
+    bindSetupWizard();
+  }
+};
+
+
+
+window.updateWizardCreds = function(path, value) {
+  var parts = path.split('.');
+  var obj = state.setup.creds;
+  for (var i = 0; i < parts.length - 1; i++) {
+    if (!obj[parts[i]]) obj[parts[i]] = {};
+    obj = obj[parts[i]];
+  }
+  obj[parts[parts.length - 1]] = value;
+  atualizarBotaoWizard();
+};
+
+window.updateWizardConfig = function(field, value) {
+  state.setup.config[field] = value;
+  atualizarBotaoWizard();
+};
+
+window.wizardConcluir = async function() {
+  var creds = JSON.parse(JSON.stringify(state.setup.creds));
+  creds.setup_completo = true;
+  await wabot.configWrite('credentials.json', creds);
+  await wabot.configWrite('config.json', state.setup.config);
+    state.setupCompleto = true;
+    state.credenciais.creds = creds;
+    state.configuracoes.config = JSON.parse(JSON.stringify(state.setup.config));
+    loadConversasList();
+    iniciarPollingConversas();
+    loadRegrasList();
+    loadIgnoradosList();
+    render();
+};
+
+function bindSetupWizard() {}
+
+// ─── POLLING: atualizar conversas a cada 5s ──────
+var pollingTimer = null;
+var pollingRodando = false;
+function iniciarPollingConversas() {
+  if (pollingTimer) clearInterval(pollingTimer);
+  pollingTimer = setInterval(function() {
+    if (pollingRodando) return;
+    pollingRodando = true;
+    loadConversasList().then(function() {
+      pollingRodando = false;
+      if (state.currentPage === 'conversas' && !state.conversas.contatoSelecionado) {
+        render();
+      }
+      // Atualizar docker status a cada ciclo
+      checkDockerStatus();
+    }, function() { pollingRodando = false; });
+  }, 5000);
+}
+
+// ─── INICIALIZAÇÃO ────────────────────────────────
+document.addEventListener('DOMContentLoaded', async function() {
+  await checkSetup();
+  render();
+});
+
+async function checkSetup() {
+  try {
+    var creds = await wabot.configRead('credentials.json');
+    var config = await wabot.configRead('config.json');
+    var s = state.setup;
+    if (creds && creds.data) {
+      s.creds = JSON.parse(JSON.stringify(creds.data));
+      state.credenciais.creds = JSON.parse(JSON.stringify(creds.data));
+    }
+    if (config && config.data) {
+      s.config = JSON.parse(JSON.stringify(config.data));
+      state.configuracoes.config = JSON.parse(JSON.stringify(config.data));
+    }
+    var wizardCompleto = creds && creds.data && creds.data.setup_completo;
+    state.setupCompleto = !!wizardCompleto;
+    // Garantir que llm exista (backward compat com credentials antigas)
+    if (state.setupCompleto && !state.credenciais.creds.llm) {
+      state.credenciais.creds.llm = { provider: 'groq', api_key: '', model: 'llama-3.3-70b-versatile' };
+    }
+    if (state.setupCompleto) {
+      wabot.evolutionStatus().then(function(r) { state.credenciais.evoStatus = r; }).catch(function(){});
+      loadConversasList();
+      iniciarPollingConversas();
+      checkDockerStatus();
+      loadRegrasList();
+      loadIgnoradosList();
+      loadAprendizado();
+    } else {
+      var dockerStatus2 = await wabot.dockerStatus();
+      state.setup.dockerInstalado = dockerStatus2 && dockerStatus2.dockerInstalled;
+      state.dockerStatus = dockerStatus2;
+    }
+  } catch (e) {
+    state.setupCompleto = false;
+  }
+}
+
+async function loadConversasList() {
+  try {
+    var result = await wabot.evolutionConversations();
+    if (result.success && Array.isArray(result.data)) state.conversas.contatos = result.data;
+  } catch(e) {}
+}
+
+async function loadRegrasList() {
+  try {
+    var result = await wabot.configRead('regras.json');
+    if (result.success && Array.isArray(result.data)) state.regras = result.data;
+    else state.regras = [];
+  } catch(e) { state.regras = []; }
+}
+
+async function loadIgnoradosList() {
+  try {
+    var result = await wabot.configRead('ignorados.json');
+    if (result.success && Array.isArray(result.data)) state.ignorados = result.data;
+    else state.ignorados = [];
+  } catch(e) { state.ignorados = []; }
+}

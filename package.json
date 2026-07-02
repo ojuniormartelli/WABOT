@@ -1,0 +1,13 @@
+{
+  "name": "wabot",
+  "version": "1.0.0",
+  "description": "WaBot - Atendimento automatizado WhatsApp com IA",
+  "main": "app/server.js",
+  "scripts": {
+    "start": "node app/server.js",
+    "dev": "node app/server.js"
+  },
+  "dependencies": {
+    "express": "^4.18.2"
+  }
+}

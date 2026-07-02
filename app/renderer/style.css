@@ -1,0 +1,36 @@
+*::-webkit-scrollbar { width: 6px; }
+*::-webkit-scrollbar-track { background: transparent; }
+*::-webkit-scrollbar-thumb { background: #d1d5db; border-radius: 3px; }
+*::-webkit-scrollbar-thumb:hover { background: #9ca3af; }
+
+.chat-bubble-client {
+  background-color: #10b981;
+  color: white;
+  border-radius: 1rem 1rem 0.125rem 1rem;
+  padding: 0.625rem 1rem;
+  max-width: 75%;
+}
+
+.chat-bubble-bot {
+  background-color: white;
+  border: 1px solid #e5e7eb;
+  border-radius: 1rem 1rem 1rem 0.125rem;
+  padding: 0.625rem 1rem;
+  max-width: 75%;
+}
+
+/* Sidebar */
+.sidebar-collapsed:hover { width: 16rem !important; }
+.sidebar-collapsed:hover .sidebar-label { display: inline !important; }
+.sidebar-collapsed .sidebar-label { display: none; }
+.sidebar-collapsed nav { overflow: hidden; }
+.sidebar-collapsed:hover nav { overflow: visible; }
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.animate-fade-in {
+  animation: fadeIn 0.3s ease-out;
+}

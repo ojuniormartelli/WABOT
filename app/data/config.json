@@ -1,0 +1,88 @@
+{
+  "nome_negocio": "Restaurante Casarão do Gui",
+  "endereco": "R 15 DE NOVEMBRO, 184",
+  "telefone": "1938411778",
+  "site": "",
+  "redes_sociais": {
+    "instagram": "",
+    "facebook": "",
+    "ifood": ""
+  },
+  "link_pedido_online": "https://casarao.agilizae.com.br",
+  "observacoes_gerais": "",
+  "tipos_atendimento": [
+    "retirada",
+    "consumo_local",
+    "delivery"
+  ],
+  "horarios": {
+    "segunda": {
+      "fechado": false,
+      "cozinha": [
+        {
+          "abertura": "11:00",
+          "fechamento": "23:00"
+        }
+      ]
+    },
+    "terca": {
+      "fechado": false,
+      "cozinha": [
+        {
+          "abertura": "11:00",
+          "fechamento": "23:00"
+        }
+      ]
+    },
+    "quarta": {
+      "fechado": true,
+      "cozinha": [
+        {
+          "abertura": null,
+          "fechamento": null
+        }
+      ]
+    },
+    "quinta": {
+      "fechado": false,
+      "cozinha": [
+        {
+          "abertura": "11:00",
+          "fechamento": "23:00"
+        }
+      ]
+    },
+    "sexta": {
+      "fechado": false,
+      "cozinha": [
+        {
+          "abertura": "11:00",
+          "fechamento": "23:00"
+        }
+      ]
+    },
+    "sabado": {
+      "fechado": false,
+      "cozinha": [
+        {
+          "abertura": "11:00",
+          "fechamento": "23:00"
+        }
+      ]
+    },
+    "domingo": {
+      "fechado": false,
+      "cozinha": [
+        {
+          "abertura": "11:00",
+          "fechamento": "22:00"
+        }
+      ]
+    }
+  },
+  "mensagem_saudacao": "Olá! Bem-vindo ao {{nome_negocio}}! Como podemos ajudar?",
+  "mensagem_ausencia": "Estamos fechados no momento. Nosso horário é: {{horario_hoje}}. Voltamos em breve!",
+  "mensagem_regra_nao_encontrada": "Vou verificar com um atendente humano e já volto com uma resposta.",
+  "mensagem_agradecimento": "Por nada! Ficamos felizes em ajudar. 😊 Se precisar de mais alguma coisa, é só chamar!",
+  "registrar_aprendizado_auto": true
+}

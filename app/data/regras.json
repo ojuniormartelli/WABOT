@@ -1,0 +1,32 @@
+[
+  {
+    "id": "reg-1",
+    "instrucao": "Quando o cliente perguntar sobre feriado, avise que estaremos fechados e que voltamos no dia seguinte no horário normal.",
+    "ativo": true
+  },
+  {
+    "id": "reg-2",
+    "instrucao": "Quando o cliente pedir o cardápio, envie o link de pedido online: {{link_pedido_online}}",
+    "ativo": true
+  },
+  {
+    "id": "reg-3",
+    "instrucao": "Quando o cliente perguntar onde fica ou o endereço, informe: {{endereco}} e diga que estamos esperando ele.",
+    "ativo": true
+  },
+  {
+    "id": "reg-4",
+    "instrucao": "Quando o cliente pedir telefone ou contato, informe: {{telefone}}",
+    "ativo": true
+  },
+  {
+    "id": "reg-5",
+    "instrucao": "Quando o cliente perguntar sobre entrega/delivery, diga que fazemos delivery e envie o link: {{link_pedido_online}}",
+    "ativo": true
+  },
+  {
+    "id": "reg-6",
+    "instrucao": "Quando o cliente perguntar sobre horários, informe os horários de funcionamento do salão, retirada e encomendas.",
+    "ativo": true
+  }
+]

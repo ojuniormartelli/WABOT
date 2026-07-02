@@ -1,0 +1,10 @@
+node_modules/
+.DS_Store
+*.log
+app/data/credentials.json
+app/data/conversas.json
+app/data/aprendizados.json
+app/data/nao_sei.json
+app/data/knowledge.json
+app/data/learn.json
+app/data/mensagens/
