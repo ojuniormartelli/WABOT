@@ -727,7 +727,8 @@ function renderConfiguracoes() {
           campo('Endereço', 'configEnd', c.endereco, 'Ex: Rua 15 de Novembro, 184', 'updateConfig(\'endereco\',this.value)') +
         '</div>' +
         '<div>' +
-          campo('Telefone', 'configTel', c.telefone, '(19) 3843-1778', 'updateConfig(\'telefone\',this.value)') +
+          '<div><label class="block text-sm font-medium text-gray-700 mb-1.5">Telefone</label>' +
+  '<input type="text" id="configTel" value="' + esc(c.telefone) + '" placeholder="(19) 3843-1778" oninput="updatePhone(this.value)" class="w-full px-3 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 text-sm" /></div>' +
         '</div>' +
         '<div>' +
           campo('Site', 'configSite', c.site, 'https://meusite.com.br', 'updateConfig(\'site\',this.value)') +
@@ -775,6 +776,20 @@ function renderConfiguracoes() {
       I.save(18, '') + ' ' + btnLabel +
     '</button></div>';
 }
+
+function maskPhone(v) {
+  v = v.replace(/\D/g, '').slice(0, 11);
+  if (v.length <= 2) return '(' + v;
+  if (v.length <= 7) return '(' + v.slice(0, 2) + ') ' + v.slice(2);
+  return '(' + v.slice(0, 2) + ') ' + v.slice(2, 7) + '-' + v.slice(7);
+}
+
+window.updatePhone = function(v) {
+  var masked = maskPhone(v);
+  state.configuracoes.config.telefone = masked;
+  var el = document.getElementById('configTel');
+  if (el) el.value = masked;
+};
 
 function campo(label, id, value, placeholder, onchange) {
   return '<div><label class="block text-sm font-medium text-gray-700 mb-1.5">' + label + '</label>' +
