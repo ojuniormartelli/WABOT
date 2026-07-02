@@ -49,9 +49,6 @@ var state = {
   setupCompleto: null,
   sidebar: { collapsed: false },
   setup: {
-    passo: 'boas-vindas',
-    dockerInstalado: false,
-    instalandoDocker: false,
     creds: { evolution: { api_key: '', base_url: 'http://localhost:8081', instance_name: '' }, gemini: { api_key: '', model: 'gemini-2.0-flash' } },
     config: { nome_negocio: '', endereco: '', telefone: '', site: '', link_pedido_online: '' },
   },
@@ -118,11 +115,6 @@ function render() {
   if (!app) return;
   if (state.setupCompleto === null) {
     app.innerHTML = loadingScreen();
-    return;
-  }
-  if (!state.setupCompleto) {
-    app.innerHTML = renderSetupWizard();
-    bindSetupWizard();
     return;
   }
   var sidebar = elId('sidebar');
@@ -1395,226 +1387,7 @@ async function loadAprendizado() {
 
 function bindAprendizado() {}
 
-// ─── SETUP WIZARD ──────────────────────────────────
-var PASSOS = ['boas-vindas','docker','whatsapp','gemini','dados','pronto'];
-var PASSO_INDICE = { 'boas-vindas':0, 'docker':1, 'whatsapp':2, 'gemini':3, 'dados':4, 'pronto':5 };
-var TOTAL_PASSOS = PASSOS.length - 1;
-
-function renderSetupWizard() {
-  var s = state.setup;
-  var passo = s.passo;
-  var passoAtual = PASSO_INDICE[passo];
-  var progresso = Math.round((passoAtual / TOTAL_PASSOS) * 100);
-
-  var labels = ['Docker','WhatsApp','Gemini','Dados'];
-  var labelStepHtml = '';
-  for (var i = 0; i < labels.length; i++) {
-    var idx = i + 1;
-    labelStepHtml += '<div class="text-xs ' + (idx <= passoAtual ? 'text-emerald-600 font-medium' : 'text-gray-300') + '">' + labels[i] + '</div>';
-  }
-
-  var contentHtml = '';
-
-  if (passo === 'boas-vindas') {
-    contentHtml = '<div class="text-center">' +
-      '<div class="w-20 h-20 bg-emerald-100 rounded-2xl flex items-center justify-center mx-auto mb-6">' + I.bot(48, 'text-emerald-600') + '</div>' +
-      '<h1 class="text-3xl font-bold text-gray-800 mb-3">Bem-vindo ao WaBot!</h1>' +
-      '<p class="text-gray-500 mb-2 max-w-md mx-auto">Vamos configurar seu atendente automático do WhatsApp com IA.</p>' +
-      '<p class="text-gray-400 text-sm mb-8 max-w-md mx-auto">Tudo roda 100% local no seu computador — sem custos mensais.</p>' +
-      '<div class="grid grid-cols-3 gap-4 mb-8">' +
-        '<div class="rounded-xl p-4 bg-blue-50 text-blue-600"><div class="font-semibold text-sm">Docker</div><div class="text-xs mt-1 opacity-75">Container pra rodar tudo</div></div>' +
-        '<div class="rounded-xl p-4 bg-green-50 text-green-600"><div class="font-semibold text-sm">WhatsApp</div><div class="text-xs mt-1 opacity-75">Evolution API local</div></div>' +
-        '<div class="rounded-xl p-4 bg-purple-50 text-purple-600"><div class="font-semibold text-sm">Gemini</div><div class="text-xs mt-1 opacity-75">IA do Google grátis</div></div>' +
-      '</div>' +
-      '<button onclick="wizardAvancar()" class="inline-flex items-center gap-2 px-8 py-3.5 bg-emerald-600 text-white rounded-xl hover:bg-emerald-700 transition-colors text-lg font-medium shadow-lg shadow-emerald-200">' +
-        'Começar' + I.arrowRight(22, '') +
-      '</button></div>';
-  }
-
-  else if (passo === 'docker') {
-    var dockerOk = s.dockerInstalado;
-    contentHtml = '<div class="flex items-center gap-4 mb-6">' +
-      '<div class="w-12 h-12 bg-blue-100 rounded-xl flex items-center justify-center">' + I.download(24, 'text-blue-600') + '</div>' +
-      '<div><h2 class="text-xl font-bold text-gray-800">Passo 1: Docker</h2><p class="text-sm text-gray-500">Necessário para rodar a Evolution API</p></div></div>';
-    if (dockerOk) {
-      contentHtml += '<div class="bg-emerald-50 border border-emerald-200 rounded-xl p-5 mb-6"><div class="flex items-center gap-3">' +
-        I.checkCircle2(24, 'text-emerald-600') + '<div><p class="font-medium text-emerald-800">Docker instalado!</p></div></div></div>';
-    } else {
-      contentHtml += '<div class="space-y-4 mb-6">' +
-        '<div class="bg-amber-50 border border-amber-200 rounded-xl p-4"><p class="text-sm text-amber-800">Docker não encontrado. Clique abaixo para baixar.</p></div>' +
-        '<button onclick="window.open(\'https://www.docker.com/products/docker-desktop/\')" class="w-full flex items-center justify-center gap-2 px-6 py-4 bg-blue-600 text-white rounded-xl hover:bg-blue-700 font-medium">' +
-          I.externalLink(22, '') + ' Baixar Docker Desktop' +
-        '</button></div>';
-    }
-  }
-
-  else if (passo === 'whatsapp') {
-    contentHtml = '<div class="flex items-center gap-4 mb-6">' +
-      '<div class="w-12 h-12 bg-green-100 rounded-xl flex items-center justify-center">' + I.send(24, 'text-green-600') + '</div>' +
-      '<div><h2 class="text-xl font-bold text-gray-800">Passo 2: WhatsApp</h2><p class="text-sm text-gray-500">Conecte seu WhatsApp via QR Code</p></div></div>' +
-      '<div class="bg-amber-50 border border-amber-200 rounded-xl p-5">' +
-        '<div class="flex items-start gap-3">' +
-          I.info(20, 'text-amber-600 flex-shrink-0 mt-0.5') +
-          '<div><p class="text-sm text-amber-800">A conexão do WhatsApp é feita pelo painel, na página <strong>Credenciais</strong>. Lá você escaneia o QR Code com o WhatsApp do seu negócio.</p>' +
-          '<p class="text-sm text-amber-700 mt-2">Você pode configurar o resto agora e conectar o WhatsApp depois.</p></div>' +
-        '</div>' +
-      '</div>';
-  }
-
-  else if (passo === 'gemini') {
-    contentHtml = '<div class="flex items-center gap-4 mb-6">' +
-      '<div class="w-12 h-12 bg-purple-100 rounded-xl flex items-center justify-center">' + I.externalLink(24, 'text-purple-600') + '</div>' +
-      '<div><h2 class="text-xl font-bold text-gray-800">Passo 3: Google Gemini</h2><p class="text-sm text-gray-500">IA que vai atender seus clientes</p></div></div>' +
-      '<div class="bg-gray-50 rounded-xl p-5 mb-6">' +
-        '<h3 class="font-semibold text-gray-700 mb-3 text-sm">Instruções:</h3>' +
-        '<ol class="space-y-2 text-sm text-gray-600 list-decimal list-inside">' +
-          '<li>Abra o Google AI Studio</li><li>Clique em "Get API Key"</li><li>Crie uma chave (grátis)</li><li>Cole no campo abaixo</li>' +
-        '</ol>' +
-        '<button onclick="window.open(\'https://aistudio.google.com\')" class="mt-3 w-full flex items-center justify-center gap-2 px-4 py-3 bg-purple-600 text-white rounded-xl hover:bg-purple-700 text-sm font-medium">' +
-          I.externalLink(16, '') + ' Abrir Google AI Studio' +
-        '</button>' +
-      '</div>' +
-      '<div class="space-y-4">' +
-        '<div><label class="block text-sm font-medium text-gray-700 mb-1">API Key</label>' +
-          '<input type="text" id="wiz-gem-key" value="' + esc(s.creds.gemini.api_key) + '" oninput="updateWizardCreds(\'gemini.api_key\',this.value)" class="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-emerald-500 text-sm font-mono" placeholder="AIzaSy..." /></div>' +
-        '<div><label class="block text-sm font-medium text-gray-700 mb-1">Modelo</label>' +
-          '<select onchange="updateWizardCreds(\'gemini.model\',this.value)" class="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-emerald-500 text-sm">' +
-            '<option value="gemini-2.0-flash"' + (s.creds.gemini.model === 'gemini-2.0-flash' ? ' selected' : '') + '>Gemini 2.0 Flash (recomendado)</option>' +
-            '<option value="gemini-2.0-pro"' + (s.creds.gemini.model === 'gemini-2.0-pro' ? ' selected' : '') + '>Gemini 2.0 Pro</option>' +
-          '</select></div>' +
-      '</div>';
-  }
-
-  else if (passo === 'dados') {
-    contentHtml = '<div class="flex items-center gap-4 mb-6">' +
-      '<div class="w-12 h-12 bg-amber-100 rounded-xl flex items-center justify-center">' + I.bot(24, 'text-amber-600') + '</div>' +
-      '<div><h2 class="text-xl font-bold text-gray-800">Passo 4: Dados do Negócio</h2><p class="text-sm text-gray-500">Informações que a IA vai usar</p></div></div>' +
-      '<div class="space-y-4">' +
-        '<div><label class="block text-sm font-medium text-gray-700 mb-1">Nome do Negócio</label>' +
-          '<input type="text" id="wiz-config-nome" value="' + esc(s.config.nome_negocio) + '" oninput="updateWizardConfig(\'nome_negocio\',this.value)" class="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-emerald-500 text-sm" placeholder="Ex: Casarão do Gui" /></div>' +
-        '<div><label class="block text-sm font-medium text-gray-700 mb-1">Endereço</label>' +
-          '<input type="text" value="' + esc(s.config.endereco) + '" oninput="updateWizardConfig(\'endereco\',this.value)" class="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-emerald-500 text-sm" placeholder="Ex: Rua 15 de Novembro, 184" /></div>' +
-        '<div class="grid grid-cols-2 gap-4">' +
-          '<div><label class="block text-sm font-medium text-gray-700 mb-1">Telefone</label>' +
-            '<input type="text" value="' + esc(s.config.telefone) + '" oninput="updateWizardConfig(\'telefone\',this.value)" class="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-emerald-500 text-sm" placeholder="(19) 3843-1778" /></div>' +
-          '<div><label class="block text-sm font-medium text-gray-700 mb-1">Link Pedido Online</label>' +
-            '<input type="text" value="' + esc(s.config.link_pedido_online) + '" oninput="updateWizardConfig(\'link_pedido_online\',this.value)" class="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-emerald-500 text-sm" placeholder="https://..." /></div>' +
-        '</div>' +
-      '</div>';
-  }
-
-  else if (passo === 'pronto') {
-    contentHtml = '<div class="text-center">' +
-      '<div class="w-20 h-20 bg-emerald-100 rounded-full flex items-center justify-center mx-auto mb-6">' + I.checkCircle2(48, 'text-emerald-600') + '</div>' +
-      '<h1 class="text-3xl font-bold text-gray-800 mb-3">Tudo pronto!</h1>' +
-      '<p class="text-gray-500 mb-8 max-w-md mx-auto">WaBot configurado. Acesse o Dashboard para gerenciar.</p>' +
-      '<button onclick="wizardConcluir()" class="inline-flex items-center gap-2 px-8 py-3.5 bg-emerald-600 text-white rounded-xl hover:bg-emerald-700 transition-colors text-lg font-medium shadow-lg shadow-emerald-200">' +
-        'Abrir Dashboard' + I.arrowRight(22, '') +
-      '</button></div>';
-  }
-
-  var navHtml = '';
-  if (passo !== 'boas-vindas' && passo !== 'pronto') {
-    navHtml = '<div class="flex items-center justify-between mt-8 pt-6 border-t border-gray-100">' +
-      '<button onclick="wizardVoltar()" class="flex items-center gap-2 px-4 py-2 text-gray-600 hover:text-gray-800">' + I.arrowLeft(18, '') + ' Voltar</button>' +
-      '<button id="wizard-avancar-btn" onclick="wizardAvancar()" ' + (wizardPassoCompleto() ? '' : 'disabled') + ' class="flex items-center gap-2 px-6 py-2.5 bg-emerald-600 text-white rounded-xl hover:bg-emerald-700 font-medium ' + (wizardPassoCompleto() ? '' : 'disabled:opacity-40') + '">' +
-        (wizardPassoCompleto() ? 'Avançar' : 'Complete esta etapa') + I.arrowRight(18, '') +
-      '</button></div>';
-  }
-
-  return '<div class="min-h-screen bg-gradient-to-br from-emerald-50 via-white to-emerald-50 flex items-center justify-center p-6">' +
-    '<div class="w-full max-w-2xl">' +
-      '<div class="mb-8">' +
-        '<div class="flex items-center justify-between mb-2">' +
-          '<span class="text-sm font-medium text-emerald-700">Passo ' + passoAtual + ' de ' + TOTAL_PASSOS + '</span>' +
-          '<span class="text-sm text-gray-500">' + progresso + '%</span>' +
-        '</div>' +
-        '<div class="w-full bg-gray-200 rounded-full h-2">' +
-          '<div class="bg-emerald-500 h-2 rounded-full transition-all duration-500" style="width:' + progresso + '%"></div>' +
-        '</div>' +
-        '<div class="flex justify-between mt-2">' + labelStepHtml + '</div>' +
-      '</div>' +
-      '<div class="bg-white rounded-2xl shadow-lg border border-gray-100 p-8">' + contentHtml + navHtml + '</div>' +
-    '</div></div>';
-}
-
-function atualizarBotaoWizard() {
-  var btn = document.getElementById('wizard-avancar-btn');
-  if (!btn) return;
-  var completo = wizardPassoCompleto();
-  if (completo) {
-    btn.removeAttribute('disabled');
-    btn.classList.remove('disabled:opacity-40');
-  } else {
-    btn.setAttribute('disabled', 'disabled');
-  }
-}
-
-function wizardPassoCompleto() {
-  var s = state.setup;
-  switch (s.passo) {
-    case 'boas-vindas': return true;
-    case 'docker': return s.dockerInstalado;
-    case 'whatsapp': return true;
-    case 'gemini': return !!s.creds.gemini.api_key;
-    case 'dados': return !!(s.config.nome_negocio);
-    case 'pronto': return true;
-    default: return false;
-  }
-}
-
-window.wizardAvancar = function() {
-  var i = PASSO_INDICE[state.setup.passo];
-  if (i < PASSOS.length - 1) {
-    state.setup.passo = PASSOS[i + 1];
-    render();
-    bindSetupWizard();
-  }
-};
-
-window.wizardVoltar = function() {
-  var i = PASSO_INDICE[state.setup.passo];
-  if (i > 0) {
-    state.setup.passo = PASSOS[i - 1];
-    render();
-    bindSetupWizard();
-  }
-};
-
-
-
-window.updateWizardCreds = function(path, value) {
-  var parts = path.split('.');
-  var obj = state.setup.creds;
-  for (var i = 0; i < parts.length - 1; i++) {
-    if (!obj[parts[i]]) obj[parts[i]] = {};
-    obj = obj[parts[i]];
-  }
-  obj[parts[parts.length - 1]] = value;
-  atualizarBotaoWizard();
-};
-
-window.updateWizardConfig = function(field, value) {
-  state.setup.config[field] = value;
-  atualizarBotaoWizard();
-};
-
-window.wizardConcluir = async function() {
-  var creds = JSON.parse(JSON.stringify(state.setup.creds));
-  creds.setup_completo = true;
-  await wabot.configWrite('credentials.json', creds);
-  await wabot.configWrite('config.json', state.setup.config);
-    state.setupCompleto = true;
-    state.credenciais.creds = creds;
-    state.configuracoes.config = JSON.parse(JSON.stringify(state.setup.config));
-    loadConversasList();
-    iniciarPollingConversas();
-    loadRegrasList();
-    loadIgnoradosList();
-    render();
-};
-
-function bindSetupWizard() {}
+// (Setup Wizard removido — agora o Dashboard é a tela inicial)
 
 // ─── POLLING: atualizar conversas a cada 5s ──────
 var pollingTimer = null;
@@ -1645,36 +1418,27 @@ async function checkSetup() {
   try {
     var creds = await wabot.configRead('credentials.json');
     var config = await wabot.configRead('config.json');
-    var s = state.setup;
     if (creds && creds.data) {
-      s.creds = JSON.parse(JSON.stringify(creds.data));
+      state.setup.creds = JSON.parse(JSON.stringify(creds.data));
       state.credenciais.creds = JSON.parse(JSON.stringify(creds.data));
     }
     if (config && config.data) {
-      s.config = JSON.parse(JSON.stringify(config.data));
+      state.setup.config = JSON.parse(JSON.stringify(config.data));
       state.configuracoes.config = JSON.parse(JSON.stringify(config.data));
     }
-    var wizardCompleto = creds && creds.data && creds.data.setup_completo;
-    state.setupCompleto = !!wizardCompleto;
-    // Garantir que llm exista (backward compat com credentials antigas)
-    if (state.setupCompleto && !state.credenciais.creds.llm) {
+    if (!state.credenciais.creds.llm) {
       state.credenciais.creds.llm = { provider: 'groq', api_key: '', model: 'llama-3.3-70b-versatile' };
     }
-    if (state.setupCompleto) {
-      wabot.evolutionStatus().then(function(r) { state.credenciais.evoStatus = r; }).catch(function(){});
-      loadConversasList();
-      iniciarPollingConversas();
-      checkDockerStatus();
-      loadRegrasList();
-      loadIgnoradosList();
-      loadAprendizado();
-    } else {
-      var dockerStatus2 = await wabot.dockerStatus();
-      state.setup.dockerInstalado = dockerStatus2 && dockerStatus2.dockerInstalled;
-      state.dockerStatus = dockerStatus2;
-    }
+    state.setupCompleto = true;
+    wabot.evolutionStatus().then(function(r) { state.credenciais.evoStatus = r; }).catch(function(){});
+    loadConversasList();
+    iniciarPollingConversas();
+    checkDockerStatus();
+    loadRegrasList();
+    loadIgnoradosList();
+    loadAprendizado();
   } catch (e) {
-    state.setupCompleto = false;
+    state.setupCompleto = true;
   }
 }
 
