@@ -3,7 +3,7 @@ module.exports = (req, res) => {
     version: '1.0.0',
     name: 'WaBot',
     description: 'Atendente Inteligente para WhatsApp',
-    downloadUrl: 'https://github.com/ojuniormartelli/lp-casarao-do-gui/releases/latest',
+    downloadUrl: 'https://github.com/ojuniormartelli/WABOT/releases/latest',
     changelog: [
       '- Primeira versão pública do WaBot',
       '- Sistema de aprendizado contínuo',

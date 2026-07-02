@@ -4,7 +4,7 @@
 #define MyAppName "WaBot"
 #define MyAppVersion "1.0.0"
 #define MyAppPublisher "WaBot"
-#define MyAppURL "https://github.com/ojuniormartelli/lp-casarao-do-gui"
+#define MyAppURL "https://github.com/ojuniormartelli/WABOT"
 #define MyAppExeName "start-wabot.bat"
 
 [Setup]

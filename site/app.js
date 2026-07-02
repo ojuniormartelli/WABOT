@@ -307,7 +307,7 @@ function renderPasso(num, id, titulo, descricao, concluido) {
     '</div>';
   } else if (id === 'wabot') {
     acoesHtml = '<div class="flex flex-wrap gap-2">' +
-      '<a href="https://github.com/ojuniormartelli/lp-casarao-do-gui/releases/latest" target="_blank" class="inline-flex items-center gap-1.5 px-4 py-2 bg-emerald-600 text-white rounded-lg text-sm font-medium hover:bg-emerald-700 transition-colors">' +
+      '<a href="https://github.com/ojuniormartelli/WABOT/releases/latest" target="_blank" class="inline-flex items-center gap-1.5 px-4 py-2 bg-emerald-600 text-white rounded-lg text-sm font-medium hover:bg-emerald-700 transition-colors">' +
         '<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>' +
         'Baixar WaBot' +
       '</a>' +
