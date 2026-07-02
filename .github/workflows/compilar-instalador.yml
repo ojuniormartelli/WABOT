@@ -37,13 +37,13 @@ jobs:
         run: |
           & "C:\Program Files (x86)\Inno Setup 6\ISCC.exe" /dMyAppVersion="$env:VERSION" installer\wabot-installer.iss
 
-      - name: Descobrir nome do .exe
+      - name: Definir caminho do instalador
         id: vars
         shell: pwsh
         run: |
-          $exe = Get-ChildItem -Path . -Filter "WaBot-Setup-*.exe" | Select-Object -First 1
-          echo "EXE_PATH=$($exe.FullName)" | Out-File -FilePath $env:GITHUB_ENV -Append
-          echo "EXE_NAME=$($exe.Name)" | Out-File -FilePath $env:GITHUB_ENV -Append
+          $exe = "WaBot-Setup.exe"
+          echo "EXE_PATH=$((Get-Item -Path ".\$exe").FullName)" | Out-File -FilePath $env:GITHUB_ENV -Append
+          echo "EXE_NAME=$exe" | Out-File -FilePath $env:GITHUB_ENV -Append
 
       - name: Upload para a release
         if: github.event_name == 'release'
@@ -51,7 +51,9 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          gh release upload "${{ github.event.release.tag_name }}" "$env:EXE_PATH"
+          $tag = "${{ github.event.release.tag_name }}"
+          gh release delete-asset $tag "$env:EXE_NAME" --yes 2>$null
+          gh release upload $tag "$env:EXE_PATH"
 
       - name: Upload como artefato (workflow_dispatch)
         if: github.event_name == 'workflow_dispatch'

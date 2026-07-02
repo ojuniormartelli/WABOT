@@ -23,7 +23,7 @@ AllowNoIcons=yes
 PrivilegesRequired=admin
 PrivilegesRequiredOverridesAllowed=commandline
 OutputDir=..\
-OutputBaseFilename=WaBot-Setup-{#MyAppVersion}
+OutputBaseFilename=WaBot-Setup
 ; SetupIconFile=assets\icon.ico  (gere um .ico válido no Windows e coloque aqui)
 ; UninstallDisplayIcon={app}\installer\assets\icon.ico
 Compression=lzma2
@@ -45,6 +45,7 @@ Name: "openafter"; Description: "Abrir &WaBot após a instalação"; GroupDescri
 [Files]
 ; App core
 Source: "..\app\server.js"; DestDir: "{app}\app"; Flags: ignoreversion
+Source: "..\app\version.json"; DestDir: "{app}\app"; Flags: ignoreversion
 Source: "..\app\package.json"; DestDir: "{app}\app"; Flags: ignoreversion
 Source: "..\app\package-lock.json"; DestDir: "{app}\app"; Flags: ignoreversion
 Source: "..\app\Dockerfile"; DestDir: "{app}\app"; Flags: ignoreversion

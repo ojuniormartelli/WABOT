@@ -1,3 +1,5 @@
+var APP_VERSION = '1.0.2';
+
 // ─── Ícones SVG ─────────────────────────────────────
 var I = {};
 
@@ -210,6 +212,7 @@ function renderSidebar() {
         '<div class="w-2 h-2 rounded-full ' + statusColor + ' flex-shrink-0"></div>' +
         '<span class="sidebar-label text-gray-500' + (collapsed ? ' hidden' : '') + '">Docker: ' + statusText + '</span>' +
       '</div>' +
+      '<div class="sidebar-label text-xs text-gray-400' + (collapsed ? ' hidden' : '') + '">v' + APP_VERSION + '</div>' +
     '</div>' +
   '</aside>';
 }
