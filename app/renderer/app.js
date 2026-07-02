@@ -427,7 +427,30 @@ async function checkDockerStatus() {
   } catch (e) {
     state.dockerStatus = { dockerInstalled: false, evolutionRunning: false };
   }
-  render();
+  if (!(state.currentPage === 'conversas' && state.conversas.contatoSelecionado)) {
+    render();
+  }
+}
+
+var pollingMsgRodando = false;
+
+async function pollChatMessages() {
+  var contato = state.conversas.contatoSelecionado;
+  if (!contato || !contato.telefone) return;
+  if (pollingMsgRodando) return;
+  pollingMsgRodando = true;
+  try {
+    var result = await wabot.evolutionHistory(contato.telefone);
+    if (result.success && Array.isArray(result.data)) {
+      var atuais = state.chat.mensagens;
+      if (result.data.length > atuais.length) {
+        state.chat.mensagens = result.data;
+        render();
+        bindChat();
+      }
+    }
+  } catch(e) {}
+  pollingMsgRodando = false;
 }
 
 // ─── CREDENCIAIS ───────────────────────────────────
@@ -934,7 +957,15 @@ window.selectContato = function(telefone) {
   }
 };
 
-function bindConversas() {}
+function bindConversas() {
+  var container = document.getElementById('chat-messages');
+  if (container && state.conversas.contatoSelecionado) {
+    container.onscroll = function() {
+      chatIsNearBottom = (container.scrollHeight - container.scrollTop - container.clientHeight) < 80;
+    };
+    scrollChat();
+  }
+}
 
 // ─── CHAT VIEW ─────────────────────────────────────
 function renderChatView(contato) {
@@ -1080,7 +1111,7 @@ window.enviarMsg = async function() {
   render();
   bindChat();
   await wabot.sendMessage(contato.telefone, texto);
-  scrollChat();
+  scrollChat(true);
 };
 
 window.enviarSugestaoIA = async function() {
@@ -1093,12 +1124,21 @@ window.enviarSugestaoIA = async function() {
   render();
   bindChat();
   await wabot.sendMessage(contato.telefone, texto);
-  scrollChat();
+  scrollChat(true);
 };
 
-function scrollChat() {
+var chatIsNearBottom = true;
+
+function scrollChat(force) {
   var container = document.getElementById('chat-messages');
-  if (container) setTimeout(function() { container.scrollTop = container.scrollHeight; }, 50);
+  if (!container) return;
+  if (force) {
+    requestAnimationFrame(function() { container.scrollTop = container.scrollHeight; });
+    return;
+  }
+  if (chatIsNearBottom) {
+    requestAnimationFrame(function() { container.scrollTop = container.scrollHeight; });
+  }
 }
 
 function bindChat() {
@@ -1355,7 +1395,10 @@ function renderAprendizado() {
           '<textarea rows="3" id="nova-resposta" oninput="state.aprendizado.novaResposta=this.value" class="w-full px-3 py-2.5 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-emerald-500" placeholder="Ex: Sim! Temos opções sem glúten no nosso cardápio. Você pode conferir pelo link...">' + esc(a.novaResposta) + '</textarea></div>' +
         '<div><label class="block text-sm font-medium text-gray-700 mb-1">Palavras-chave (separadas por vírgula)</label>' +
           '<input type="text" id="nova-palavras" value="' + esc(a.novasPalavrasChave) + '" oninput="state.aprendizado.novasPalavrasChave=this.value" class="w-full px-3 py-2.5 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-emerald-500" placeholder="Ex: glúten, gluten, sem glúten, celíaco" /></div>' +
-        '<button onclick="adicionarConhecimentoManual()" class="flex items-center gap-2 px-4 py-2.5 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 text-sm font-medium">' + I.plus(16, '') + ' Adicionar Conhecimento</button>' +
+        '<div class="flex gap-2">' +
+          '<button onclick="adicionarConhecimentoManual()" class="flex items-center gap-2 px-4 py-2.5 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 text-sm font-medium">' + I.plus(16, '') + ' Adicionar Conhecimento</button>' +
+          '<button onclick="state.aprendizado.tab=\'respostas\';state.aprendizado.novaPergunta=\'\';state.aprendizado.novaResposta=\'\';state.aprendizado.novasPalavrasChave=\'\';render();bindAprendizado();loadAprendizado()" class="px-4 py-2.5 text-gray-500 text-sm border border-gray-300 rounded-lg hover:bg-gray-50">Cancelar</button>' +
+        '</div>' +
       '</div></div>';
   }
 
@@ -1492,6 +1535,10 @@ function iniciarPollingConversas() {
       }
       // Atualizar docker status a cada ciclo
       checkDockerStatus();
+      // Se um contato estiver selecionado, buscar novas mensagens
+      if (state.currentPage === 'conversas' && state.conversas.contatoSelecionado) {
+        pollChatMessages();
+      }
     }, function() { pollingRodando = false; });
   }, 5000);
 }
