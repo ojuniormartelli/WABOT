@@ -222,11 +222,12 @@ function bindCurrentPage() {
 
 // ─── SIDEBAR ───────────────────────────────────────
 function renderSidebar() {
-  var d = state.dockerStatus || {};
-  var evoOnline = d.evolutionRunning;
-  var dockerOk = d.dockerInstalled;
-  var statusColor = dockerOk ? (evoOnline ? 'bg-emerald-500' : 'bg-yellow-500') : 'bg-red-500';
-  var statusText = 'Evolution ' + (evoOnline ? 'Online' : (dockerOk ? 'Parado' : 'Offline'));
+  var d = state.dockerStatus;
+  var evoOnline = d && d.evolutionRunning;
+  var dockerOk = d && d.dockerInstalled;
+  var carregando = !d;
+  var statusColor = carregando ? 'bg-gray-300' : (dockerOk ? (evoOnline ? 'bg-emerald-500' : 'bg-yellow-500') : 'bg-red-500');
+  var statusText = carregando ? 'Verificando...' : 'Evolution ' + (evoOnline ? 'Online' : (dockerOk ? 'Parado' : 'Offline'));
   var collapsed = state.sidebar.collapsed;
   var width = collapsed ? 'w-16' : 'w-64';
 
@@ -426,6 +427,7 @@ async function checkDockerStatus() {
   } catch (e) {
     state.dockerStatus = { dockerInstalled: false, evolutionRunning: false };
   }
+  render();
 }
 
 // ─── CREDENCIAIS ───────────────────────────────────
