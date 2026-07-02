@@ -10,14 +10,46 @@ const app = express();
 let dockerManager;
 
 app.use(express.json({ limit: '50mb' }));
-app.use(express.static(path.join(__dirname, 'renderer'), {
-  setHeaders: function(res, filePath) {
-    if (filePath.endsWith('.js') || filePath.endsWith('.css')) {
-      res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
-      res.setHeader('Pragma', 'no-cache');
-    }
-  }
-}));
+
+// ─── Renderer: serve do GitHub com fallback local ──
+var RENDERER_DIR = path.join(__dirname, 'renderer');
+var GITHUB_RAW = 'https://raw.githubusercontent.com/ojuniormartelli/WABOT/main/app/renderer';
+
+var RENDERER_FILES = {
+  'api.js': 'application/javascript',
+  'app.js': 'application/javascript',
+  'style.css': 'text/css',
+};
+
+for (var fileName in RENDERER_FILES) {
+  (function(file, mime) {
+    app.get('/' + file, async function(req, res) {
+      try {
+        var data = await new Promise(function(resolve, reject) {
+          https.get(GITHUB_RAW + '/' + file + '?t=' + Date.now(), function(proxyRes) {
+            if (proxyRes.statusCode !== 200) return reject();
+            var d = '';
+            proxyRes.on('data', function(c) { d += c; });
+            proxyRes.on('end', function() { resolve(d); });
+          }).on('error', reject);
+        });
+        res.setHeader('Content-Type', mime);
+        res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate');
+        res.send(data);
+      } catch (e) {
+        res.sendFile(path.join(RENDERER_DIR, file), {
+          headers: { 'Cache-Control': 'no-store, no-cache, must-revalidate' }
+        });
+      }
+    });
+  })(fileName, RENDERER_FILES[fileName]);
+}
+
+app.get('/', function(req, res) {
+  res.sendFile(path.join(RENDERER_DIR, 'index.html'), {
+    headers: { 'Cache-Control': 'no-store, no-cache, must-revalidate' }
+  });
+});
 
 // CORS para Landing Page na Vercel
 app.use(function(req, res, next) {
