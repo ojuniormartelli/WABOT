@@ -22,8 +22,8 @@ PrivilegesRequired=admin
 PrivilegesRequiredOverridesAllowed=commandline
 OutputDir=..\
 OutputBaseFilename=WaBot-Setup-{#MyAppVersion}
-SetupIconFile=assets\icon.ico
-UninstallDisplayIcon={app}\installer\assets\icon.ico
+; SetupIconFile=assets\icon.ico  (gere um .ico válido no Windows e coloque aqui)
+; UninstallDisplayIcon={app}\installer\assets\icon.ico
 Compression=lzma2
 SolidCompression=yes
 WizardStyle=modern
@@ -73,7 +73,7 @@ Source: "assets\*"; DestDir: "{app}\installer\assets"; Flags: ignoreversion recu
 
 [Icons]
 Name: "{group}\{#MyAppName}"; Filename: "{app}\start-wabot.bat"; WorkingDir: "{app}"
-Name: "{group}\Painel WaBot"; Filename: "http://localhost:3001"; IconFilename: "{app}\installer\assets\icon.ico"
+Name: "{group}\Painel WaBot"; Filename: "http://localhost:3001"
 Name: "{group}\Desinstalar {#MyAppName}"; Filename: "{uninstallexe}"
 Name: "{commondesktop}\{#MyAppName}"; Filename: "{app}\start-wabot.bat"; WorkingDir: "{app}"; Tasks: desktopicon
 Name: "{commonstartup}\{#MyAppName}"; Filename: "{app}\start-wabot.bat"; WorkingDir: "{app}"; Tasks: startup
