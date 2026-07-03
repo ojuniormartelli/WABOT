@@ -445,6 +445,16 @@ async function pollChatMessages() {
       var atuais = state.chat.mensagens;
       if (result.data.length > atuais.length) {
         state.chat.mensagens = result.data;
+        if (contato) {
+          contato.nao_lidas = 0;
+          var contatos = state.conversas.contatos || [];
+          for (var i = 0; i < contatos.length; i++) {
+            if (contatos[i].telefone === contato.telefone) {
+              contatos[i].nao_lidas = 0;
+              break;
+            }
+          }
+        }
         render();
         bindChat();
       }
@@ -899,7 +909,8 @@ function renderConversas() {
   for (var i = 0; i < filtrados.length; i++) {
     var c = filtrados[i];
     var sel = state.conversas.contatoSelecionado && state.conversas.contatoSelecionado.telefone === c.telefone;
-    var badgeColor = c.status === 'bot' ? 'bg-blue-100 text-blue-700' : c.status === 'pausado' ? 'bg-yellow-100 text-yellow-700' : 'bg-purple-100 text-purple-700';
+    var badgeColor = c.status === 'bot' ? 'bg-blue-100 text-blue-700' : c.status === 'pausado' ? 'bg-yellow-100 text-yellow-700' : c.status === 'ignorado' ? 'bg-red-100 text-red-600' : 'bg-purple-100 text-purple-700';
+    var badgeLabel = c.status === 'ignorado' ? 'Ignorado' : (c.status || 'bot');
     listaHtml += '<button onclick="selectContato(\'' + c.telefone + '\')" class="w-full p-4 flex items-start gap-3 text-left transition-colors border-b border-gray-100 ' + (sel ? 'bg-emerald-50' : 'hover:bg-gray-50') + '">' +
       '<div class="w-12 h-12 rounded-full bg-emerald-100 flex items-center justify-center flex-shrink-0">' + I.messageSquare(20, 'text-emerald-600') + '</div>' +
       '<div class="flex-1 min-w-0">' +
@@ -909,7 +920,7 @@ function renderConversas() {
         '</div>' +
         '<p class="text-sm text-gray-500 truncate">' + esc(c.ultima_msg) + '</p>' +
         '<div class="flex items-center gap-2 mt-1.5">' +
-          '<span class="text-xs px-2 py-0.5 rounded-full font-medium ' + badgeColor + '">' + esc(c.status || 'bot') + '</span>' +
+          '<span class="text-xs px-2 py-0.5 rounded-full font-medium ' + badgeColor + '">' + esc(badgeLabel) + '</span>' +
           (c.nao_lidas > 0 ? '<span class="bg-emerald-500 text-white text-xs px-1.5 py-0.5 rounded-full">' + c.nao_lidas + '</span>' : '') +
         '</div>' +
       '</div>' +
@@ -941,17 +952,23 @@ function renderConversas() {
     '</div>' + painelDireito + '</div>';
 }
 
-window.selectContato = function(telefone) {
+window.selectContato = async function(telefone) {
   var contatos = state.conversas.contatos || [];
   for (var i = 0; i < contatos.length; i++) {
     if (contatos[i].telefone === telefone) {
       state.conversas.contatoSelecionado = contatos[i];
+      state.chat.status = contatos[i].status || 'bot';
+      contatos[i].nao_lidas = 0;
       state.chat.mensagens = [];
       state.chat.texto = '';
       state.chat.sugestaoIA = '';
       render();
       bindChat();
       loadMensagens();
+      // Salvar zeração de não lidas
+      try {
+        await wabot.configWrite('conversas.json', contatos);
+      } catch(e) {}
       return;
     }
   }
@@ -978,6 +995,7 @@ function renderChatView(contato) {
     bot: { label: 'Bot Ativo', color: 'bg-blue-100 text-blue-700' },
     pausado: { label: 'Pausado', color: 'bg-yellow-100 text-yellow-700' },
     humano: { label: 'Humano', color: 'bg-purple-100 text-purple-700' },
+    ignorado: { label: 'Ignorado', color: 'bg-red-100 text-red-600' },
   };
   var badge = badgeConfig[status] || { label: status, color: 'bg-gray-100 text-gray-700' };
 
@@ -988,15 +1006,16 @@ function renderChatView(contato) {
   for (var i = 0; i < mensagens.length; i++) {
     var m = mensagens[i];
     var isBot = m.de_bot;
-    msgsHtml += '<div class="flex ' + (isBot ? 'justify-start' : 'justify-end') + ' animate-fade-in">' +
-      '<div class="' + (isBot ? 'chat-bubble-bot' : 'chat-bubble-client') + '">';
+    var isClient = !isBot;
+    msgsHtml += '<div class="flex ' + (isClient ? 'justify-start' : 'justify-end') + ' animate-fade-in">' +
+      '<div class="' + (isClient ? 'chat-bubble-bot' : 'chat-bubble-client') + '">';
     if (isBot && m.origem && m.origem !== 'cliente') {
       var origemLabel = m.origem === 'regra' ? 'Regra' : m.origem === 'ia' ? 'IA' : 'Você';
       var origemColor = m.origem === 'regra' ? 'text-blue-600' : m.origem === 'ia' ? 'text-purple-600' : 'text-gray-500';
       msgsHtml += '<div class="flex items-center gap-1 mb-1"><span class="text-xs font-medium ' + origemColor + '">' + origemLabel + '</span></div>';
     }
     msgsHtml += '<p class="text-sm whitespace-pre-wrap">' + esc(m.texto) + '</p>' +
-      '<p class="text-xs mt-1 ' + (isBot ? 'text-gray-400' : 'text-emerald-100') + '">' + esc(m.horario || '') + '</p>' +
+      '<p class="text-xs mt-1 ' + (isClient ? 'text-gray-400' : 'text-emerald-100') + '">' + esc(m.horario || '') + '</p>' +
       '</div></div>';
   }
 
@@ -1062,7 +1081,17 @@ window.ignorarContato = async function() {
   ignorados.push({ id: 'ign-' + Date.now(), telefone: contato.telefone, nome: contato.nome || '' });
   await wabot.configWrite('ignorados.json', ignorados);
   state.ignorados = ignorados;
-  state.chat.status = 'pausado';
+  if (contato) {
+    contato.status = 'ignorado';
+    var contatos = state.conversas.contatos || [];
+    for (var i = 0; i < contatos.length; i++) {
+      if (contatos[i].telefone === contato.telefone) {
+        contatos[i].status = 'ignorado';
+        break;
+      }
+    }
+  }
+  state.chat.status = 'ignorado';
   render();
   bindChat();
 };
@@ -1600,14 +1629,20 @@ function iniciarPollingConversas() {
     pollingRodando = true;
     loadConversasList().then(function() {
       pollingRodando = false;
-      if (state.currentPage === 'conversas' && !state.conversas.contatoSelecionado) {
+      if (state.currentPage === 'conversas') {
         render();
       }
       // Atualizar status a cada ciclo (sem re-render)
       atualizarStatusPolling();
       // Se um contato estiver selecionado, buscar novas mensagens
       if (state.currentPage === 'conversas' && state.conversas.contatoSelecionado) {
-        pollChatMessages();
+        pollChatMessages().then(function() {
+          loadConversasList().then(function() {
+            if (state.currentPage === 'conversas') {
+              render();
+            }
+          });
+        });
       }
     }, function() { pollingRodando = false; });
   }, 5000);

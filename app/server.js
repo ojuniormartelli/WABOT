@@ -163,6 +163,29 @@ function evolutionRequest(method, pathUrl, bodyData) {
 
 function sendEvolutionMessage(to, text, origem) {
   salvarMensagemLocal(to, text, true, origem || 'bot');
+  try {
+    const conversas = readJson('conversas.json') || [];
+    const existente = conversas.find(c => c.telefone === to);
+    const horario = new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+    if (existente) {
+      existente.ultima_msg = text;
+      existente.horario = horario;
+      existente.ultimo_timestamp = Date.now();
+    } else {
+      conversas.push({
+        telefone: to,
+        nome: to,
+        ultima_msg: text,
+        status: 'bot',
+        horario,
+        nao_lidas: 0,
+        ultimo_timestamp: Date.now(),
+      });
+    }
+    writeJson('conversas.json', conversas);
+  } catch(e) {
+    console.error('[sendEvolutionMessage] erro ao atualizar conversas.json:', e.message);
+  }
   const creds = getCreds();
   const instance = creds.evolution?.instance_name || 'test';
   return evolutionRequest('POST', `/message/sendText/${encodeURIComponent(instance)}`, {
@@ -573,7 +596,7 @@ app.get('/api/evolution/conversations', async (req, res) => {
           for (var j = 0; j < convs.length; j++) {
             var ec = evoPorTelefone[convs[j].telefone];
             if (ec) {
-              if (ec.unreadCount > 0) convs[j].nao_lidas = ec.unreadCount;
+              if (ec.unreadCount > 0 && convs[j].nao_lidas > 0) convs[j].nao_lidas = ec.unreadCount;
               // Atualizar status se tiver info mais recente
               if (!convs[j].nome || convs[j].nome === convs[j].telefone) {
                 convs[j].nome = ec.name || ec.pushName || convs[j].nome;
@@ -583,6 +606,20 @@ app.get('/api/evolution/conversations', async (req, res) => {
         }
       } catch(e) {}
     }
+
+    // Marcar ignorados
+    const ignorados = readJson('ignorados.json') || [];
+    for (var k = 0; k < convs.length; k++) {
+      var isIgnorado = ignorados.some(function(ign) { return ign.telefone === convs[k].telefone; });
+      if (isIgnorado) convs[k].status = 'ignorado';
+    }
+
+    // Ordenar por mais recente primeiro
+    convs.sort(function(a, b) {
+      var ta = a.ultimo_timestamp || 0;
+      var tb = b.ultimo_timestamp || 0;
+      return tb - ta;
+    });
 
     return res.json({ success: true, mock: false, data: convs });
   } catch (error) {
