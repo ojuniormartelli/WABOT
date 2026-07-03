@@ -1202,7 +1202,6 @@ window.ignorarContato = async function() {
     var r = await wabot.configRead('ignorados.json');
     if (r.success && Array.isArray(r.data)) ignorados = r.data;
   } catch(e) {}
-  // Verificar se já existe
   for (var i = 0; i < ignorados.length; i++) {
     if (ignorados[i].telefone === contato.telefone) return;
   }
@@ -1220,6 +1219,58 @@ window.ignorarContato = async function() {
     }
   }
   state.chat.status = 'ignorado';
+  await loadConversasList();
+  render();
+  bindChat();
+};
+
+window.alterarStatus = async function(modo) {
+  var contato = state.conversas.contatoSelecionado;
+  if (!contato || !contato.telefone) return;
+  var tel = contato.telefone;
+
+  if (modo === 'bot') {
+    // Reativar bot: remover da lista de ignorados
+    var ignorados = [];
+    try {
+      var r = await wabot.configRead('ignorados.json');
+      if (r.success && Array.isArray(r.data)) ignorados = r.data;
+    } catch(e) {}
+    var novos = [];
+    for (var i = 0; i < ignorados.length; i++) {
+      if (ignorados[i].telefone !== tel) novos.push(ignorados[i]);
+    }
+    await wabot.configWrite('ignorados.json', novos);
+    state.ignorados = novos;
+    contato.status = 'bot';
+    state.chat.status = 'bot';
+  } else if (modo === 'humano') {
+    // Modo humano: adicionar aos ignorados (para bot não responder) + status intervencao
+    var ignorados = [];
+    try {
+      var r = await wabot.configRead('ignorados.json');
+      if (r.success && Array.isArray(r.data)) ignorados = r.data;
+    } catch(e) {}
+    var existe = false;
+    for (var i = 0; i < ignorados.length; i++) {
+      if (ignorados[i].telefone === tel) { existe = true; break; }
+    }
+    if (!existe) {
+      ignorados.push({ id: 'ign-' + Date.now(), telefone: tel, nome: contato.nome || '' });
+      await wabot.configWrite('ignorados.json', ignorados);
+      state.ignorados = ignorados;
+    }
+    // Persistir status no servidor
+    try {
+      await fetch('/api/conversa/' + encodeURIComponent(tel) + '/status', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status: 'intervencao' })
+      });
+    } catch(e) {}
+    contato.status = 'intervencao';
+    state.chat.status = 'intervencao';
+  }
+
   await loadConversasList();
   render();
   bindChat();

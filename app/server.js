@@ -582,6 +582,34 @@ app.post('/api/evolution/disconnect', async (req, res) => {
   }
 });
 
+// ─── Conversa: Alterar status ─────────────────────
+
+app.post('/api/conversa/:telefone/status', (req, res) => {
+  try {
+    var tel = req.params.telefone;
+    var status = req.body.status;
+    if (!status) return res.json({ success: false, error: 'status obrigatório' });
+    var conversas = readJson('conversas.json') || [];
+    if (!Array.isArray(conversas)) conversas = [];
+    var achou = false;
+    for (var i = 0; i < conversas.length; i++) {
+      if (conversas[i].telefone === tel) {
+        conversas[i].status = status;
+        conversas[i].ultimo_timestamp = Date.now();
+        achou = true;
+        break;
+      }
+    }
+    if (!achou) {
+      conversas.push({ telefone: tel, status: status, ultimo_timestamp: Date.now(), nao_lidas: 0 });
+    }
+    writeJson('conversas.json', conversas);
+    res.json({ success: true });
+  } catch (e) {
+    res.json({ success: false, error: e.message });
+  }
+});
+
 // ─── Evolution: Listar conversas ───────────────────
 
 app.get('/api/evolution/conversations', async (req, res) => {
