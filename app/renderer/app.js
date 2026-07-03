@@ -222,12 +222,12 @@ function bindCurrentPage() {
 
 // ─── SIDEBAR ───────────────────────────────────────
 function renderSidebar() {
+  var evoConnected = state.credenciais.evoStatus && state.credenciais.evoStatus.connected;
   var d = state.dockerStatus;
   var evoOnline = d && d.evolutionRunning;
-  var dockerOk = d && d.dockerInstalled;
-  var carregando = !d;
-  var statusColor = carregando ? 'bg-gray-300' : (dockerOk ? (evoOnline ? 'bg-emerald-500' : 'bg-yellow-500') : 'bg-red-500');
-  var statusText = carregando ? 'Verificando...' : 'Evolution ' + (evoOnline ? 'Online' : (dockerOk ? 'Parado' : 'Offline'));
+  var carregando = !d && !state.credenciais.evoStatus;
+  var statusColor = carregando ? 'bg-gray-300' : (evoConnected ? 'bg-emerald-500' : (evoOnline ? 'bg-yellow-500' : 'bg-red-500'));
+  var statusText = carregando ? 'Verificando...' : (evoConnected ? 'Online' : (evoOnline ? 'WA Desconectado' : 'Offline'));
   var collapsed = state.sidebar.collapsed;
   var width = collapsed ? 'w-16' : 'w-64';
 
@@ -270,8 +270,8 @@ function renderSidebar() {
     '<nav class="flex-1 p-3 space-y-1 overflow-hidden">' + navItems + '</nav>' +
     '<div class="p-4 border-t border-gray-200 overflow-hidden">' +
       '<div class="flex items-center gap-2 text-xs">' +
-        '<div class="w-2 h-2 rounded-full ' + statusColor + ' flex-shrink-0"></div>' +
-        '<span class="sidebar-label text-gray-500' + (collapsed ? ' hidden' : '') + '">Docker: ' + statusText + '</span>' +
+        '<div id="sidebar-status-dot" class="w-2 h-2 rounded-full ' + statusColor + ' flex-shrink-0"></div>' +
+        '<span id="sidebar-status-text" class="sidebar-label text-gray-500' + (collapsed ? ' hidden' : '') + '">' + statusText + '</span>' +
       '</div>' +
       '<div class="sidebar-label text-xs text-gray-400' + (collapsed ? ' hidden' : '') + '">v' + APP_VERSION + '</div>' +
     '</div>' +
@@ -1587,8 +1587,8 @@ function iniciarPollingConversas() {
       if (state.currentPage === 'conversas' && !state.conversas.contatoSelecionado) {
         render();
       }
-      // Atualizar docker status a cada ciclo (sem re-render)
-      atualizarDockerPolling();
+      // Atualizar status a cada ciclo (sem re-render)
+      atualizarStatusPolling();
       // Se um contato estiver selecionado, buscar novas mensagens
       if (state.currentPage === 'conversas' && state.conversas.contatoSelecionado) {
         pollChatMessages();
@@ -1597,12 +1597,28 @@ function iniciarPollingConversas() {
   }, 5000);
 }
 
-function atualizarDockerPolling() {
+function atualizarStatusPolling() {
   wabot.dockerStatus().then(function(status) {
     state.dockerStatus = status;
   }).catch(function() {
     state.dockerStatus = { dockerInstalled: false, evolutionRunning: false };
   });
+  wabot.evolutionStatus().then(function(status) {
+    state.credenciais.evoStatus = status;
+  }).catch(function() {});
+  atualizarBadgeSidebar();
+}
+
+function atualizarBadgeSidebar() {
+  var dot = document.getElementById('sidebar-status-dot');
+  var text = document.getElementById('sidebar-status-text');
+  if (!dot || !text) return;
+  var evoConnected = state.credenciais.evoStatus && state.credenciais.evoStatus.connected;
+  var d = state.dockerStatus;
+  var evoOnline = d && d.evolutionRunning;
+  var carregando = !d && !state.credenciais.evoStatus;
+  dot.className = 'w-2 h-2 rounded-full flex-shrink-0 ' + (carregando ? 'bg-gray-300' : (evoConnected ? 'bg-emerald-500' : (evoOnline ? 'bg-yellow-500' : 'bg-red-500')));
+  text.textContent = carregando ? 'Verificando...' : (evoConnected ? 'Online' : (evoOnline ? 'WA Desconectado' : 'Offline'));
 }
 
 // ─── INICIALIZAÇÃO ────────────────────────────────
