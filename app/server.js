@@ -656,11 +656,13 @@ app.get('/api/evolution/conversations', async (req, res) => {
       } catch(e) {}
     }
 
-    // Marcar ignorados
+    // Marcar ignorados (preserva status 'intervencao' se foi definido manualmente)
     const ignorados = readJson('ignorados.json') || [];
     for (var k = 0; k < convs.length; k++) {
       var isIgnorado = ignorados.some(function(ign) { return ign.telefone === convs[k].telefone; });
-      if (isIgnorado) convs[k].status = 'ignorado';
+      if (isIgnorado && convs[k].status !== 'intervencao') {
+        convs[k].status = 'ignorado';
+      }
     }
 
     // Ordenar por mais recente primeiro
