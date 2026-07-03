@@ -1349,6 +1349,31 @@ async function salvarRegras() {
 function bindRegras() {}
 
 // ─── IGNORADOS ─────────────────────────────────────
+function formatPhone(digits) {
+  if (!digits) return '';
+  var d = digits.replace(/\D/g, '').substring(0, 13);
+  if (d.length <= 2) return '+' + d;
+  if (d.length <= 4) return '+' + d.substring(0, 2) + ' (' + d.substring(2);
+  if (d.length <= 9) return '+' + d.substring(0, 2) + ' (' + d.substring(2, 4) + ') ' + d.substring(4);
+  return '+' + d.substring(0, 2) + ' (' + d.substring(2, 4) + ') ' + d.substring(4, 9) + '-' + d.substring(9);
+}
+
+window.formatPhoneInput = function(input) {
+  var digits = input.value.replace(/\D/g, '');
+  if (digits.length <= 11 && !digits.startsWith('55')) {
+    digits = '55' + digits;
+  }
+  digits = digits.substring(0, 13);
+  input.value = formatPhone(digits);
+  var id = input.getAttribute('data-id');
+  for (var i = 0; i < state.ignorados.length; i++) {
+    if (state.ignorados[i].id === id) {
+      state.ignorados[i].telefone = digits;
+      break;
+    }
+  }
+};
+
 function renderIgnorados() {
   var ignorados = state.ignorados;
   function renderLista(lista) {
@@ -1358,7 +1383,7 @@ function renderIgnorados() {
       var item = lista[j];
       h += '<div class="flex items-center gap-3 p-3 bg-gray-50 rounded-lg group">' +
         '<div class="flex-1 grid grid-cols-[1fr_1fr] gap-2">' +
-          '<div><input type="text" value="' + esc(item.telefone) + '" onchange="updateIgnorado(\'' + item.id + '\',\'telefone\',this.value)" class="w-full px-2 py-1.5 border border-gray-300 rounded text-sm" placeholder="5511999999999" /></div>' +
+          '<div><input type="text" value="' + esc(formatPhone(item.telefone)) + '" oninput="formatPhoneInput(this)" data-id="' + item.id + '" class="w-full px-2 py-1.5 border border-gray-300 rounded text-sm" placeholder="+55 (11) 91234-5678" /></div>' +
           '<div><input type="text" value="' + esc(item.nome || '') + '" onchange="updateIgnorado(\'' + item.id + '\',\'nome\',this.value)" class="w-full px-2 py-1.5 border border-gray-300 rounded text-sm" placeholder="Nome" /></div>' +
         '</div>' +
         '<button onclick="removeIgnorado(\'' + item.id + '\')" class="text-red-400 hover:text-red-600 p-1.5 opacity-0 group-hover:opacity-100">' + I.trash2(14, '') + '</button>' +
