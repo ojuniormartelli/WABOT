@@ -677,7 +677,8 @@ app.get('/api/evolution/conversations', async (req, res) => {
     }
 
     // Marcar ignorados (expira_em no passado = reativar automaticamente)
-    const ignorados = readJson('ignorados.json') || [];
+    var ignoradosTmp = readJson('ignorados.json');
+    const ignorados = Array.isArray(ignoradosTmp) ? ignoradosTmp : [];
     var now = new Date();
     for (var k = 0; k < convs.length; k++) {
       var ignItem = null;
@@ -1115,16 +1116,23 @@ app.post('/webhook/evolution', async (req, res) => {
     var now = new Date();
     var isIgnorado = false;
     var precisaSalvar = false;
-    for (var ig = 0; ig < ignorados.length; ig++) {
-      if (ignorados[ig].telefone === telefone) {
-        if (ignorados[ig].expira_em && new Date(ignorados[ig].expira_em) <= now) {
-          ignorados.splice(ig, 1); // Remover expirado
-          precisaSalvar = true;
-        } else {
-          isIgnorado = true;
+    if (telefone) {
+      var debugIgn = 'ignorados.json: ' + (Array.isArray(ignorados) ? ignorados.length + ' entries' : typeof ignorados) + ' | buscando: ' + telefone;
+      for (var ig = 0; ig < (Array.isArray(ignorados) ? ignorados.length : 0); ig++) {
+        if (ignorados[ig] && ignorados[ig].telefone === telefone) {
+          debugIgn += ' | ENCONTRADO';
+          if (ignorados[ig].expira_em && new Date(ignorados[ig].expira_em) <= now) {
+            ignorados.splice(ig, 1);
+            precisaSalvar = true;
+            debugIgn += ' (expirado, removido)';
+          } else {
+            isIgnorado = true;
+            debugIgn += ' (ativo)';
+          }
+          break;
         }
-        break;
       }
+      console.log('[webhook] ' + debugIgn);
     }
     if (precisaSalvar) writeJson('ignorados.json', ignorados);
 
@@ -1132,8 +1140,38 @@ app.post('/webhook/evolution', async (req, res) => {
       return res.json({ success: true, ignored: true });
     }
 
-    // Processar com IA (Gemini ou Groq)
+    // Verificar horário de funcionamento
     const config = readJson('config.json') || {};
+    if (config.horarios) {
+      var diasSemana = ['domingo', 'segunda', 'terca', 'quarta', 'quinta', 'sexta', 'sabado'];
+      var hoje = diasSemana[new Date().getDay()];
+      var configDia = config.horarios[hoje];
+      var foraHorario = false;
+      if (configDia) {
+        if (configDia.fechado) {
+          foraHorario = true;
+        } else {
+          var agora = new Date();
+          var minAgora = agora.getHours() * 60 + agora.getMinutes();
+          var periodos = configDia.periodos || configDia.cozinha || [];
+          var dentro = false;
+          for (var p = 0; p < periodos.length; p++) {
+            var hab = periodos[p].abertura || '00:00';
+            var hfe = periodos[p].fechamento || '23:59';
+            var pAbb = parseInt(hab.split(':')[0]) * 60 + parseInt(hab.split(':')[1] || '0');
+            var pFee = parseInt(hfe.split(':')[0]) * 60 + parseInt(hfe.split(':')[1] || '0');
+            if (minAgora >= pAbb && minAgora < pFee) { dentro = true; break; }
+          }
+          if (!dentro) foraHorario = true;
+        }
+      }
+      if (foraHorario) {
+        var msgAusencia = config.mensagem_ausencia || 'Olá! No momento estamos fora do horário de funcionamento. 😊 Por favor, envie uma mensagem novamente durante nosso horário comercial que responderemos em breve.';
+        await sendEvolutionMessage(telefone, msgAusencia);
+        return res.json({ success: true, out_of_hours: true });
+      }
+    }
+
     const regras = readJson('regras.json') || [];
     const creds = getCreds();
     const provider = creds.llm?.provider || 'gemini';
