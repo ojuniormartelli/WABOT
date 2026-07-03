@@ -76,6 +76,7 @@ var state = {
   dockerStatus: null,
   setupCompleto: null,
   pageHelp: false,
+  intervencaoCount: 0,
   sidebar: { collapsed: false },
   setup: {
     creds: { evolution: { api_key: '', base_url: 'http://localhost:8081', instance_name: '' }, gemini: { api_key: '', model: 'gemini-2.0-flash' } },
@@ -283,11 +284,15 @@ function renderSidebar() {
   for (var i = 0; i < items.length; i++) {
     var item = items[i];
     var active = state.currentPage === item.id;
+    var mostraIntervencao = item.id === 'conversas' && state.intervencaoCount > 0;
+    var labelTexto = item.label + (mostraIntervencao ? ' (' + state.intervencaoCount + ')' : '');
+    var notifDot = mostraIntervencao ? '<span class="w-2 h-2 rounded-full bg-orange-500 ml-auto flex-shrink-0"></span>' : '';
     navItems += '<button class="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors ' +
       (active ? 'bg-emerald-50 text-emerald-700' : 'text-gray-600 hover:bg-gray-100') +
       '" data-nav="' + item.id + '" title="' + item.label + '">' +
       '<span class="flex-shrink-0">' + item.icon + '</span>' +
-      '<span class="sidebar-label truncate' + (collapsed ? ' hidden' : '') + '">' + esc(item.label) + '</span></button>';
+      '<span class="sidebar-label truncate' + (collapsed ? ' hidden' : '') + '">' + esc(labelTexto) + '</span>' +
+      notifDot + '</button>';
   }
 
   var toggleIcon = collapsed
@@ -493,8 +498,6 @@ async function pollChatMessages() {
             }
           }
         }
-        render();
-        bindChat();
       }
     }
   } catch(e) {}
@@ -953,8 +956,8 @@ function renderConversas() {
   for (var i = 0; i < filtrados.length; i++) {
     var c = filtrados[i];
     var sel = state.conversas.contatoSelecionado && state.conversas.contatoSelecionado.telefone === c.telefone;
-    var badgeColor = c.status === 'bot' ? 'bg-blue-100 text-blue-700' : c.status === 'pausado' ? 'bg-yellow-100 text-yellow-700' : c.status === 'ignorado' ? 'bg-red-100 text-red-600' : 'bg-purple-100 text-purple-700';
-    var badgeLabel = c.status === 'ignorado' ? 'Ignorado' : (c.status || 'bot');
+    var badgeColor = c.status === 'bot' ? 'bg-blue-100 text-blue-700' : c.status === 'pausado' ? 'bg-yellow-100 text-yellow-700' : c.status === 'ignorado' ? 'bg-red-100 text-red-600' : c.status === 'intervencao' ? 'bg-orange-100 text-orange-700' : 'bg-purple-100 text-purple-700';
+    var badgeLabel = c.status === 'ignorado' ? 'Ignorado' : c.status === 'intervencao' ? 'Intervenção' : (c.status || 'bot');
     listaHtml += '<button onclick="selectContato(\'' + c.telefone + '\')" class="w-full p-4 flex items-start gap-3 text-left transition-colors border-b border-gray-100 ' + (sel ? 'bg-emerald-50' : 'hover:bg-gray-50') + '">' +
       '<div class="w-12 h-12 rounded-full bg-emerald-100 flex items-center justify-center flex-shrink-0">' + I.messageSquare(20, 'text-emerald-600') + '</div>' +
       '<div class="flex-1 min-w-0">' +
@@ -1040,6 +1043,7 @@ function renderChatView(contato) {
     pausado: { label: 'Pausado', color: 'bg-yellow-100 text-yellow-700' },
     humano: { label: 'Humano', color: 'bg-purple-100 text-purple-700' },
     ignorado: { label: 'Ignorado', color: 'bg-red-100 text-red-600' },
+    intervencao: { label: 'Intervenção', color: 'bg-orange-100 text-orange-700' },
   };
   var badge = badgeConfig[status] || { label: status, color: 'bg-gray-100 text-gray-700' };
 
@@ -1136,6 +1140,7 @@ window.ignorarContato = async function() {
     }
   }
   state.chat.status = 'ignorado';
+  await loadConversasList();
   render();
   bindChat();
 };
@@ -1691,29 +1696,51 @@ function bindAprendizado() {}
 // ─── POLLING: atualizar conversas a cada 5s ──────
 var pollingTimer = null;
 var pollingRodando = false;
+function salvarScrollChat() {
+  var c = document.getElementById('chat-messages');
+  return c ? { top: c.scrollTop, nearBottom: (c.scrollHeight - c.scrollTop - c.clientHeight) < 80 } : null;
+}
+function restaurarScrollChat(saved) {
+  if (!saved) return;
+  var c = document.getElementById('chat-messages');
+  if (!c) return;
+  requestAnimationFrame(function() {
+    if (saved.nearBottom) {
+      c.scrollTop = c.scrollHeight;
+    } else {
+      c.scrollTop = Math.min(saved.top, c.scrollHeight - c.clientHeight);
+    }
+  });
+}
 function iniciarPollingConversas() {
   if (pollingTimer) clearInterval(pollingTimer);
   pollingTimer = setInterval(function() {
     if (pollingRodando) return;
     pollingRodando = true;
+
+    var savedScroll = salvarScrollChat();
+
     loadConversasList().then(function() {
-      pollingRodando = false;
       if (state.currentPage === 'conversas') {
         render();
       }
-      // Atualizar status a cada ciclo (sem re-render)
       atualizarStatusPolling();
-      // Se um contato estiver selecionado, buscar novas mensagens
+
       if (state.currentPage === 'conversas' && state.conversas.contatoSelecionado) {
-        pollChatMessages().then(function() {
-          loadConversasList().then(function() {
-            if (state.currentPage === 'conversas') {
-              render();
-            }
-          });
+        return pollChatMessages().then(function() {
+          return loadConversasList();
+        }).then(function() {
+          if (state.currentPage === 'conversas') {
+            render();
+          }
         });
       }
-    }, function() { pollingRodando = false; });
+    }).then(function() {
+      pollingRodando = false;
+      restaurarScrollChat(savedScroll);
+    }, function() {
+      pollingRodando = false;
+    });
   }, 5000);
 }
 
@@ -1727,6 +1754,27 @@ function atualizarStatusPolling() {
     state.credenciais.evoStatus = status;
   }).catch(function() {});
   atualizarBadgeSidebar();
+  atualizarBadgeIntervencao();
+}
+
+function atualizarBadgeIntervencao() {
+  var conversasBtn = document.querySelector('[data-nav="conversas"]');
+  if (!conversasBtn) return;
+  var label = conversasBtn.querySelector('.sidebar-label');
+  if (label) {
+    label.textContent = 'Conversas' + (state.intervencaoCount > 0 ? ' (' + state.intervencaoCount + ')' : '');
+  }
+  // Atualizar/remover dot de notificação laranja
+  var dot = conversasBtn.querySelector('.intervencao-dot');
+  if (state.intervencaoCount > 0) {
+    if (!dot) {
+      dot = document.createElement('span');
+      dot.className = 'w-2 h-2 rounded-full bg-orange-500 ml-auto flex-shrink-0 intervencao-dot';
+      conversasBtn.appendChild(dot);
+    }
+  } else {
+    if (dot) dot.remove();
+  }
 }
 
 function atualizarBadgeSidebar() {
@@ -1782,6 +1830,12 @@ async function loadConversasList() {
     var result = await wabot.evolutionConversations();
     if (result.success && Array.isArray(result.data)) {
       state.conversas.contatos = result.data;
+      // Calcular quantidade de conversas pendentes de intervenção humana
+      var count = 0;
+      for (var ci = 0; ci < result.data.length; ci++) {
+        if (result.data[ci].status === 'intervencao') count++;
+      }
+      state.intervencaoCount = count;
       // Sincronizar contato selecionado com dados atualizados (status ignorado, etc.)
       if (state.conversas.contatoSelecionado) {
         var tel = state.conversas.contatoSelecionado.telefone;

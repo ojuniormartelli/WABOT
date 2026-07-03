@@ -107,6 +107,11 @@ function getCreds() {
   return readJson('credentials.json') || { evolution: {}, gemini: {} };
 }
 
+function limparJid(jid) {
+  if (!jid || typeof jid !== 'string') return '';
+  return jid.replace(/@s\.whatsapp\.net/g, '').replace(/@c\.us/g, '').split('@')[0];
+}
+
 function formatTelefone(numero) {
   if (!numero || numero.length < 2) return numero || 'Contato';
   var digits = numero.replace(/\D/g, '');
@@ -161,6 +166,20 @@ function evolutionRequest(method, pathUrl, bodyData) {
   });
 }
 
+function marcarConversaIntervencao(telefone) {
+  try {
+    const conversas = readJson('conversas.json') || [];
+    const existente = conversas.find(c => c.telefone === telefone);
+    if (existente) {
+      existente.status = 'intervencao';
+      existente.nao_lidas = (existente.nao_lidas || 0) + 1;
+      writeJson('conversas.json', conversas);
+    }
+  } catch(e) {
+    console.error('[marcarConversaIntervencao] erro:', e.message);
+  }
+}
+
 function sendEvolutionMessage(to, text, origem) {
   salvarMensagemLocal(to, text, true, origem || 'bot');
   try {
@@ -171,6 +190,7 @@ function sendEvolutionMessage(to, text, origem) {
       existente.ultima_msg = text;
       existente.horario = horario;
       existente.ultimo_timestamp = Date.now();
+      existente.nao_lidas = 0;
     } else {
       conversas.push({
         telefone: to,
@@ -923,18 +943,30 @@ app.post('/webhook/evolution', async (req, res) => {
     const messageData = body?.data || body;
 
     // Extrair dados da mensagem
-    const telefone = messageData?.key?.remoteJid?.replace('@s.whatsapp.net', '') ||
-                     messageData?.from ||
-                     messageData?.sender?.split('@')[0] || '';
-    const mensagem = messageData?.message?.conversation ||
-                     messageData?.message?.extendedTextMessage?.text ||
-                     messageData?.message?.imageMessage?.caption ||
-                     messageData?.message?.videoMessage?.caption ||
-                     messageData?.message?.documentMessage?.caption ||
-                     messageData?.message?.listResponseMessage?.title ||
-                     messageData?.message?.buttonsResponseMessage?.selectedButtonId ||
-                     messageData?.text ||
-                     '';
+    const telefone = limparJid(messageData?.key?.remoteJid) ||
+                     limparJid(messageData?.from) ||
+                     limparJid(messageData?.sender) || '';
+    let mensagem = messageData?.message?.conversation ||
+                   messageData?.message?.extendedTextMessage?.text ||
+                   messageData?.message?.imageMessage?.caption ||
+                   messageData?.message?.videoMessage?.caption ||
+                   messageData?.message?.documentMessage?.caption ||
+                   messageData?.message?.listResponseMessage?.title ||
+                   messageData?.message?.buttonsResponseMessage?.selectedButtonId ||
+                   messageData?.text ||
+                   '';
+    // Fallback para mídia sem legenda (áudio, sticker, etc.)
+    if (!mensagem) {
+      const msg = messageData?.message;
+      if (msg?.audioMessage) mensagem = '🎤 Áudio';
+      else if (msg?.imageMessage) mensagem = '🖼️ Imagem';
+      else if (msg?.videoMessage) mensagem = '🎬 Vídeo';
+      else if (msg?.documentMessage) mensagem = '📄 Documento';
+      else if (msg?.stickerMessage) mensagem = '🔖 Sticker';
+      else if (msg?.ptvMessage) mensagem = '🎥 Vídeo';
+      else if (msg?.locationMessage) mensagem = '📍 Localização';
+      else if (msg?.contactMessage) mensagem = '👤 Contato';
+    }
 
     // Mensagens do próprio bot (enviadas por fora — Evolution API, n8n, etc.)
     if (messageData?.key?.fromMe) {
@@ -962,6 +994,27 @@ app.post('/webhook/evolution', async (req, res) => {
         writeJson('conversas.json', conversas);
       }
       return res.json({ success: true, ignored: true });
+    }
+
+    // ─── Chamada de voz ───────────────────────────
+    if (messageData?.callStatus) {
+      if (telefone) {
+        salvarMensagemLocal(telefone, '📞 Chamada de voz', false, 'cliente');
+        const convs = readJson('conversas.json') || [];
+        const existe = convs.find(c => c.telefone === telefone);
+        const horarioCall = new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+        if (existe) {
+          existe.ultima_msg = '📞 Chamada de voz';
+          existe.horario = horarioCall;
+          existe.nao_lidas = (existe.nao_lidas || 0) + 1;
+          existe.ultimo_timestamp = Date.now();
+        } else {
+          convs.push({ telefone, nome: telefone, ultima_msg: '📞 Chamada de voz', status: 'bot', horario: horarioCall, nao_lidas: 1, ultimo_timestamp: Date.now() });
+        }
+        writeJson('conversas.json', convs);
+        await sendEvolutionMessage(telefone, 'Infelizmente não conseguimos atender chamadas de voz pelo WhatsApp. Por favor, envie uma mensagem de texto.');
+      }
+      return res.json({ success: true, call: true });
     }
 
     if (!mensagem || !telefone) {
@@ -994,6 +1047,12 @@ app.post('/webhook/evolution', async (req, res) => {
       });
     }
     writeJson('conversas.json', conversas);
+
+    // ─── Auto-resposta para áudio (antes do check de ignorados) ─
+    if (messageData?.message?.audioMessage) {
+      await sendEvolutionMessage(telefone, 'Infelizmente não consigo ouvir mensagens de áudio. Por favor, digite sua mensagem.');
+      return res.json({ success: true, audio: true });
+    }
 
     // Verificar ignorados
     const ignorados = readJson('ignorados.json') || [];
@@ -1065,6 +1124,8 @@ app.post('/webhook/evolution', async (req, res) => {
       }
     }
 
+    var precisaIntervencao = false;
+
     // 5. IA: consultar LLM
     if (!respostaIA) {
       try {
@@ -1078,6 +1139,7 @@ app.post('/webhook/evolution', async (req, res) => {
           respostaIA = respostaIA.replace('[NAO_SEI]', '').trim();
           if (respostaIA.length === 0) respostaIA = null;
           salvarPerguntaNaoRespondida(telefone, mensagem);
+          precisaIntervencao = true;
         }
       } catch (iaErr) {
         console.error('[webhook] erro IA:', iaErr.message);
@@ -1092,6 +1154,7 @@ app.post('/webhook/evolution', async (req, res) => {
         respostaIA = substituirVariaveis(regraLocal.instrucao, config);
       } else {
         respostaIA = substituirVariaveis(config.mensagem_regra_nao_encontrada, config) || 'Vou verificar com um atendente humano.';
+        precisaIntervencao = true;
       }
     }
 
@@ -1115,6 +1178,10 @@ app.post('/webhook/evolution', async (req, res) => {
         }
       }
       await sendEvolutionMessage(telefone, respostaIA);
+      // Se o bot precisou de intervenção humana, marcar conversa e incrementar badge
+      if (precisaIntervencao) {
+        marcarConversaIntervencao(telefone);
+      }
     }
 
     res.json({ success: true });
