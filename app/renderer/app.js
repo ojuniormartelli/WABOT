@@ -2,6 +2,22 @@ console.log('[WABOT] app.js loaded, version:', '1.0.2');
 window.onerror = function(msg, url, line) {
   console.error('[WABOT] GLOBAL ERROR:', msg, 'at', url, 'line', line);
 };
+// Poll for button every second and re-bind onclick (robust against re-renders)
+setInterval(function() {
+  var btn = document.getElementById('btn-check-update');
+  if (btn) {
+    if (!btn._wc) {
+      btn._wc = true;
+      console.log('[WABOT] button found, binding onclick');
+    }
+    btn.onclick = function() {
+      console.log('[WABOT] direct onclick fired');
+      verificarAtualizacao();
+    };
+  } else {
+    console.log('[WABOT] button NOT in DOM');
+  }
+}, 1000);
 
 var APP_VERSION = '1.0.2';
 
