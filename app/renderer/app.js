@@ -1226,10 +1226,11 @@ function renderRegras() {
   '</div>';
 }
 
-window.addRegra = function() {
+window.addRegra = async function() {
   var texto = prompt('Digite a instrução da nova regra:');
   if (!texto || !texto.trim()) return;
   state.regras.push({ id: 'reg-' + Date.now(), instrucao: texto.trim(), ativo: true, editing: false });
+  await wabot.configWrite('regras.json', state.regras);
   render();
   bindRegras();
 };
@@ -1245,10 +1246,11 @@ window.editarRegra = function(id) {
   }
 };
 
-window.toggleRegraAtivo = function(id) {
+window.toggleRegraAtivo = async function(id) {
   for (var i = 0; i < state.regras.length; i++) {
     if (state.regras[i].id === id) {
       state.regras[i].ativo = !state.regras[i].ativo;
+      await wabot.configWrite('regras.json', state.regras);
       render();
       bindRegras();
       return;
@@ -1284,13 +1286,14 @@ window.cancelarRegraEdicao = function(id) {
   bindRegras();
 };
 
-window.removeRegra = function(id) {
+window.removeRegra = async function(id) {
   if (!confirm('Excluir esta regra?')) return;
   var novas = [];
   for (var i = 0; i < state.regras.length; i++) {
     if (state.regras[i].id !== id) novas.push(state.regras[i]);
   }
   state.regras = novas;
+  await wabot.configWrite('regras.json', state.regras);
   render();
   bindRegras();
 };
