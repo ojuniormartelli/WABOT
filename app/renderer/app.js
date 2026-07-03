@@ -181,6 +181,11 @@ function render() {
   var restoreFocus = oldInput && document.activeElement === oldInput;
   var cursorPos = restoreFocus ? oldInput.selectionStart : -1;
 
+  // Salvar scroll do chat antes de recriar o DOM
+  var chatContainer = document.getElementById('chat-messages');
+  var savedScrollTop = chatContainer ? chatContainer.scrollTop : -1;
+  var savedScrollHeight = chatContainer ? chatContainer.scrollHeight : -1;
+
   if (state.setupCompleto === null) {
     app.innerHTML = loadingScreen();
     return;
@@ -208,6 +213,17 @@ function render() {
       if (cursorPos >= 0) {
         try { newInput.setSelectionRange(cursorPos, cursorPos); } catch(e) {}
       }
+    }
+  }
+
+  // Restaurar scroll do chat se o usuário não estava no fim
+  if (savedScrollTop >= 0 && !chatIsNearBottom && state.currentPage === 'conversas' && state.conversas.contatoSelecionado) {
+    var newContainer = document.getElementById('chat-messages');
+    if (newContainer) {
+      requestAnimationFrame(function() {
+        var addedHeight = newContainer.scrollHeight - savedScrollHeight;
+        newContainer.scrollTop = savedScrollTop + Math.max(0, addedHeight);
+      });
     }
   }
 }
@@ -1759,7 +1775,20 @@ async function checkSetup() {
 async function loadConversasList() {
   try {
     var result = await wabot.evolutionConversations();
-    if (result.success && Array.isArray(result.data)) state.conversas.contatos = result.data;
+    if (result.success && Array.isArray(result.data)) {
+      state.conversas.contatos = result.data;
+      // Sincronizar contato selecionado com dados atualizados (status ignorado, etc.)
+      if (state.conversas.contatoSelecionado) {
+        var tel = state.conversas.contatoSelecionado.telefone;
+        for (var i = 0; i < result.data.length; i++) {
+          if (result.data[i].telefone === tel) {
+            state.conversas.contatoSelecionado = result.data[i];
+            state.chat.status = result.data[i].status || state.chat.status;
+            break;
+          }
+        }
+      }
+    }
   } catch(e) {}
 }
 
