@@ -656,13 +656,18 @@ app.get('/api/evolution/conversations', async (req, res) => {
       } catch(e) {}
     }
 
-    // Marcar ignorados (preserva status 'intervencao' se foi definido manualmente)
+    // Marcar ignorados (expira_em no passado = reativar automaticamente)
     const ignorados = readJson('ignorados.json') || [];
+    var now = new Date();
     for (var k = 0; k < convs.length; k++) {
-      var isIgnorado = ignorados.some(function(ign) { return ign.telefone === convs[k].telefone; });
-      if (isIgnorado && convs[k].status !== 'intervencao') {
-        convs[k].status = 'ignorado';
+      var ignItem = null;
+      for (var ig = 0; ig < ignorados.length; ig++) {
+        if (ignorados[ig].telefone === convs[k].telefone) { ignItem = ignorados[ig]; break; }
       }
+      if (!ignItem) continue;
+      // Se tem expira_em e já passou, não marca como ignorado
+      if (ignItem.expira_em && new Date(ignItem.expira_em) <= now) continue;
+      if (convs[k].status !== 'intervencao') convs[k].status = 'ignorado';
     }
 
     // Ordenar por mais recente primeiro
@@ -1085,12 +1090,23 @@ app.post('/webhook/evolution', async (req, res) => {
       return res.json({ success: true, audio: true });
     }
 
-    // Verificar ignorados
-    const ignorados = readJson('ignorados.json') || [];
-    const isIgnorado = ignorados.some(i =>
-      i.telefone === telefone &&
-      (!i.expira_em || new Date(i.expira_em) > new Date())
-    );
+    // Verificar ignorados (expira_em no passado = reativa automaticamente)
+    var ignorados = readJson('ignorados.json') || [];
+    var now = new Date();
+    var isIgnorado = false;
+    var precisaSalvar = false;
+    for (var ig = 0; ig < ignorados.length; ig++) {
+      if (ignorados[ig].telefone === telefone) {
+        if (ignorados[ig].expira_em && new Date(ignorados[ig].expira_em) <= now) {
+          ignorados.splice(ig, 1); // Remover expirado
+          precisaSalvar = true;
+        } else {
+          isIgnorado = true;
+        }
+        break;
+      }
+    }
+    if (precisaSalvar) writeJson('ignorados.json', ignorados);
 
     if (isIgnorado) {
       return res.json({ success: true, ignored: true });

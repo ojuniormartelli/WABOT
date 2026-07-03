@@ -1118,6 +1118,19 @@ function renderChatView(contato) {
   var sugestaoIA = state.chat.sugestaoIA;
   var texto = state.chat.texto;
 
+  // Determinar status real baseado em state.ignorados
+  var ignoradoItem = null;
+  for (var ig = 0; ig < state.ignorados.length; ig++) {
+    if (state.ignorados[ig].telefone === contato.telefone) { ignoradoItem = state.ignorados[ig]; break; }
+  }
+  var estaIgnoradoPermanente = ignoradoItem && !ignoradoItem.expira_em;
+  var estaPausaTemporaria = ignoradoItem && ignoradoItem.expira_em && new Date(ignoradoItem.expira_em) > new Date();
+
+  if (estaPausaTemporaria) status = 'humano';
+  else if (estaIgnoradoPermanente) status = 'ignorado';
+  else if (status === 'ignorado' || status === 'intervencao') { /* preserva */ }
+  else status = 'bot';
+
   var badgeConfig = {
     bot: { label: 'Bot Ativo', color: 'bg-blue-100 text-blue-700' },
     pausado: { label: 'Pausado', color: 'bg-yellow-100 text-yellow-700' },
@@ -1126,6 +1139,16 @@ function renderChatView(contato) {
     intervencao: { label: 'Intervenção', color: 'bg-orange-100 text-orange-700' },
   };
   var badge = badgeConfig[status] || { label: status, color: 'bg-gray-100 text-gray-700' };
+  // Badge do humano mostra ate quando
+  if (status === 'humano' && ignoradoItem && ignoradoItem.expira_em) {
+    var ate = new Date(ignoradoItem.expira_em);
+    var diff = ate - new Date();
+    if (diff > 0) {
+      var h = Math.floor(diff / 3600000);
+      var m = Math.floor((diff % 3600000) / 60000);
+      badge.label = 'Humano (' + h + 'h' + (m > 0 ? m + 'm' : '') + ')';
+    }
+  }
 
   var msgsHtml = '';
   if (mensagens.length === 0) {
@@ -1175,10 +1198,10 @@ function renderChatView(contato) {
     '</div>' +
 
     '<div class="bg-white px-4 py-2 flex items-center gap-1.5 border-b border-gray-200 flex-shrink-0 overflow-x-auto">' +
-      '<button onclick="alterarStatus(\'humano\')" class="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-lg bg-white border border-gray-300 hover:bg-gray-50 disabled:opacity-40 whitespace-nowrap">' + I.pause(14, '') + ' Modo Humano</button>' +
-      '<button onclick="alterarStatus(\'bot\')" class="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-lg bg-white border border-gray-300 hover:bg-gray-50 disabled:opacity-40 whitespace-nowrap">' + I.play(14, '') + ' Reativar Bot</button>' +
+      '<button onclick="alterarStatus(\'humano\')" class="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-lg bg-white border border-gray-300 hover:bg-gray-50 disabled:opacity-40 whitespace-nowrap" ' + (estaIgnoradoPermanente || estaPausaTemporaria ? 'disabled' : '') + '>' + I.pause(14, '') + ' Modo Humano</button>' +
+      '<button onclick="alterarStatus(\'bot\')" class="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-lg bg-white border border-gray-300 hover:bg-gray-50 disabled:opacity-40 whitespace-nowrap" ' + (!estaIgnoradoPermanente && !estaPausaTemporaria ? 'disabled' : '') + '>' + I.play(14, '') + ' Reativar Bot</button>' +
       '<span class="text-gray-300 mx-0.5">|</span>' +
-      '<button onclick="ignorarContato()" class="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-lg bg-white border border-red-200 text-red-600 hover:bg-red-50 whitespace-nowrap">' + I.shieldBan(14, '') + ' Ignorar</button>' +
+      '<button onclick="ignorarContato()" class="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-lg bg-white border border-red-200 text-red-600 hover:bg-red-50 whitespace-nowrap" ' + (estaIgnoradoPermanente || estaPausaTemporaria ? 'disabled' : '') + '>' + I.shieldBan(14, '') + ' Ignorar</button>' +
     '</div>' +
 
     '<div class="flex-1 overflow-y-auto p-5 space-y-3" id="chat-messages">' + msgsHtml + '</div>' +
@@ -1245,7 +1268,30 @@ window.alterarStatus = async function(modo) {
     contato.status = 'bot';
     state.chat.status = 'bot';
   } else if (modo === 'humano') {
-    // Modo humano: adicionar aos ignorados (para bot não responder) + status intervencao
+    // Escolher duração da pausa
+    var op = prompt(
+      'Pausar conversa por quanto tempo?\n\n' +
+      '1 - 2 horas\n' +
+      '2 - 4 horas\n' +
+      '3 - 6 horas\n' +
+      '4 - 12 horas\n' +
+      '5 - Até meia-noite\n' +
+      '6 - Cancelar'
+    );
+    if (!op) return;
+    var horas = parseInt(op);
+    var expiraEm;
+    if (op === '5') {
+      // Até meia-noite
+      var agora = new Date();
+      expiraEm = new Date(agora.getFullYear(), agora.getMonth(), agora.getDate() + 1, 0, 0, 0);
+    } else if (horas >= 1 && horas <= 4) {
+      var duracoes = [0, 2, 4, 6, 12];
+      if (horas < 1 || horas > 5) return;
+      horas = duracoes[horas - 1] || 2;
+      expiraEm = new Date(Date.now() + horas * 3600000);
+    } else return;
+
     var ignorados = [];
     try {
       var r = await wabot.configRead('ignorados.json');
@@ -1256,7 +1302,7 @@ window.alterarStatus = async function(modo) {
       if (ignorados[i].telefone === tel) { existe = true; break; }
     }
     if (!existe) {
-      ignorados.push({ id: 'ign-' + Date.now(), telefone: tel, nome: contato.nome || '' });
+      ignorados.push({ id: 'ign-' + Date.now(), telefone: tel, nome: contato.nome || '', expira_em: expiraEm.toISOString() });
       await wabot.configWrite('ignorados.json', ignorados);
       state.ignorados = ignorados;
     }
