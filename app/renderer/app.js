@@ -1230,7 +1230,7 @@ window.addRegra = async function() {
   var texto = prompt('Digite a instrução da nova regra:');
   if (!texto || !texto.trim()) return;
   state.regras.push({ id: 'reg-' + Date.now(), instrucao: texto.trim(), ativo: true, editing: false });
-  await wabot.configWrite('regras.json', state.regras);
+  if (!await salvarRegras()) return;
   render();
   bindRegras();
 };
@@ -1250,7 +1250,7 @@ window.toggleRegraAtivo = async function(id) {
   for (var i = 0; i < state.regras.length; i++) {
     if (state.regras[i].id === id) {
       state.regras[i].ativo = !state.regras[i].ativo;
-      await wabot.configWrite('regras.json', state.regras);
+      if (!await salvarRegras()) return;
       render();
       bindRegras();
       return;
@@ -1270,7 +1270,7 @@ window.salvarRegraEdicao = async function(id) {
       break;
     }
   }
-  await wabot.configWrite('regras.json', state.regras);
+  if (!await salvarRegras()) return;
   render();
   bindRegras();
 };
@@ -1293,10 +1293,23 @@ window.removeRegra = async function(id) {
     if (state.regras[i].id !== id) novas.push(state.regras[i]);
   }
   state.regras = novas;
-  await wabot.configWrite('regras.json', state.regras);
+  if (!await salvarRegras()) return;
   render();
   bindRegras();
 };
+
+async function salvarRegras() {
+  var limpas = [];
+  for (var i = 0; i < state.regras.length; i++) {
+    limpas.push({ id: state.regras[i].id, instrucao: state.regras[i].instrucao, ativo: state.regras[i].ativo });
+  }
+  try {
+    var result = await wabot.configWrite('regras.json', limpas);
+    return result && result.success;
+  } catch(e) {
+    return false;
+  }
+}
 
 function bindRegras() {}
 
@@ -1647,12 +1660,14 @@ async function checkSetup() {
     }
     state.setupCompleto = true;
     wabot.evolutionStatus().then(function(r) { state.credenciais.evoStatus = r; }).catch(function(){});
-    loadConversasList();
+    await Promise.all([
+      loadConversasList(),
+      loadRegrasList(),
+      loadIgnoradosList(),
+      loadAprendizado(),
+      checkDockerStatus(),
+    ]);
     iniciarPollingConversas();
-    checkDockerStatus();
-    loadRegrasList();
-    loadIgnoradosList();
-    loadAprendizado();
   } catch (e) {
     state.setupCompleto = true;
   }
