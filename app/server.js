@@ -914,8 +914,31 @@ app.post('/webhook/evolution', async (req, res) => {
                      messageData?.text ||
                      '';
 
-    // Ignorar mensagens do próprio bot
+    // Mensagens do próprio bot (enviadas por fora — Evolution API, n8n, etc.)
     if (messageData?.key?.fromMe) {
+      if (mensagem && telefone) {
+        salvarMensagemLocal(telefone, mensagem, true, 'bot');
+        const conversas = readJson('conversas.json') || [];
+        const existente = conversas.find(c => c.telefone === telefone);
+        const horario = new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+        var agora = Date.now();
+        if (existente) {
+          existente.ultima_msg = mensagem;
+          existente.horario = horario;
+          existente.ultimo_timestamp = agora;
+        } else {
+          conversas.push({
+            telefone,
+            nome: messageData?.pushName || telefone,
+            ultima_msg: mensagem,
+            status: 'bot',
+            horario,
+            nao_lidas: 0,
+            ultimo_timestamp: agora,
+          });
+        }
+        writeJson('conversas.json', conversas);
+      }
       return res.json({ success: true, ignored: true });
     }
 
