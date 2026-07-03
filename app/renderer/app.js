@@ -1128,7 +1128,7 @@ function renderChatView(contato) {
 
   if (estaPausaTemporaria) status = 'humano';
   else if (estaIgnoradoPermanente) status = 'ignorado';
-  else if (status === 'ignorado' || status === 'intervencao') { /* preserva */ }
+  else if (status === 'intervencao') { /* preserva */ }
   else status = 'bot';
 
   var badgeConfig = {
@@ -1318,12 +1318,6 @@ window.alterarStatus = async function(modo) {
   }
 
   await loadConversasList();
-  render();
-  bindChat();
-};
-
-window.alterarStatus = function(status) {
-  state.chat.status = status;
   render();
   bindChat();
 };
@@ -2014,13 +2008,12 @@ async function loadConversasList() {
         if (result.data[ci].status === 'intervencao') count++;
       }
       state.intervencaoCount = count;
-      // Sincronizar contato selecionado com dados atualizados (status ignorado, etc.)
+      // Sincronizar contato selecionado com dados atualizados
       if (state.conversas.contatoSelecionado) {
         var tel = state.conversas.contatoSelecionado.telefone;
         for (var i = 0; i < result.data.length; i++) {
           if (result.data[i].telefone === tel) {
             state.conversas.contatoSelecionado = result.data[i];
-            state.chat.status = result.data[i].status || state.chat.status;
             break;
           }
         }
