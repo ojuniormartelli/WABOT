@@ -1164,23 +1164,52 @@ function renderRegras() {
   var cardsHtml = '';
   for (var i = 0; i < regras.length; i++) {
     var r = regras[i];
-    cardsHtml += '<div class="bg-white rounded-xl border border-gray-200 p-5">' +
-      '<div class="flex items-start gap-3">' +
-        '<div class="flex-1">' +
-          '<div><label class="block text-xs font-medium text-gray-500 mb-1.5">Instrução para o bot</label>' +
-            '<textarea rows="3" oninput="updateRegra(\'' + r.id + '\',\'instrucao\',this.value)" class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-emerald-500" placeholder="Explique em linguagem natural como o bot deve agir...">' + esc(r.instrucao || '') + '</textarea></div>' +
-          '<div class="flex items-center justify-between mt-3">' +
-            '<button onclick="toggleRegraAtivo(\'' + r.id + '\')" class="flex items-center gap-1.5 text-sm ' + (r.ativo ? 'text-emerald-600' : 'text-gray-400') + '">' +
-              (r.ativo ? I.toggleRight(20, '') : I.toggleLeft(20, '')) + (r.ativo ? ' Ativo' : ' Inativo') +
-            '</button>' +
-            '<button onclick="removeRegra(\'' + r.id + '\')" class="text-red-400 hover:text-red-600 p-1">' + I.trash2(16, '') + '</button>' +
+    var editando = r.editing;
+
+    if (editando) {
+      cardsHtml += '<div class="bg-white rounded-xl border border-emerald-300 border-2 p-5">' +
+        '<div class="flex items-start gap-3">' +
+          '<div class="flex-1">' +
+            '<div><label class="block text-xs font-medium text-gray-500 mb-1.5">Instrução para o bot</label>' +
+              '<textarea id="regra-textarea-' + r.id + '" rows="3" class="w-full px-3 py-2 border border-emerald-400 rounded-lg text-sm focus:ring-2 focus:ring-emerald-500" placeholder="Explique em linguagem natural como o bot deve agir...">' + esc(r.instrucao || '') + '</textarea></div>' +
+            '<div class="flex items-center justify-between mt-3">' +
+              '<button onclick="toggleRegraAtivo(\'' + r.id + '\')" class="flex items-center gap-1.5 text-sm ' + (r.ativo ? 'text-emerald-600' : 'text-gray-400') + '">' +
+                (r.ativo ? I.toggleRight(20, '') : I.toggleLeft(20, '')) + (r.ativo ? ' Ativo' : ' Inativo') +
+              '</button>' +
+              '<div class="flex gap-2">' +
+                '<button onclick="salvarRegraEdicao(\'' + r.id + '\')" class="flex items-center gap-1.5 px-3 py-1.5 bg-emerald-600 text-white rounded-lg text-xs font-medium hover:bg-emerald-700 transition-colors">' + I.checkCircle2(14, '') + ' Salvar</button>' +
+                '<button onclick="cancelarRegraEdicao(\'' + r.id + '\')" class="flex items-center gap-1.5 px-3 py-1.5 text-gray-600 border border-gray-300 rounded-lg text-xs font-medium hover:bg-gray-50 transition-colors">' + I.x(14, '') + ' Cancelar</button>' +
+                '<button onclick="removeRegra(\'' + r.id + '\')" class="flex items-center gap-1.5 px-3 py-1.5 text-red-600 border border-red-200 rounded-lg text-xs font-medium hover:bg-red-50 transition-colors">' + I.trash2(14, '') + ' Excluir</button>' +
+              '</div>' +
+            '</div>' +
           '</div>' +
         '</div>' +
-      '</div>' +
-    '</div>';
+      '</div>';
+    } else {
+      cardsHtml += '<div class="bg-white rounded-xl border border-gray-200 p-5">' +
+        '<div class="flex items-start gap-3">' +
+          '<div class="flex-1">' +
+            '<div class="flex items-center justify-between mb-1">' +
+              '<label class="block text-xs font-medium text-gray-500">Instrução para o bot</label>' +
+              '<span class="flex items-center gap-1 text-xs ' + (r.ativo ? 'text-emerald-600' : 'text-gray-400') + '">' +
+                (r.ativo ? I.toggleRight(14, '') : I.toggleLeft(14, '')) + (r.ativo ? ' Ativo' : ' Inativo') +
+              '</span>' +
+            '</div>' +
+            '<p class="text-sm text-gray-700 whitespace-pre-wrap">' + esc(r.instrucao || '') + '</p>' +
+            '<div class="flex items-center gap-2 mt-3 pt-3 border-t border-gray-100">' +
+              '<button onclick="editarRegra(\'' + r.id + '\')" class="flex items-center gap-1.5 px-3 py-1.5 bg-emerald-600 text-white rounded-lg text-xs font-medium hover:bg-emerald-700 transition-colors">' + I.fileText(14, '') + ' Editar</button>' +
+              '<button onclick="toggleRegraAtivo(\'' + r.id + '\')" class="flex items-center gap-1.5 px-3 py-1.5 text-gray-500 border border-gray-300 rounded-lg text-xs hover:bg-gray-50 transition-colors">' +
+                (r.ativo ? I.toggleRight(14, '') + ' Desativar' : I.toggleLeft(14, '') + ' Ativar') +
+              '</button>' +
+              '<button onclick="removeRegra(\'' + r.id + '\')" class="flex items-center gap-1.5 px-3 py-1.5 text-red-400 border border-transparent rounded-lg text-xs hover:text-red-600 hover:bg-red-50 transition-colors ml-auto">' + I.trash2(14, '') + ' Excluir</button>' +
+            '</div>' +
+          '</div>' +
+        '</div>' +
+      '</div>';
+    }
   }
   if (regras.length === 0) {
-    cardsHtml = '<div class="text-center py-16 text-gray-400"><p class="text-sm">Nenhuma instrução cadastrada.</p><p class="text-xs mt-1">Clique em "Nova Instrução" para ensinar o bot.</p></div>';
+    cardsHtml = '<div class="text-center py-16 text-gray-400"><p class="text-sm">Nenhuma instrução cadastrada.</p><p class="text-xs mt-1">Clique em "Nova Regra" para ensinar o bot.</p></div>';
   }
   return '<div class="p-8 max-w-4xl mx-auto">' +
     '<div class="flex items-center justify-between mb-6">' +
@@ -1190,11 +1219,9 @@ function renderRegras() {
       '</div>' +
       '<div class="flex gap-2">' +
         '<button onclick="addRegra()" class="flex items-center gap-2 px-4 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 text-sm font-medium">' + I.plus(18, '') + ' Nova Regra</button>' +
-        '<button onclick="saveRegras()" class="flex items-center gap-2 px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 text-sm font-medium">' + I.save(18, '') + ' Salvar</button>' +
       '</div>' +
     '</div>' +
     renderHelp('regras') +
-    '</div>' +
     '<div class="space-y-3">' + cardsHtml + '</div>' +
   '</div>';
 }
@@ -1202,14 +1229,19 @@ function renderRegras() {
 window.addRegra = function() {
   var texto = prompt('Digite a instrução da nova regra:');
   if (!texto || !texto.trim()) return;
-  state.regras.push({ id: 'reg-' + Date.now(), instrucao: texto.trim(), ativo: true });
+  state.regras.push({ id: 'reg-' + Date.now(), instrucao: texto.trim(), ativo: true, editing: false });
   render();
   bindRegras();
 };
 
-window.updateRegra = function(id, campo, valor) {
+window.editarRegra = function(id) {
   for (var i = 0; i < state.regras.length; i++) {
-    if (state.regras[i].id === id) { state.regras[i][campo] = valor; return; }
+    if (state.regras[i].id === id) {
+      state.regras[i].editing = true;
+      render();
+      bindRegras();
+      return;
+    }
   }
 };
 
@@ -1224,7 +1256,36 @@ window.toggleRegraAtivo = function(id) {
   }
 };
 
+window.salvarRegraEdicao = async function(id) {
+  var textarea = document.getElementById('regra-textarea-' + id);
+  if (!textarea) return;
+  var novoTexto = textarea.value.trim();
+  if (!novoTexto) return;
+  for (var i = 0; i < state.regras.length; i++) {
+    if (state.regras[i].id === id) {
+      state.regras[i].instrucao = novoTexto;
+      state.regras[i].editing = false;
+      break;
+    }
+  }
+  await wabot.configWrite('regras.json', state.regras);
+  render();
+  bindRegras();
+};
+
+window.cancelarRegraEdicao = function(id) {
+  for (var i = 0; i < state.regras.length; i++) {
+    if (state.regras[i].id === id) {
+      state.regras[i].editing = false;
+      break;
+    }
+  }
+  render();
+  bindRegras();
+};
+
 window.removeRegra = function(id) {
+  if (!confirm('Excluir esta regra?')) return;
   var novas = [];
   for (var i = 0; i < state.regras.length; i++) {
     if (state.regras[i].id !== id) novas.push(state.regras[i]);
@@ -1232,13 +1293,6 @@ window.removeRegra = function(id) {
   state.regras = novas;
   render();
   bindRegras();
-};
-
-window.saveRegras = async function() {
-  await wabot.configWrite('regras.json', state.regras);
-  // Feedback visual
-  var btn = document.querySelector('button[onclick="saveRegras()"]');
-  if (btn) { btn.innerHTML = I.save(18, '') + ' Salvo!'; setTimeout(function() { btn.innerHTML = I.save(18, '') + ' Salvar'; }, 2000); }
 };
 
 function bindRegras() {}
@@ -1533,14 +1587,22 @@ function iniciarPollingConversas() {
       if (state.currentPage === 'conversas' && !state.conversas.contatoSelecionado) {
         render();
       }
-      // Atualizar docker status a cada ciclo
-      checkDockerStatus();
+      // Atualizar docker status a cada ciclo (sem re-render)
+      atualizarDockerPolling();
       // Se um contato estiver selecionado, buscar novas mensagens
       if (state.currentPage === 'conversas' && state.conversas.contatoSelecionado) {
         pollChatMessages();
       }
     }, function() { pollingRodando = false; });
   }, 5000);
+}
+
+function atualizarDockerPolling() {
+  wabot.dockerStatus().then(function(status) {
+    state.dockerStatus = status;
+  }).catch(function() {
+    state.dockerStatus = { dockerInstalled: false, evolutionRunning: false };
+  });
 }
 
 // ─── INICIALIZAÇÃO ────────────────────────────────
