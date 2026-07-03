@@ -1014,6 +1014,29 @@ window.saveConfiguracoes = async function() {
   render();
 };
 
+function getBadgeForContact(contato) {
+  var ignoradoItem = null;
+  for (var ig = 0; ig < state.ignorados.length; ig++) {
+    if (state.ignorados[ig].telefone === contato.telefone) { ignoradoItem = state.ignorados[ig]; break; }
+  }
+  var estaPausaTemporaria = ignoradoItem && ignoradoItem.expira_em && new Date(ignoradoItem.expira_em) > new Date();
+  var estaIgnoradoPermanente = ignoradoItem && !ignoradoItem.expira_em;
+  var status;
+  if (estaPausaTemporaria) status = 'humano';
+  else if (estaIgnoradoPermanente) status = 'ignorado';
+  else if (contato.status === 'intervencao') status = 'intervencao';
+  else status = 'bot';
+
+  var configs = {
+    bot: { label: 'Bot Ativo', color: 'bg-blue-100 text-blue-700' },
+    pausado: { label: 'Pausado', color: 'bg-yellow-100 text-yellow-700' },
+    humano: { label: 'Humano', color: 'bg-purple-100 text-purple-700' },
+    ignorado: { label: 'Ignorado', color: 'bg-red-100 text-red-600' },
+    intervencao: { label: 'Intervenção', color: 'bg-orange-100 text-orange-700' },
+  };
+  var cfg = configs[status] || { label: status, color: 'bg-gray-100 text-gray-700' };
+  return { status: status, label: cfg.label, color: cfg.color, _item: ignoradoItem, _permanente: estaIgnoradoPermanente, _temporaria: estaPausaTemporaria };
+}
 
 
 function bindConfiguracoes() {}
@@ -1036,8 +1059,9 @@ function renderConversas() {
   for (var i = 0; i < filtrados.length; i++) {
     var c = filtrados[i];
     var sel = state.conversas.contatoSelecionado && state.conversas.contatoSelecionado.telefone === c.telefone;
-    var badgeColor = c.status === 'bot' ? 'bg-blue-100 text-blue-700' : c.status === 'pausado' ? 'bg-yellow-100 text-yellow-700' : c.status === 'ignorado' ? 'bg-red-100 text-red-600' : c.status === 'intervencao' ? 'bg-orange-100 text-orange-700' : 'bg-purple-100 text-purple-700';
-    var badgeLabel = c.status === 'ignorado' ? 'Ignorado' : c.status === 'intervencao' ? 'Intervenção' : (c.status || 'bot');
+    var cBadge = getBadgeForContact(c);
+    var badgeColor = cBadge.color;
+    var badgeLabel = cBadge.label;
     listaHtml += '<button onclick="selectContato(\'' + c.telefone + '\')" class="w-full p-4 flex items-start gap-3 text-left transition-colors border-b border-gray-100 ' + (sel ? 'bg-emerald-50' : 'hover:bg-gray-50') + '">' +
       '<div class="w-12 h-12 rounded-full bg-emerald-100 flex items-center justify-center flex-shrink-0">' + I.messageSquare(20, 'text-emerald-600') + '</div>' +
       '<div class="flex-1 min-w-0">' +
@@ -1119,29 +1143,14 @@ function renderChatView(contato) {
   var texto = state.chat.texto;
 
   // Determinar status real baseado em state.ignorados
-  var ignoradoItem = null;
-  for (var ig = 0; ig < state.ignorados.length; ig++) {
-    if (state.ignorados[ig].telefone === contato.telefone) { ignoradoItem = state.ignorados[ig]; break; }
-  }
-  var estaIgnoradoPermanente = ignoradoItem && !ignoradoItem.expira_em;
-  var estaPausaTemporaria = ignoradoItem && ignoradoItem.expira_em && new Date(ignoradoItem.expira_em) > new Date();
+  var badge = getBadgeForContact(contato);
+  var status = badge.status;
+  var estaIgnoradoPermanente = badge._permanente;
+  var estaPausaTemporaria = badge._temporaria;
 
-  if (estaPausaTemporaria) status = 'humano';
-  else if (estaIgnoradoPermanente) status = 'ignorado';
-  else if (status === 'intervencao') { /* preserva */ }
-  else status = 'bot';
-
-  var badgeConfig = {
-    bot: { label: 'Bot Ativo', color: 'bg-blue-100 text-blue-700' },
-    pausado: { label: 'Pausado', color: 'bg-yellow-100 text-yellow-700' },
-    humano: { label: 'Humano', color: 'bg-purple-100 text-purple-700' },
-    ignorado: { label: 'Ignorado', color: 'bg-red-100 text-red-600' },
-    intervencao: { label: 'Intervenção', color: 'bg-orange-100 text-orange-700' },
-  };
-  var badge = badgeConfig[status] || { label: status, color: 'bg-gray-100 text-gray-700' };
   // Badge do humano mostra ate quando
-  if (status === 'humano' && ignoradoItem && ignoradoItem.expira_em) {
-    var ate = new Date(ignoradoItem.expira_em);
+  if (status === 'humano' && badge._item && badge._item.expira_em) {
+    var ate = new Date(badge._item.expira_em);
     var diff = ate - new Date();
     if (diff > 0) {
       var h = Math.floor(diff / 3600000);
