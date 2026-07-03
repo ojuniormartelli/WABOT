@@ -436,7 +436,7 @@ function renderDashboard() {
           '<h2 class="text-lg font-semibold text-gray-700">Atualizações</h2>' +
           '<p class="text-sm text-gray-500 mt-1">Buscar novidades do GitHub</p>' +
         '</div>' +
-        '<button onclick="verificarAtualizacao()" id="btn-check-update" class="flex items-center gap-2 px-4 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 text-sm font-medium transition-colors">' +
+        '<button id="btn-check-update" class="flex items-center gap-2 px-4 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 text-sm font-medium transition-colors">' +
           I.refreshCw(16, '') + ' Verificar' +
         '</button>' +
       '</div>' +
@@ -447,12 +447,32 @@ function renderDashboard() {
 function bindDashboard() {
   if (!state.dockerStatus) checkDockerStatus();
   loadChecklist();
+  // Event delegation para botão de atualização (robusto contra re-render)
+  if (!window._dbUpdateBound) {
+    window._dbUpdateBound = true;
+    document.addEventListener('click', function(e) {
+      if (e.target.id === 'btn-check-update' || e.target.closest && e.target.closest('#btn-check-update')) {
+        verificarAtualizacao();
+      }
+    });
+    // Também pelo toque do cursor (Enter/Space) via teclado nos navegadores
+    document.addEventListener('keydown', function(e) {
+      if (e.key === 'Enter' || e.key === ' ') {
+        var el = document.activeElement;
+        if (el && (el.id === 'btn-check-update' || el.closest && el.closest('#btn-check-update'))) {
+          e.preventDefault();
+          verificarAtualizacao();
+        }
+      }
+    });
+  }
 }
 
 window.verificarAtualizacao = async function() {
   var btn = document.getElementById('btn-check-update');
   var status = document.getElementById('update-status');
-  if (!btn || !status) return;
+  if (!btn || !status) { console.warn('[WABOT] btn or status not found'); return; }
+  console.log('[WABOT] verificarAtualizacao clicked');
   btn.disabled = true;
   btn.innerHTML = I.loader2(16, 'animate-spin') + ' Verificando...';
   status.innerHTML = '<span class="text-gray-400">Verificando atualizações...</span>';
