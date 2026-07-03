@@ -900,6 +900,12 @@ function bindConfiguracoes() {}
 // ─── CONVERSAS ─────────────────────────────────────
 function renderConversas() {
   var contatos = state.conversas.contatos || [];
+  // Garantir ordem: mais recentes primeiro
+  contatos.sort(function(a, b) {
+    var ta = a.ultimo_timestamp || 0;
+    var tb = b.ultimo_timestamp || 0;
+    return tb - ta;
+  });
   var busca = state.conversas.busca.toLowerCase();
   var filtrados = contatos.filter(function(c) {
     return c.nome.toLowerCase().indexOf(busca) >= 0 || c.telefone.indexOf(busca) >= 0;
