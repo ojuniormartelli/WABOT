@@ -1862,6 +1862,29 @@ async function init() {
       var npm = '';
       try { npm = execSync('npm install 2>&1', { cwd: REPO_DIR, timeout: 60000 }).toString(); } catch(e) { npm = e.message; }
       res.json({ success: true, pull, npm });
+
+      // Agendar restart: spawna um script auxiliar que espera servidor morrer e inicia o novo
+      var restartFile = path.join(REPO_DIR, '_restart.js');
+      var serverEntry = path.join(__dirname, 'server.js').split('\\').join('/');
+      var logFile = path.join(REPO_DIR, '_restart.log').split('\\').join('/');
+      fs.writeFileSync(restartFile,
+        'const{exec}=require("child_process");\n' +
+        'const fs=require("fs");\n' +
+        'setTimeout(function(){\n' +
+        '  exec("node ' + serverEntry + '", function(err,stdout,stderr){\n' +
+        '    if(err) fs.appendFileSync("' + logFile + '",err.stack+"\\n");\n' +
+        '    if(stdout) console.log(stdout);\n' +
+        '  });\n' +
+        '},3000);\n'
+      );
+
+      var child = require('child_process').spawn('node', [restartFile], {
+        detached: true,
+        stdio: 'ignore',
+        cwd: REPO_DIR,
+      });
+      child.unref();
+
       setTimeout(() => {
         console.log('[update] Atualização concluída. Reiniciando servidor...');
         process.exit(0);
