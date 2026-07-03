@@ -97,3 +97,10 @@ window.wabot.aprendizadoAdicionar = (data) =>
 
 window.wabot.aprendizadoRemover = (id) =>
   fetch('/api/aprendizado/respostas/' + id, { method: 'DELETE' }).then(r => r.json());
+
+// ─── Update System ────────────────────────────────
+window.wabot.checkUpdate = () =>
+  fetch('/api/update/check').then(r => r.json());
+
+window.wabot.applyUpdate = () =>
+  fetch('/api/update/apply', { method: 'POST' }).then(r => r.json());

@@ -3,6 +3,7 @@ const path = require('path');
 const fs = require('fs');
 const http = require('http');
 const https = require('https');
+const { execSync } = require('child_process');
 const { DockerManager } = require('./docker/manager');
 
 const PORT = process.env.PORT || 3001;
@@ -1833,6 +1834,42 @@ async function init() {
       }
     }
   } catch(e) {}
+
+  // ─── Update: verificar e aplicar atualizações do GitHub ──
+
+  const REPO_DIR = path.resolve(__dirname, '..');
+
+  app.get('/api/update/check', (req, res) => {
+    try {
+      execSync('git fetch origin', { cwd: REPO_DIR, timeout: 15000, stdio: 'pipe' });
+      const behind = execSync('git rev-list HEAD...origin/main --count', { cwd: REPO_DIR, timeout: 5000 }).toString().trim();
+      const localHash = execSync('git rev-parse HEAD', { cwd: REPO_DIR, timeout: 5000 }).toString().trim();
+      const remoteHash = execSync('git rev-parse origin/main', { cwd: REPO_DIR, timeout: 5000 }).toString().trim();
+      const hasUpdates = parseInt(behind) > 0;
+      var changelog = '';
+      if (hasUpdates) {
+        changelog = execSync('git log HEAD..origin/main --oneline --no-decorate', { cwd: REPO_DIR, timeout: 5000 }).toString().trim();
+      }
+      res.json({ success: true, hasUpdates, behind: parseInt(behind), localHash, remoteHash, changelog });
+    } catch (e) {
+      res.json({ success: false, error: e.message });
+    }
+  });
+
+  app.post('/api/update/apply', (req, res) => {
+    try {
+      const pull = execSync('git pull origin main 2>&1', { cwd: REPO_DIR, timeout: 30000 }).toString();
+      var npm = '';
+      try { npm = execSync('npm install 2>&1', { cwd: REPO_DIR, timeout: 60000 }).toString(); } catch(e) { npm = e.message; }
+      res.json({ success: true, pull, npm });
+      setTimeout(() => {
+        console.log('[update] Atualização concluída. Reiniciando servidor...');
+        process.exit(0);
+      }, 1500);
+    } catch (e) {
+      res.json({ success: false, error: e.message });
+    }
+  });
 
   app.listen(PORT, () => {
     console.log('');

@@ -429,6 +429,18 @@ function renderDashboard() {
     '<div class="bg-white rounded-xl border border-gray-200 p-6">' +
       '<h2 class="text-lg font-semibold text-gray-700 mb-4">Checklist</h2>' +
       '<div class="space-y-3">' + checklistHtml + '</div>' +
+    '</div>' +
+    '<div class="mt-6 bg-white rounded-xl border border-gray-200 p-6">' +
+      '<div class="flex items-center justify-between">' +
+        '<div>' +
+          '<h2 class="text-lg font-semibold text-gray-700">Atualizações</h2>' +
+          '<p class="text-sm text-gray-500 mt-1">Buscar novidades do GitHub</p>' +
+        '</div>' +
+        '<button onclick="verificarAtualizacao()" id="btn-check-update" class="flex items-center gap-2 px-4 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 text-sm font-medium transition-colors">' +
+          I.refreshCw(16, '') + ' Verificar' +
+        '</button>' +
+      '</div>' +
+      '<div id="update-status" class="mt-3 text-sm text-gray-500"></div>' +
     '</div></div>';
 }
 
@@ -436,6 +448,60 @@ function bindDashboard() {
   if (!state.dockerStatus) checkDockerStatus();
   loadChecklist();
 }
+
+window.verificarAtualizacao = async function() {
+  var btn = document.getElementById('btn-check-update');
+  var status = document.getElementById('update-status');
+  if (!btn || !status) return;
+  btn.disabled = true;
+  btn.innerHTML = I.loader2(16, 'animate-spin') + ' Verificando...';
+  status.innerHTML = '<span class="text-gray-400">Verificando atualizações...</span>';
+  try {
+    var r = await wabot.checkUpdate();
+    if (!r.success) {
+      status.innerHTML = '<span class="text-red-500">Erro: ' + esc(r.error) + '</span>';
+      btn.disabled = false;
+      btn.innerHTML = I.refreshCw(16, '') + ' Verificar';
+      return;
+    }
+    if (r.hasUpdates) {
+      var logHtml = r.changelog ? r.changelog.split('\n').map(function(l) { return esc(l); }).join('<br>') : '';
+      status.innerHTML = '<div class="text-orange-600 font-medium mb-2">⚠ ' + r.behind + ' atualização(ões) disponível(is)</div>' +
+        '<div class="text-xs text-gray-500 bg-gray-50 rounded p-2 mb-3 font-mono">' + logHtml + '</div>' +
+        '<button onclick="aplicarAtualizacao()" class="px-4 py-2 bg-orange-600 text-white rounded-lg hover:bg-orange-700 text-sm font-medium">' +
+          I.download(16, '') + ' Atualizar agora' +
+        '</button>';
+      btn.innerHTML = I.refreshCw(16, '') + ' Verificar';
+      btn.disabled = false;
+    } else {
+      status.innerHTML = '<span class="text-emerald-600">✓ Última versão já está instalada</span>';
+      btn.innerHTML = I.refreshCw(16, '') + ' Verificar';
+      btn.disabled = false;
+    }
+  } catch(e) {
+    status.innerHTML = '<span class="text-red-500">Erro ao verificar: ' + esc(e.message) + '</span>';
+    btn.innerHTML = I.refreshCw(16, '') + ' Verificar';
+    btn.disabled = false;
+  }
+};
+
+window.aplicarAtualizacao = async function() {
+  var status = document.getElementById('update-status');
+  if (!status) return;
+  status.innerHTML = '<span class="text-orange-600 font-medium">Atualizando... O servidor será reiniciado em instantes.</span>';
+  status.innerHTML += '<div class="mt-2 text-xs text-gray-400">' + I.loader2(14, 'animate-spin inline') + ' Baixando e instalando...</div>';
+  try {
+    var r = await wabot.applyUpdate();
+    if (r.success) {
+      status.innerHTML = '<span class="text-emerald-600 font-medium">✓ Atualização concluída!</span>' +
+        '<div class="mt-2 text-xs text-gray-500">Servidor reiniciando...</div>';
+    } else {
+      status.innerHTML = '<span class="text-red-500 font-medium">Erro: ' + esc(r.error) + '</span>';
+    }
+  } catch(e) {
+    status.innerHTML = '<span class="text-red-500 font-medium">Erro ao atualizar: ' + esc(e.message) + '</span>';
+  }
+};
 
 window.dashboardStart = async function() {
   state.dashboard.installing = true;
