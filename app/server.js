@@ -1835,43 +1835,92 @@ async function init() {
     }
   } catch(e) {}
 
-  // ─── Update: verificar e aplicar atualizações do GitHub ──
+  // ─── Update via GitHub API (sem git) ──────────────────
 
   const REPO_DIR = path.resolve(__dirname, '..');
 
-  app.get('/api/update/check', (req, res) => {
+  function httpsGet(url) {
+    return new Promise(function(resolve, reject) {
+      var req = https.get(url, { headers: { 'User-Agent': 'WABOT' } }, function(res) {
+        if (res.statusCode !== 200) return reject(new Error('HTTP ' + res.statusCode + ' para ' + url));
+        var d = '';
+        res.on('data', function(c) { d += c; });
+        res.on('end', function() { resolve(d); });
+      });
+      req.on('error', reject);
+      req.setTimeout(20000, function() { req.destroy(); reject(new Error('Timeout')); });
+    });
+  }
+
+  var FILES_TO_UPDATE = [
+    'package.json',
+    'start-wabot.bat', 'stop-wabot.bat', 'iniciar.bat', 'atualizar.bat',
+    'app/server.js',
+    'app/renderer/app.js', 'app/renderer/api.js', 'app/renderer/index.html', 'app/renderer/style.css',
+  ];
+  var GITHUB_RAW_BASE = 'https://raw.githubusercontent.com/ojuniormartelli/WABOT/main';
+
+  app.get('/api/update/check', async function(req, res) {
     try {
-      execSync('git fetch origin', { cwd: REPO_DIR, timeout: 15000, stdio: 'pipe' });
-      const behind = execSync('git rev-list HEAD...origin/main --count', { cwd: REPO_DIR, timeout: 5000 }).toString().trim();
-      const localHash = execSync('git rev-parse HEAD', { cwd: REPO_DIR, timeout: 5000 }).toString().trim();
-      const remoteHash = execSync('git rev-parse origin/main', { cwd: REPO_DIR, timeout: 5000 }).toString().trim();
-      const hasUpdates = parseInt(behind) > 0;
+      var data = await httpsGet('https://api.github.com/repos/ojuniormartelli/WABOT/commits/main');
+      var commit = JSON.parse(data);
+      var latestSha = commit.sha;
+      var localVersion = {};
+      try { localVersion = JSON.parse(fs.readFileSync(path.join(REPO_DIR, '_version.json'), 'utf8')); } catch(e) {}
+      var hasUpdates = localVersion.sha !== latestSha;
+
+      // Buscar changelog (últimos 10 commits)
       var changelog = '';
-      if (hasUpdates) {
-        changelog = execSync('git log HEAD..origin/main --oneline --no-decorate', { cwd: REPO_DIR, timeout: 5000 }).toString().trim();
-      }
-      res.json({ success: true, hasUpdates, behind: parseInt(behind), localHash, remoteHash, changelog });
+      try {
+        var logData = await httpsGet('https://api.github.com/repos/ojuniormartelli/WABOT/commits?per_page=10');
+        var commits = JSON.parse(logData);
+        changelog = commits.map(function(c) { return c.sha.substring(0,7) + ' ' + c.commit.message.split('\n')[0]; }).join('\n');
+      } catch(e) {}
+
+      res.json({ success: true, hasUpdates, latestSha: latestSha.substring(0,7), localSha: (localVersion.sha || '').substring(0,7), changelog });
     } catch (e) {
       res.json({ success: false, error: e.message });
     }
   });
 
-  app.post('/api/update/apply', (req, res) => {
+  app.post('/api/update/apply', async function(req, res) {
     try {
-      const pull = execSync('git pull origin main 2>&1', { cwd: REPO_DIR, timeout: 30000 }).toString();
-      var npm = '';
-      try { npm = execSync('npm install 2>&1', { cwd: REPO_DIR, timeout: 60000 }).toString(); } catch(e) { npm = e.message; }
-      res.json({ success: true, pull, npm });
+      // Pega SHA do ultimo commit (para salvar versão)
+      var data = await httpsGet('https://api.github.com/repos/ojuniormartelli/WABOT/commits/main');
+      var commit = JSON.parse(data);
+      var latestSha = commit.sha;
 
-      // Agendar restart: spawna script auxiliar que espera servidor morrer e inicia o novo
+      // Baixar cada arquivo do raw.githubusercontent.com e salvar localmente
+      var results = [];
+      for (var fi = 0; fi < FILES_TO_UPDATE.length; fi++) {
+        var file = FILES_TO_UPDATE[fi];
+        try {
+          var content = await httpsGet(GITHUB_RAW_BASE + '/' + file);
+          var dest = path.join(REPO_DIR, file);
+          fs.mkdirSync(path.dirname(dest), { recursive: true });
+          fs.writeFileSync(dest, content, 'utf8');
+          results.push(file + ': OK');
+        } catch (e) {
+          results.push(file + ': ' + e.message);
+        }
+      }
+
+      // Salvar versão local
+      fs.writeFileSync(path.join(REPO_DIR, '_version.json'), JSON.stringify({ sha: latestSha, updatedAt: new Date().toISOString() }, null, 2));
+
+      // npm install
+      var npmOut = '';
+      try { npmOut = require('child_process').execSync('npm install 2>&1', { cwd: REPO_DIR, timeout: 60000 }).toString(); } catch(e) { npmOut = e.message; }
+
+      res.json({ success: true, files: results, npm: npmOut });
+
+      // Agendar restart
       var restartFile = path.join(REPO_DIR, '_restart.js');
       var serverEntry = path.join(__dirname, 'server.js');
-      var logFile = path.join(REPO_DIR, '_restart.log');
       var isWin = process.platform === 'win32';
       var startCmd;
       if (isWin) {
-        // Windows: inicia oculto via PowerShell (mesmo padrao do start-wabot.bat)
-        startCmd = 'powershell -Command "Start-Process -WindowStyle Hidden -FilePath node -ArgumentList \'' + serverEntry + '\'"';
+        startCmd = 'powershell -Command "Start-Process -WindowStyle Hidden -FilePath node -ArgumentList \'' + serverEntry.replace(/\\/g, '\\\\') + '\'"';
       } else {
         startCmd = 'node ' + serverEntry;
       }
@@ -1889,7 +1938,7 @@ async function init() {
       });
       child.unref();
 
-      setTimeout(() => {
+      setTimeout(function() {
         console.log('[update] Atualização concluída. Reiniciando servidor...');
         process.exit(0);
       }, 1500);

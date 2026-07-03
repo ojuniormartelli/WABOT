@@ -485,7 +485,9 @@ window.verificarAtualizacao = async function() {
     if (!latestSha) throw new Error('Resposta inválida do GitHub');
     status.innerHTML = '<div class="text-orange-600 font-medium mb-2">⚠ Nova versão disponível no GitHub</div>' +
       '<div class="text-xs text-gray-500 bg-gray-50 rounded p-2 mb-2 font-mono">' + esc(latestSha) + ' — ' + esc((ghData.commit && ghData.commit.message ? ghData.commit.message.split('\n')[0] : '')) + '</div>' +
-      '<div class="text-xs text-gray-600 mb-3">📦 No Windows: execute <strong>atualizar.bat</strong> (dentro da pasta do WaBot) para atualizar e reiniciar automaticamente.</div>' +
+      '<div class="text-xs text-gray-600 mb-3">💡 Baixe o <strong>atualizar.js</strong> em:<br>' +
+      '<a href="https://raw.githubusercontent.com/ojuniormartelli/WABOT/main/atualizar.js" target="_blank" class="text-blue-600 underline break-all">raw.githubusercontent.com/ojuniormartelli/WABOT/main/atualizar.js</a><br>' +
+      'Salve na pasta do WaBot e dê duplo clique (ou execute <code>node atualizar.js</code> no terminal).</div>' +
       '<button onclick="verificarAtualizacao()" class="px-3 py-1.5 border border-gray-300 rounded-lg text-sm hover:bg-gray-50">' + I.refreshCw(14, '') + ' Verificar novamente</button>';
   } catch(e2) {
     status.innerHTML = '<span class="text-red-500">Não foi possível verificar atualizações. Verifique a conexão com a internet.</span>';
