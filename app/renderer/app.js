@@ -456,33 +456,42 @@ window.verificarAtualizacao = async function() {
   btn.disabled = true;
   btn.innerHTML = I.loader2(16, 'animate-spin') + ' Verificando...';
   status.innerHTML = '<span class="text-gray-400">Verificando atualizações...</span>';
+
+  // Tenta backend primeiro (se servidor já estiver atualizado)
   try {
     var r = await wabot.checkUpdate();
-    if (!r.success) {
-      status.innerHTML = '<span class="text-red-500">Erro: ' + esc(r.error) + '</span>';
-      btn.disabled = false;
+    if (r.success) {
+      if (r.hasUpdates) {
+        var logHtml = r.changelog ? r.changelog.split('\n').map(function(l) { return esc(l); }).join('<br>') : '';
+        status.innerHTML = '<div class="text-orange-600 font-medium mb-2">⚠ ' + r.behind + ' atualização(ões) disponível(is)</div>' +
+          '<div class="text-xs text-gray-500 bg-gray-50 rounded p-2 mb-3 font-mono">' + logHtml + '</div>' +
+          '<button onclick="aplicarAtualizacao()" class="px-4 py-2 bg-orange-600 text-white rounded-lg hover:bg-orange-700 text-sm font-medium">' +
+            I.download(16, '') + ' Atualizar agora' +
+          '</button>';
+      } else {
+        status.innerHTML = '<span class="text-emerald-600">✓ Última versão já está instalada</span>';
+      }
       btn.innerHTML = I.refreshCw(16, '') + ' Verificar';
+      btn.disabled = false;
       return;
     }
-    if (r.hasUpdates) {
-      var logHtml = r.changelog ? r.changelog.split('\n').map(function(l) { return esc(l); }).join('<br>') : '';
-      status.innerHTML = '<div class="text-orange-600 font-medium mb-2">⚠ ' + r.behind + ' atualização(ões) disponível(is)</div>' +
-        '<div class="text-xs text-gray-500 bg-gray-50 rounded p-2 mb-3 font-mono">' + logHtml + '</div>' +
-        '<button onclick="aplicarAtualizacao()" class="px-4 py-2 bg-orange-600 text-white rounded-lg hover:bg-orange-700 text-sm font-medium">' +
-          I.download(16, '') + ' Atualizar agora' +
-        '</button>';
-      btn.innerHTML = I.refreshCw(16, '') + ' Verificar';
-      btn.disabled = false;
-    } else {
-      status.innerHTML = '<span class="text-emerald-600">✓ Última versão já está instalada</span>';
-      btn.innerHTML = I.refreshCw(16, '') + ' Verificar';
-      btn.disabled = false;
-    }
-  } catch(e) {
-    status.innerHTML = '<span class="text-red-500">Erro ao verificar: ' + esc(e.message) + '</span>';
-    btn.innerHTML = I.refreshCw(16, '') + ' Verificar';
-    btn.disabled = false;
+  } catch(e) {}
+
+  // Fallback: consultar GitHub API direto do navegador
+  try {
+    var ghResp = await fetch('https://api.github.com/repos/ojuniormartelli/WABOT/commits/main');
+    var ghData = await ghResp.json();
+    var latestSha = ghData.sha ? ghData.sha.substring(0, 7) : '';
+    if (!latestSha) throw new Error('Resposta inválida do GitHub');
+    status.innerHTML = '<div class="text-orange-600 font-medium mb-2">⚠ Nova versão disponível no GitHub</div>' +
+      '<div class="text-xs text-gray-500 bg-gray-50 rounded p-2 mb-2 font-mono">' + esc(latestSha) + ' — ' + esc((ghData.commit && ghData.commit.message ? ghData.commit.message.split('\n')[0] : '')) + '</div>' +
+      '<div class="text-xs text-gray-400 mb-3">O servidor precisa ser reiniciado para aplicar. Peça ao cliente para reiniciar o WaBot.</div>' +
+      '<button onclick="verificarAtualizacao()" class="px-3 py-1.5 border border-gray-300 rounded-lg text-sm hover:bg-gray-50">' + I.refreshCw(14, '') + ' Verificar novamente</button>';
+  } catch(e2) {
+    status.innerHTML = '<span class="text-red-500">Não foi possível verificar atualizações. Verifique a conexão com a internet.</span>';
   }
+  btn.innerHTML = I.refreshCw(16, '') + ' Verificar';
+  btn.disabled = false;
 };
 
 window.aplicarAtualizacao = async function() {
