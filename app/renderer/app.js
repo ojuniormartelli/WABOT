@@ -1,3 +1,8 @@
+console.log('[WABOT] app.js loaded, version:', '1.0.2');
+window.onerror = function(msg, url, line) {
+  console.error('[WABOT] GLOBAL ERROR:', msg, 'at', url, 'line', line);
+};
+
 var APP_VERSION = '1.0.2';
 
 // ─── Ícones SVG ─────────────────────────────────────
