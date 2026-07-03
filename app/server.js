@@ -658,8 +658,9 @@ app.get('/api/evolution/conversations', async (req, res) => {
 
     // Safety: se a última mensagem no histórico local foi do bot, zerar nao_lidas
     // (cobre race condition entre webhook incrementar e sendEvolutionMessage zerar)
+    // Exceção: status 'intervencao' (bot pediu ajuda humana) mantém nao_lidas
     for (var j = 0; j < convs.length; j++) {
-      if (convs[j].nao_lidas > 0) {
+      if (convs[j].nao_lidas > 0 && convs[j].status !== 'intervencao') {
         try {
           var msgFile = path.join(MSG_DIR, convs[j].telefone + '.json');
           if (fs.existsSync(msgFile)) {
