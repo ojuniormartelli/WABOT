@@ -656,6 +656,25 @@ app.get('/api/evolution/conversations', async (req, res) => {
       } catch(e) {}
     }
 
+    // Safety: se a última mensagem no histórico local foi do bot, zerar nao_lidas
+    // (cobre race condition entre webhook incrementar e sendEvolutionMessage zerar)
+    for (var j = 0; j < convs.length; j++) {
+      if (convs[j].nao_lidas > 0) {
+        try {
+          var msgFile = path.join(MSG_DIR, convs[j].telefone + '.json');
+          if (fs.existsSync(msgFile)) {
+            var msgs = JSON.parse(fs.readFileSync(msgFile, 'utf-8') || '[]');
+            if (Array.isArray(msgs) && msgs.length > 0) {
+              var ultima = msgs[msgs.length - 1];
+              if (ultima.de_bot) {
+                convs[j].nao_lidas = 0;
+              }
+            }
+          }
+        } catch(e) {}
+      }
+    }
+
     // Marcar ignorados (expira_em no passado = reativar automaticamente)
     const ignorados = readJson('ignorados.json') || [];
     var now = new Date();
