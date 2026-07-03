@@ -662,8 +662,25 @@ app.post('/api/evolution/history', async (req, res) => {
             .filter(m => m.message)
             .map(m => {
               const msg = m.message;
-              const texto = msg.conversation || msg.extendedTextMessage?.text || msg.imageMessage?.caption || '';
-              if (!texto) return null;
+              var texto = msg.conversation ||
+                msg.extendedTextMessage?.text ||
+                msg.imageMessage?.caption ||
+                msg.videoMessage?.caption ||
+                msg.documentMessage?.caption ||
+                msg.listResponseMessage?.title ||
+                msg.buttonsResponseMessage?.selectedButtonId ||
+                m.text || '';
+              if (!texto) {
+                if (msg.audioMessage) texto = '🎤 Áudio';
+                else if (msg.imageMessage) texto = '🖼️ Imagem';
+                else if (msg.videoMessage) texto = '🎬 Vídeo';
+                else if (msg.documentMessage) texto = '📄 Documento';
+                else if (msg.stickerMessage) texto = '🔖 Sticker';
+                else if (msg.ptvMessage) texto = '🎥 Vídeo';
+                else if (msg.locationMessage) texto = '📍 Localização';
+                else if (msg.contactMessage) texto = '👤 Contato';
+                else return null;
+              }
               const deBot = m.key?.fromMe === true;
               const ts = m.messageTimestamp || 0;
               return {

@@ -185,6 +185,7 @@ function render() {
   var chatContainer = document.getElementById('chat-messages');
   var savedScrollTop = chatContainer ? chatContainer.scrollTop : -1;
   var savedScrollHeight = chatContainer ? chatContainer.scrollHeight : -1;
+  var savedClientHeight = chatContainer ? chatContainer.clientHeight : -1;
 
   if (state.setupCompleto === null) {
     app.innerHTML = loadingScreen();
@@ -216,15 +217,19 @@ function render() {
     }
   }
 
-  // Restaurar scroll do chat se o usuário não estava no fim
-  if (savedScrollTop >= 0 && !chatIsNearBottom && state.currentPage === 'conversas' && state.conversas.contatoSelecionado) {
-    var newContainer = document.getElementById('chat-messages');
-    if (newContainer) {
-      requestAnimationFrame(function() {
-        var addedHeight = newContainer.scrollHeight - savedScrollHeight;
-        newContainer.scrollTop = savedScrollTop + Math.max(0, addedHeight);
-      });
-    }
+  // Restaurar scroll do chat, ajustando se novas mensagens chegaram
+  if (savedScrollTop >= 0 && state.currentPage === 'conversas' && state.conversas.contatoSelecionado) {
+    requestAnimationFrame(function() {
+      var n = document.getElementById('chat-messages');
+      if (!n) return;
+      var addedHeight = n.scrollHeight - savedScrollHeight;
+      var wasNearBottom = (savedScrollHeight - savedScrollTop - savedClientHeight) < 80;
+      if (wasNearBottom) {
+        n.scrollTop = n.scrollHeight;
+      } else {
+        n.scrollTop = savedScrollTop + Math.max(0, addedHeight);
+      }
+    });
   }
 }
 
