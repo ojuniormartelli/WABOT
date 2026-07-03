@@ -1,24 +1,3 @@
-console.log('[WABOT] app.js loaded, version:', '1.0.2');
-window.onerror = function(msg, url, line) {
-  console.error('[WABOT] GLOBAL ERROR:', msg, 'at', url, 'line', line);
-};
-// Poll for button every second and re-bind onclick (robust against re-renders)
-setInterval(function() {
-  var btn = document.getElementById('btn-check-update');
-  if (btn) {
-    if (!btn._wc) {
-      btn._wc = true;
-      console.log('[WABOT] button found, binding onclick');
-    }
-    btn.onclick = function() {
-      console.log('[WABOT] direct onclick fired');
-      verificarAtualizacao();
-    };
-  } else {
-    console.log('[WABOT] button NOT in DOM');
-  }
-}, 1000);
-
 var APP_VERSION = '1.0.2';
 
 // ─── Ícones SVG ─────────────────────────────────────
@@ -457,7 +436,7 @@ function renderDashboard() {
           '<h2 class="text-lg font-semibold text-gray-700">Atualizações</h2>' +
           '<p class="text-sm text-gray-500 mt-1">Buscar novidades do GitHub</p>' +
         '</div>' +
-        '<button id="btn-check-update" class="flex items-center gap-2 px-4 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 text-sm font-medium transition-colors" style="cursor:pointer;pointer-events:auto" onclick="console.log(\'[WABOT] inline onclick\');verificarAtualizacao()">' +
+        '<button id="btn-check-update" class="flex items-center gap-2 px-4 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 text-sm font-medium transition-colors" onclick="verificarAtualizacao()">' +
           I.refreshCw(16, '') + ' Verificar' +
         '</button>' +
       '</div>' +
@@ -468,24 +447,12 @@ function renderDashboard() {
 function bindDashboard() {
   if (!state.dockerStatus) checkDockerStatus();
   loadChecklist();
-  // Event delegation para botão de atualização (robusto contra re-render)
-  if (!window._dbUpdateBound) {
-    window._dbUpdateBound = true;
-    document.addEventListener('click', function(e) {
-      console.log('[WABOT] click on', e.target.id || e.target.tagName, e.target.className);
-      if (e.target.id === 'btn-check-update' || (e.target.closest && e.target.closest('#btn-check-update'))) {
-        console.log('[WABOT] matched update button!');
-        verificarAtualizacao();
-      }
-    });
-  }
 }
 
 window.verificarAtualizacao = async function() {
   var btn = document.getElementById('btn-check-update');
   var status = document.getElementById('update-status');
-  if (!btn || !status) { console.warn('[WABOT] btn or status not found'); return; }
-  console.log('[WABOT] verificarAtualizacao clicked');
+  if (!btn || !status) return;
   btn.disabled = true;
   btn.innerHTML = I.loader2(16, 'animate-spin') + ' Verificando...';
   status.innerHTML = '<span class="text-gray-400">Verificando atualizações...</span>';
@@ -557,7 +524,10 @@ window.dashboardStop = async function() {
   setTimeout(function() { checkDockerStatus(); render(); }, 3000);
 };
 
+var _loadingChecklist = false;
 async function loadChecklist() {
+  if (_loadingChecklist) return;
+  _loadingChecklist = true;
   try {
     var creds = await wabot.configRead('credentials.json');
     var config = await wabot.configRead('config.json');
@@ -567,8 +537,8 @@ async function loadChecklist() {
       { label: 'Dados do negócio preenchidos', done: config && config.data && config.data.nome_negocio && config.data.nome_negocio.length > 0 && config.data.nome_negocio !== 'Meu Negócio' },
       { label: 'Evolution API rodando (Docker)', done: state.dockerStatus && state.dockerStatus.evolutionRunning },
     ];
-    render();
   } catch(e) {}
+  _loadingChecklist = false;
 }
 
 async function checkDockerStatus() {
@@ -1926,6 +1896,7 @@ async function checkSetup() {
       loadIgnoradosList(),
       loadAprendizado(),
       checkDockerStatus(),
+      loadChecklist(),
     ]);
     iniciarPollingConversas();
   } catch (e) {
