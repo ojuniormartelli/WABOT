@@ -175,6 +175,12 @@ function renderHelp(pageId) {
 function render() {
   var app = elId('app');
   if (!app) return;
+
+  // Salvar foco do input de chat antes de recriar o DOM
+  var oldInput = document.getElementById('chat-input');
+  var restoreFocus = oldInput && document.activeElement === oldInput;
+  var cursorPos = restoreFocus ? oldInput.selectionStart : -1;
+
   if (state.setupCompleto === null) {
     app.innerHTML = loadingScreen();
     return;
@@ -192,6 +198,17 @@ function render() {
     '</div>';
     bindSidebar();
     bindCurrentPage();
+  }
+
+  // Restaurar foco no input de chat se estava digitando
+  if (restoreFocus && state.currentPage === 'conversas' && state.conversas.contatoSelecionado) {
+    var newInput = document.getElementById('chat-input');
+    if (newInput) {
+      newInput.focus();
+      if (cursorPos >= 0) {
+        try { newInput.setSelectionRange(cursorPos, cursorPos); } catch(e) {}
+      }
+    }
   }
 }
 
