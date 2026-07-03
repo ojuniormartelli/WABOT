@@ -682,6 +682,11 @@ app.post('/api/evolution/history', async (req, res) => {
           evoMsgs.forEach(function(m) { idsEvo[m.texto + '_' + m.horario] = true; });
           historico = historico.filter(function(m) { return !idsEvo[m.texto + '_' + m.horario]; });
           historico = historico.concat(evoMsgs);
+
+          // Persistir localmente mensagens do Evolution (inclui fromMe enviadas por fora)
+          try {
+            fs.writeFileSync(arquivoLocal, JSON.stringify(historico, null, 2), 'utf-8');
+          } catch(e) {}
         }
       } catch(e) {}
     }
