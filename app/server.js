@@ -869,6 +869,74 @@ function responderHorarios(config) {
   return 'Aqui estão nossos horários de funcionamento:\n\n' + linhas.join('\n') + '\n\n📲 Peça pelo link: ' + (config.link_pedido_online || '');
 }
 
+function agendarLembrete(telefone, nome, proxMinutos, config) {
+  try {
+    var agora = new Date();
+    var dataLembrete;
+    if (proxMinutos !== null) {
+      // Próximo período ainda hoje
+      dataLembrete = new Date(agora.getFullYear(), agora.getMonth(), agora.getDate(), Math.floor(proxMinutos / 60), proxMinutos % 60, 0);
+      if (dataLembrete <= agora) dataLembrete = null;
+    }
+    // Se não achou período hoje, buscar próximo dia com horário
+    if (!dataLembrete) {
+      var diasSemana = ['domingo', 'segunda', 'terca', 'quarta', 'quinta', 'sexta', 'sabado'];
+      for (var d = 1; d <= 7; d++) {
+        var idx = (agora.getDay() + d) % 7;
+        var cfgDia = config?.horarios?.[diasSemana[idx]];
+        if (!cfgDia || cfgDia.fechado) continue;
+        var periodos = cfgDia.periodos || cfgDia.cozinha || [];
+        if (periodos.length > 0) {
+          var hab = periodos[0].abertura || '11:00';
+          dataLembrete = new Date(agora.getFullYear(), agora.getMonth(), agora.getDate() + d, parseInt(hab.split(':')[0]), parseInt(hab.split(':')[1] || '0'), 0);
+          break;
+        }
+      }
+    }
+    if (!dataLembrete) return;
+    var lembretes = readJson('lembretes.json') || [];
+    if (!Array.isArray(lembretes)) lembretes = [];
+    lembretes.push({
+      id: 'lembrete-' + Date.now(),
+      telefone: telefone,
+      nome: nome || telefone,
+      enviar_em: dataLembrete.toISOString(),
+      enviado: false,
+    });
+    writeJson('lembretes.json', lembretes);
+    console.log('[agendarLembrete] lembrete agendado para', telefone, 'em', dataLembrete.toLocaleString('pt-BR'));
+  } catch(e) {
+    console.error('[agendarLembrete] erro:', e.message);
+  }
+}
+
+function verificarLembretes() {
+  try {
+    var lembretes = readJson('lembretes.json') || [];
+    if (!Array.isArray(lembretes) || lembretes.length === 0) return;
+    var agora = new Date();
+    var modificado = false;
+    for (var i = 0; i < lembretes.length; i++) {
+      var lem = lembretes[i];
+      if (lem.enviado) continue;
+      var dataEnv = new Date(lem.enviar_em);
+      if (dataEnv <= agora) {
+        var msg = '🕐 Olá ' + (lem.nome || '') + '! O estabelecimento já está aberto! 😊\n\nEstamos prontos para atender você. Se tiver ficado com alguma dúvida ou quiser fazer um pedido, é só nos chamar!';
+        sendEvolutionMessage(lem.telefone, msg);
+        lem.enviado = true;
+        modificado = true;
+        console.log('[verificarLembretes] lembrete enviado para', lem.telefone);
+      }
+    }
+    if (modificado) writeJson('lembretes.json', lembretes);
+  } catch(e) {
+    console.error('[verificarLembretes] erro:', e.message);
+  }
+}
+
+// Iniciar verificação de lembretes a cada 60 segundos
+setInterval(verificarLembretes, 60000);
+
 function detectarSaudacao(texto) {
   if (!texto) return false;
   var t = texto.toLowerCase().trim();
@@ -1153,11 +1221,12 @@ app.post('/webhook/evolution', async (req, res) => {
 
     // Verificar horário de funcionamento
     const config = readJson('config.json') || {};
+    var foraHorario = false;
+    var proxAbertura = null;
     if (config.horarios) {
       var diasSemana = ['domingo', 'segunda', 'terca', 'quarta', 'quinta', 'sexta', 'sabado'];
       var hoje = diasSemana[new Date().getDay()];
       var configDia = config.horarios[hoje];
-      var foraHorario = false;
       if (configDia) {
         if (configDia.fechado) {
           foraHorario = true;
@@ -1172,14 +1241,10 @@ app.post('/webhook/evolution', async (req, res) => {
             var pAbb = parseInt(hab.split(':')[0]) * 60 + parseInt(hab.split(':')[1] || '0');
             var pFee = parseInt(hfe.split(':')[0]) * 60 + parseInt(hfe.split(':')[1] || '0');
             if (minAgora >= pAbb && minAgora < pFee) { dentro = true; break; }
+            if (minAgora < pAbb && (!proxAbertura || pAbb < proxAbertura)) proxAbertura = pAbb;
           }
           if (!dentro) foraHorario = true;
         }
-      }
-      if (foraHorario) {
-        var msgAusencia = config.mensagem_ausencia || 'Olá! No momento estamos fora do horário de funcionamento. 😊 Por favor, envie uma mensagem novamente durante nosso horário comercial que responderemos em breve.';
-        await sendEvolutionMessage(telefone, msgAusencia);
-        return res.json({ success: true, out_of_hours: true });
       }
     }
 
@@ -1275,28 +1340,44 @@ app.post('/webhook/evolution', async (req, res) => {
     }
 
     if (respostaIA) {
-      // Pós-processamento: só para respostas que não são saudação/agradecimento
-      if (!isSaudacao && !isAgradecimento) {
-        var saudacoesStrip = ['olá', 'olá,', 'oi,', 'oi ', 'bom dia,', 'bom dia!', 'boa tarde,', 'boa tarde!', 'boa noite,', 'boa noite!'];
-        var respTrim = respostaIA.trim();
-        for (var s = 0; s < saudacoesStrip.length; s++) {
-          if (respTrim.toLowerCase().startsWith(saudacoesStrip[s])) {
-            respTrim = respTrim.substring(respTrim.indexOf(' ') + 1).trim();
-            if (respTrim.length > 0) respTrim = respTrim.charAt(0).toUpperCase() + respTrim.slice(1);
-            respostaIA = respTrim;
-            break;
+      // Fora do horário: detectar se o cliente quer fazer pedido
+      var msgNormalizada = (mensagem || '').toLowerCase().trim();
+      var palavrasPedido = ['quero pedir', 'fazer um pedido', 'queria pedir', 'gostaria de pedir', 'quero fazer', 'quero comprar', 'pedido', 'encomenda', 'encomendar', 'pedir agora', 'pode anotar', 'vou querer', 'eu quero'];
+      var ehPedido = palavrasPedido.some(function(p) { return msgNormalizada.indexOf(p) >= 0; });
+      if (foraHorario && ehPedido) {
+        // Responder informando que está fora do horário
+        var msgPedidoFora = config.mensagem_ausencia || 'Olá! 😊 No momento estamos fora do horário de funcionamento.';
+        var horariosTexto = responderHorarios(config);
+        if (horariosTexto) msgPedidoFora += '\n\n' + horariosTexto;
+        msgPedidoFora += '\n\nAssim que abrirmos, enviaremos uma mensagem para lembrar você! 🕐';
+        await sendEvolutionMessage(telefone, msgPedidoFora);
+        // Agendar lembrete para o próximo horário de abertura
+        if (proxAbertura !== null) {
+          agendarLembrete(telefone, messageData?.pushName || telefone, proxAbertura, config);
+        }
+      } else {
+        // Resposta normal do bot
+        if (!isSaudacao && !isAgradecimento) {
+          var saudacoesStrip = ['olá', 'olá,', 'oi,', 'oi ', 'bom dia,', 'bom dia!', 'boa tarde,', 'boa tarde!', 'boa noite,', 'boa noite!'];
+          var respTrim = respostaIA.trim();
+          for (var s = 0; s < saudacoesStrip.length; s++) {
+            if (respTrim.toLowerCase().startsWith(saudacoesStrip[s])) {
+              respTrim = respTrim.substring(respTrim.indexOf(' ') + 1).trim();
+              if (respTrim.length > 0) respTrim = respTrim.charAt(0).toUpperCase() + respTrim.slice(1);
+              respostaIA = respTrim;
+              break;
+            }
+          }
+          var tempoLimite = 2 * 60 * 60 * 1000;
+          var ultimoTs = typeof existente?.ultimo_timestamp === 'number' ? existente.ultimo_timestamp : 0;
+          if (config.mensagem_saudacao && (!existente || (Date.now() - ultimoTs) > tempoLimite)) {
+            respostaIA = substituirVariaveis(config.mensagem_saudacao, config) + ' ' + respostaIA.charAt(0).toLowerCase() + respostaIA.slice(1);
           }
         }
-        var tempoLimite = 2 * 60 * 60 * 1000;
-        var ultimoTs = typeof existente?.ultimo_timestamp === 'number' ? existente.ultimo_timestamp : 0;
-        if (config.mensagem_saudacao && (!existente || (Date.now() - ultimoTs) > tempoLimite)) {
-          respostaIA = substituirVariaveis(config.mensagem_saudacao, config) + ' ' + respostaIA.charAt(0).toLowerCase() + respostaIA.slice(1);
+        await sendEvolutionMessage(telefone, respostaIA);
+        if (precisaIntervencao) {
+          marcarConversaIntervencao(telefone);
         }
-      }
-      await sendEvolutionMessage(telefone, respostaIA);
-      // Se o bot precisou de intervenção humana, marcar conversa e incrementar badge
-      if (precisaIntervencao) {
-        marcarConversaIntervencao(telefone);
       }
     }
 
