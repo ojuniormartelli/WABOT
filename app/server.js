@@ -465,6 +465,13 @@ app.post('/api/evolution/connect', async (req, res) => {
     var stateResp = await evolutionRequest('GET', '/instance/connectionState/' + encodeURIComponent(evoInstance));
     var state = stateResp?.data?.instance?.state;
     if (state === 'open') {
+      // Rejeitar chamadas (voz/vídeo) na Evolution API
+      try {
+        await evolutionRequest('POST', '/settings/set/' + encodeURIComponent(evoInstance), {
+          rejectCall: true,
+          msgCall: '',
+        });
+      } catch(e) {}
       return res.json({ success: true, instanceName: evoInstance, connected: true });
     }
 
@@ -473,6 +480,8 @@ app.post('/api/evolution/connect', async (req, res) => {
       instanceName: evoInstance,
       qrcode: true,
       integration: 'WHATSAPP-BAILEYS',
+      rejectCall: true,
+      msgCall: '',
       webhook: {
         url: 'http://host.docker.internal:3001/webhook/evolution',
         enabled: true,
@@ -495,6 +504,8 @@ app.post('/api/evolution/connect', async (req, res) => {
           instanceName: evoInstance,
           qrcode: true,
           integration: 'WHATSAPP-BAILEYS',
+          rejectCall: true,
+          msgCall: '',
           webhook: {
             url: 'http://host.docker.internal:3001/webhook/evolution',
             enabled: true,
