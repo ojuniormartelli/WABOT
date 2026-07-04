@@ -89,13 +89,14 @@ var state = {
     saved: false,
   },
   configuracoes: {
-    config: { nome_negocio: '', endereco: '', telefone: '', site: '', redes_sociais: { instagram: '', facebook: '', ifood: '' }, link_pedido_online: '', observacoes_gerais: '', tipos_atendimento: [], horarios: {}, mensagem_saudacao: '', mensagem_ausencia: '', mensagem_regra_nao_encontrada: '', mensagem_agradecimento: '' },
+    config: { nome_negocio: '', endereco: '', telefone: '', site: '', redes_sociais: { instagram: '', facebook: '', ifood: '' }, link_pedido_online: '', observacoes_gerais: '', tipos_atendimento: [], horarios: {}, mensagem_saudacao: '', mensagem_ausencia: '', mensagem_regra_nao_encontrada: '', mensagem_agradecimento: '', receber_chamadas: false },
     saving: false,
     saved: false,
   },
   conversas: {
     contatos: [],
     busca: '',
+    filtroStatus: '',
     contatoSelecionado: null,
   },
   chat: {
@@ -954,6 +955,17 @@ function renderConfiguracoes() {
       '<div class="space-y-2">' + horariosHtml + '</div>' +
     '</div>' +
 
+    '<div class="bg-white rounded-xl border border-gray-200 p-6 mb-6">' +
+      '<h2 class="text-lg font-semibold text-gray-700 mb-4">Configurações Avançadas</h2>' +
+      '<div class="space-y-4">' +
+        '<label class="flex items-center gap-3 cursor-pointer">' +
+          '<input type="checkbox" ' + (c.receber_chamadas ? 'checked' : '') + ' onchange="updateConfig(\'receber_chamadas\',this.checked)" class="w-4 h-4 text-emerald-600 rounded border-gray-300 focus:ring-emerald-500" />' +
+          '<div><span class="text-sm font-medium text-gray-700">Receber chamadas de voz</span>' +
+          '<p class="text-xs text-gray-400">Quando ativado, chamadas de voz não serão rejeitadas automaticamente</p></div>' +
+        '</label>' +
+      '</div>' +
+    '</div>' +
+
     '<div class="bg-white rounded-xl border border-gray-200 p-6 mb-8">' +
       '<h2 class="text-lg font-semibold text-gray-700 mb-4">Mensagens Padrão</h2>' +
       '<div class="space-y-4">' +
@@ -1079,6 +1091,19 @@ function getBadgeForContact(contato) {
 function bindConfiguracoes() {}
 
 // ─── CONVERSAS ─────────────────────────────────────
+function setFiltroStatus(filtro) {
+  state.conversas.filtroStatus = filtro;
+  render();
+}
+
+var FILTROS_STATUS = [
+  { id: '', label: 'Todas' },
+  { id: 'nao_lidas', label: 'Não Lidas' },
+  { id: 'bot', label: 'Bot' },
+  { id: 'intervencao', label: 'Intervenção' },
+  { id: 'ignorado', label: 'Ignorado' },
+];
+
 function renderConversas() {
   var contatos = state.conversas.contatos || [];
   // Garantir ordem: mais recentes primeiro
@@ -1088,9 +1113,24 @@ function renderConversas() {
     return tb - ta;
   });
   var busca = state.conversas.busca.toLowerCase();
+  var filtro = state.conversas.filtroStatus || '';
   var filtrados = contatos.filter(function(c) {
-    return c.nome.toLowerCase().indexOf(busca) >= 0 || c.telefone.indexOf(busca) >= 0;
+    // Filtro de busca textual
+    if (busca && c.nome.toLowerCase().indexOf(busca) < 0 && c.telefone.indexOf(busca) < 0) return false;
+    // Filtro de status
+    if (filtro === 'nao_lidas') return (c.nao_lidas || 0) > 0;
+    if (filtro === 'ignorado') return c.status === 'ignorado';
+    if (filtro === 'intervencao') return c.status === 'intervencao' || c.status === 'humano';
+    if (filtro === 'bot') return !c.status || c.status === 'bot' || c.status === '';
+    return true;
   });
+
+  var filtroBtns = '';
+  for (var fi = 0; fi < FILTROS_STATUS.length; fi++) {
+    var f = FILTROS_STATUS[fi];
+    var ativo = (filtro === f.id) || (!filtro && !f.id);
+    filtroBtns += '<button onclick="setFiltroStatus(\'' + f.id + '\')" class="px-3 py-1.5 text-xs font-medium rounded-lg transition-colors ' + (ativo ? 'bg-emerald-600 text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200') + '">' + f.label + '</button>';
+  }
 
   var listaHtml = '';
   for (var i = 0; i < filtrados.length; i++) {
@@ -1131,12 +1171,13 @@ function renderConversas() {
     '<div class="w-96 bg-white border-r border-gray-200 flex flex-col flex-shrink-0">' +
       '<div class="p-4 border-b border-gray-200">' +
         '<h1 class="text-xl font-bold text-gray-800 mb-3">Conversas</h1>' +
+        '<div class="flex flex-wrap gap-1.5 mb-3">' + filtroBtns + '</div>' +
         '<div class="relative">' +
           '<span class="absolute left-3 top-2.5 text-gray-400">' + I.search(18, '') + '</span>' +
           '<input type="text" oninput="state.conversas.busca=this.value;render()" placeholder="Buscar..." class="w-full pl-10 pr-4 py-2.5 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-emerald-500" />' +
         '</div>' +
       '</div>' +
-      '<div class="flex-1 overflow-y-auto">' + listaHtml + '</div>' +
+      '<div class="flex-1 overflow-y-auto conversas-lista">' + listaHtml + '</div>' +
     '</div>' + painelDireito + '</div>';
 }
 
@@ -2016,9 +2057,19 @@ function atualizarSidebarConversas() {
   if (!container) return;
   var contatos = state.conversas.contatos || [];
   var selTel = state.conversas.contatoSelecionado?.telefone;
+  var filtro = state.conversas.filtroStatus || '';
+  var busca = (state.conversas.busca || '').toLowerCase();
+  var filtrados = contatos.filter(function(c) {
+    if (busca && c.nome.toLowerCase().indexOf(busca) < 0 && c.telefone.indexOf(busca) < 0) return false;
+    if (filtro === 'nao_lidas') return (c.nao_lidas || 0) > 0;
+    if (filtro === 'ignorado') return c.status === 'ignorado';
+    if (filtro === 'intervencao') return c.status === 'intervencao' || c.status === 'humano';
+    if (filtro === 'bot') return !c.status || c.status === 'bot' || c.status === '';
+    return true;
+  });
   var linhas = '';
-  for (var i = 0; i < contatos.length; i++) {
-    var c = contatos[i];
+  for (var i = 0; i < filtrados.length; i++) {
+    var c = filtrados[i];
     var nome = c.nome || c.telefone;
     var ultima = c.ultima_msg || '';
     var horario = c.horario || '';

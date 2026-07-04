@@ -497,14 +497,17 @@ app.post('/api/evolution/connect', async (req, res) => {
     const evoBase = creds.evolution?.base_url || 'http://localhost:8081';
     let evoInstance = req.body?.instanceName || creds.evolution?.instance_name || 'wabot-' + Date.now();
 
+    // Ler config para saber se deve rejeitar chamadas
+    const cfgCall = readJson('config.json') || {};
+    const receberChamadas = cfgCall.receber_chamadas === true;
+
     // Verificar se já está conectado
     var stateResp = await evolutionRequest('GET', '/instance/connectionState/' + encodeURIComponent(evoInstance));
     var state = stateResp?.data?.instance?.state;
     if (state === 'open') {
-      // Rejeitar chamadas (voz/vídeo) na Evolution API
       try {
         await evolutionRequest('POST', '/settings/set/' + encodeURIComponent(evoInstance), {
-          rejectCall: true,
+          rejectCall: !receberChamadas,
           msgCall: '',
         });
       } catch(e) {}
@@ -516,7 +519,7 @@ app.post('/api/evolution/connect', async (req, res) => {
       instanceName: evoInstance,
       qrcode: true,
       integration: 'WHATSAPP-BAILEYS',
-      rejectCall: true,
+      rejectCall: !receberChamadas,
       msgCall: '',
       webhook: {
         url: 'http://host.docker.internal:3001/webhook/evolution',
@@ -540,7 +543,7 @@ app.post('/api/evolution/connect', async (req, res) => {
           instanceName: evoInstance,
           qrcode: true,
           integration: 'WHATSAPP-BAILEYS',
-          rejectCall: true,
+          rejectCall: !receberChamadas,
           msgCall: '',
           webhook: {
             url: 'http://host.docker.internal:3001/webhook/evolution',
@@ -1223,7 +1226,10 @@ app.post('/webhook/evolution', async (req, res) => {
         }
         writeJson('conversas.json', convs);
         sseBroadcast('conversation_update', { telefone: telefone, ultima_msg: '📞 Chamada de voz', horario: horarioCall, ultimo_timestamp: Date.now() });
-        await sendEvolutionMessage(telefone, 'Infelizmente não conseguimos atender chamadas de voz pelo WhatsApp. Por favor, envie uma mensagem de texto.');
+        const callCfg = readJson('config.json') || {};
+        if (!callCfg.receber_chamadas) {
+          await sendEvolutionMessage(telefone, 'Infelizmente não conseguimos atender chamadas de voz pelo WhatsApp. Por favor, envie uma mensagem de texto.');
+        }
       }
       return res.json({ success: true, call: true });
     }

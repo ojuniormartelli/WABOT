@@ -85,5 +85,6 @@
   "mensagem_regra_nao_encontrada": "Vou verificar com um atendente humano e já volto com uma resposta.",
   "mensagem_agradecimento": "Por nada! Ficamos felizes em ajudar. 😊 Se precisar de mais alguma coisa, é só chamar!",
   "registrar_aprendizado_auto": true,
-  "timezone": "America/Sao_Paulo"
+  "timezone": "America/Sao_Paulo",
+  "receber_chamadas": false
 }
