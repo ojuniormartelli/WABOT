@@ -441,6 +441,18 @@ function renderDashboard() {
         '</button>' +
       '</div>' +
       '<div id="update-status" class="mt-3 text-sm text-gray-500"></div>' +
+    '</div>' +
+    '<div class="mt-6 bg-white rounded-xl border border-gray-200 p-6">' +
+      '<div class="flex items-center justify-between">' +
+        '<div>' +
+          '<h2 class="text-lg font-semibold text-gray-700">Reiniciar Bot</h2>' +
+          '<p class="text-sm text-gray-500 mt-1">Reinicia o servidor para corrigir possíveis bugs</p>' +
+        '</div>' +
+        '<button id="btn-restart" class="flex items-center gap-2 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 text-sm font-medium transition-colors" onclick="reiniciarBot()">' +
+          I.refreshCw(16, '') + ' Reiniciar' +
+        '</button>' +
+      '</div>' +
+      '<div id="restart-status" class="mt-3 text-sm text-gray-500"></div>' +
     '</div></div>';
 }
 
@@ -514,6 +526,25 @@ window.aplicarAtualizacao = async function() {
   }
 };
 
+window.reiniciarBot = async function() {
+  if (!confirm('Tem certeza que deseja reiniciar o bot?\n\nTodos os sistemas serão reiniciados. As conversas em andamento não serão perdidas.')) return;
+  var btn = document.getElementById('btn-restart');
+  var status = document.getElementById('restart-status');
+  if (!btn || !status) return;
+  btn.disabled = true;
+  btn.innerHTML = I.loader2(16, 'animate-spin') + ' Reiniciando...';
+  status.innerHTML = '<span class="text-orange-600 font-medium">Reiniciando servidor...</span>';
+  try {
+    await wabot.restartBot();
+    status.innerHTML = '<span class="text-emerald-600 font-medium">✓ Servidor reiniciado!</span><div class="mt-1 text-xs text-gray-400">Recarregando página em alguns segundos...</div>';
+    setTimeout(function() { location.reload(); }, 3000);
+  } catch(e) {
+    status.innerHTML = '<span class="text-red-500 font-medium">Erro ao reiniciar: ' + esc(e.message) + '</span>';
+    btn.disabled = false;
+    btn.innerHTML = I.refreshCw(16, '') + ' Reiniciar';
+  }
+};
+
 window.dashboardStart = async function() {
   state.dashboard.installing = true;
   render();
@@ -555,33 +586,38 @@ async function checkDockerStatus() {
   }
 }
 
-var pollingMsgRodando = false;
-
-async function pollChatMessages() {
+function appendMensagem(telefone, msg) {
+  if (state.currentPage !== 'conversas') return;
   var contato = state.conversas.contatoSelecionado;
-  if (!contato || !contato.telefone) return;
-  if (pollingMsgRodando) return;
-  pollingMsgRodando = true;
-  try {
-    var result = await wabot.evolutionHistory(contato.telefone);
-    if (result.success && Array.isArray(result.data)) {
-      var atuais = state.chat.mensagens;
-      if (result.data.length > atuais.length) {
-        state.chat.mensagens = result.data;
-        if (contato) {
-          contato.nao_lidas = 0;
-          var contatos = state.conversas.contatos || [];
-          for (var i = 0; i < contatos.length; i++) {
-            if (contatos[i].telefone === contato.telefone) {
-              contatos[i].nao_lidas = 0;
-              break;
-            }
-          }
-        }
-      }
-    }
-  } catch(e) {}
-  pollingMsgRodando = false;
+  if (!contato || contato.telefone !== telefone) return;
+  var existe = state.chat.mensagens.some(function(m) {
+    if (m.id && msg.id && m.id === msg.id) return true;
+    if (m.texto === msg.texto && m.de_bot === msg.de_bot && m.horario === msg.horario) return true;
+    return false;
+  });
+  if (existe) return;
+  state.chat.mensagens.push(msg);
+  var container = document.getElementById('chat-messages');
+  if (!container) return;
+  container.insertAdjacentHTML('beforeend', montarBolhaMensagem(msg));
+  scrollChat();
+}
+
+function montarBolhaMensagem(m) {
+  var isBot = m.de_bot;
+  var isClient = !isBot;
+  var origemHtml = '';
+  if (isBot && m.origem && m.origem !== 'cliente') {
+    var origemLabel = m.origem === 'regra' ? 'Regra' : m.origem === 'ia' ? 'IA' : 'Você';
+    var origemColor = m.origem === 'regra' ? 'text-blue-600' : m.origem === 'ia' ? 'text-purple-600' : 'text-gray-500';
+    origemHtml = '<div class="flex items-center gap-1 mb-1"><span class="text-xs font-medium ' + origemColor + '">' + origemLabel + '</span></div>';
+  }
+  return '<div class="flex ' + (isClient ? 'justify-start' : 'justify-end') + ' animate-fade-in">' +
+    '<div class="' + (isClient ? 'chat-bubble-bot' : 'chat-bubble-client') + '">' +
+    origemHtml +
+    '<p class="text-sm whitespace-pre-wrap">' + esc(m.texto) + '</p>' +
+    '<p class="text-xs mt-1 ' + (isClient ? 'text-gray-400' : 'text-emerald-100') + '">' + esc(m.horario || '') + '</p>' +
+    '</div></div>';
 }
 
 // ─── CREDENCIAIS ───────────────────────────────────
@@ -1021,6 +1057,7 @@ function getBadgeForContact(contato) {
   }
   var estaPausaTemporaria = ignoradoItem && ignoradoItem.expira_em && new Date(ignoradoItem.expira_em) > new Date();
   var estaIgnoradoPermanente = ignoradoItem && !ignoradoItem.expira_em;
+  var estaIntervencao = contato.status === 'intervencao';
   var status;
   if (estaPausaTemporaria) status = 'humano';
   else if (estaIgnoradoPermanente) status = 'ignorado';
@@ -1035,7 +1072,7 @@ function getBadgeForContact(contato) {
     intervencao: { label: 'Intervenção', color: 'bg-orange-100 text-orange-700' },
   };
   var cfg = configs[status] || { label: status, color: 'bg-gray-100 text-gray-700' };
-  return { status: status, label: cfg.label, color: cfg.color, _item: ignoradoItem, _permanente: estaIgnoradoPermanente, _temporaria: estaPausaTemporaria };
+  return { status: status, label: cfg.label, color: cfg.color, _item: ignoradoItem, _permanente: estaIgnoradoPermanente, _temporaria: estaPausaTemporaria, _intervencao: estaIntervencao };
 }
 
 
@@ -1147,6 +1184,7 @@ function renderChatView(contato) {
   var status = badge.status;
   var estaIgnoradoPermanente = badge._permanente;
   var estaPausaTemporaria = badge._temporaria;
+  var estaIntervencao = badge._intervencao;
 
   // Badge do humano mostra ate quando
   if (status === 'humano' && badge._item && badge._item.expira_em) {
@@ -1208,7 +1246,7 @@ function renderChatView(contato) {
 
     '<div class="bg-white px-4 py-2 flex items-center gap-1.5 border-b border-gray-200 flex-shrink-0 overflow-x-auto">' +
       '<button onclick="alterarStatus(\'humano\')" class="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-lg bg-white border border-gray-300 hover:bg-gray-50 disabled:opacity-40 whitespace-nowrap" ' + (estaIgnoradoPermanente || estaPausaTemporaria ? 'disabled' : '') + '>' + I.pause(14, '') + ' Modo Humano</button>' +
-      '<button onclick="alterarStatus(\'bot\')" class="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-lg bg-white border border-gray-300 hover:bg-gray-50 disabled:opacity-40 whitespace-nowrap" ' + (!estaIgnoradoPermanente && !estaPausaTemporaria ? 'disabled' : '') + '>' + I.play(14, '') + ' Reativar Bot</button>' +
+      '<button onclick="alterarStatus(\'bot\')" class="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-lg bg-white border border-gray-300 hover:bg-gray-50 disabled:opacity-40 whitespace-nowrap" ' + (!estaIgnoradoPermanente && !estaPausaTemporaria && !estaIntervencao ? 'disabled' : '') + '>' + I.play(14, '') + ' Reativar Bot</button>' +
       '<span class="text-gray-300 mx-0.5">|</span>' +
       '<button onclick="ignorarContato()" class="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-lg bg-white border border-red-200 text-red-600 hover:bg-red-50 whitespace-nowrap" ' + (estaIgnoradoPermanente || estaPausaTemporaria ? 'disabled' : '') + '>' + I.shieldBan(14, '') + ' Ignorar</button>' +
     '</div>' +
@@ -1276,6 +1314,13 @@ window.alterarStatus = async function(modo) {
     state.ignorados = novos;
     contato.status = 'bot';
     state.chat.status = 'bot';
+    // Se estava em intervenção, limpar no servidor também
+    try {
+      await fetch('/api/conversa/' + encodeURIComponent(tel) + '/status', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status: 'bot' })
+      });
+    } catch(e) {}
   } else if (modo === 'humano') {
     // Escolher duração da pausa
     var op = prompt(
@@ -1364,10 +1409,11 @@ window.enviarMsg = async function() {
   var contato = state.conversas.contatoSelecionado;
   if (!contato) return;
   var hora = new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
-  state.chat.mensagens.push({ id: Date.now().toString(), texto: texto, de_bot: true, origem: 'humano', horario: hora });
+  var msgLocal = { id: 'local-' + Date.now(), texto: texto, de_bot: true, origem: 'humano', horario: hora };
   state.chat.texto = '';
-  render();
-  bindChat();
+  appendMensagem(contato.telefone, msgLocal);
+  var input = document.getElementById('chat-input');
+  if (input) input.value = '';
   await wabot.sendMessage(contato.telefone, texto);
   scrollChat(true);
 };
@@ -1377,8 +1423,9 @@ window.enviarSugestaoIA = async function() {
   if (!texto) return;
   var contato = state.conversas.contatoSelecionado;
   var hora = new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
-  state.chat.mensagens.push({ id: Date.now().toString(), texto: texto, de_bot: true, origem: 'ia', horario: hora });
+  var msgLocal = { id: 'local-' + Date.now(), texto: texto, de_bot: true, origem: 'ia', horario: hora };
   state.chat.sugestaoIA = '';
+  appendMensagem(contato.telefone, msgLocal);
   render();
   bindChat();
   await wabot.sendMessage(contato.telefone, texto);
@@ -1871,11 +1918,8 @@ async function loadAprendizado() {
 
 function bindAprendizado() {}
 
-// (Setup Wizard removido — agora o Dashboard é a tela inicial)
-
-// ─── POLLING: atualizar conversas a cada 5s ──────
+// ─── TEMPO REAL VIA SSE ──────────────────────────
 var pollingTimer = null;
-var pollingRodando = false;
 function salvarScrollChat() {
   var c = document.getElementById('chat-messages');
   return c ? { top: c.scrollTop, nearBottom: (c.scrollHeight - c.scrollTop - c.clientHeight) < 80 } : null;
@@ -1892,36 +1936,109 @@ function restaurarScrollChat(saved) {
     }
   });
 }
-function iniciarPollingConversas() {
+
+function iniciarTempoReal() {
   if (pollingTimer) clearInterval(pollingTimer);
+
+  // SSE para mensagens em tempo real
+  wabot.conectarSSE(function(data) {
+    if (data && data.message) {
+      appendMensagem(data.telefone, data.message);
+      atualizarLinhaConversa(data.telefone, data.conversation);
+    }
+  }, function(data) {
+    if (data && data.telefone) {
+      atualizarLinhaConversa(data.telefone, data);
+    }
+  });
+
+  // Polling leve apenas para lista de conversas (30s)
   pollingTimer = setInterval(function() {
-    if (pollingRodando) return;
-    pollingRodando = true;
-
-    var savedScroll = salvarScrollChat();
-
     loadConversasList().then(function() {
       if (state.currentPage === 'conversas') {
-        render();
+        atualizarSidebarConversas();
       }
-      atualizarStatusPolling();
-
-      if (state.currentPage === 'conversas' && state.conversas.contatoSelecionado) {
-        return pollChatMessages().then(function() {
-          return loadConversasList();
-        }).then(function() {
-          if (state.currentPage === 'conversas') {
-            render();
-          }
-        });
-      }
-    }).then(function() {
-      pollingRodando = false;
-      restaurarScrollChat(savedScroll);
-    }, function() {
-      pollingRodando = false;
     });
-  }, 5000);
+    atualizarStatusPolling();
+  }, 30000);
+}
+
+function atualizarLinhaConversa(telefone, data) {
+  var contatos = state.conversas.contatos || [];
+  var selTel = state.conversas.contatoSelecionado?.telefone;
+  var idx = -1;
+  for (var i = 0; i < contatos.length; i++) {
+    if (contatos[i].telefone === telefone) { idx = i; break; }
+  }
+  if (idx >= 0) {
+    if (data.ultima_msg) contatos[idx].ultima_msg = data.ultima_msg;
+    if (data.horario) contatos[idx].horario = data.horario;
+    if (data.ultimo_timestamp) contatos[idx].ultimo_timestamp = data.ultimo_timestamp;
+    if (data.nome) contatos[idx].nome = data.nome;
+    if (data.nao_lidas !== undefined) contatos[idx].nao_lidas = data.nao_lidas;
+    if (selTel === telefone) {
+      contatos[idx].nao_lidas = 0;
+    }
+  } else if (data.nome && data.ultima_msg) {
+    contatos.push({
+      telefone: telefone,
+      nome: data.nome,
+      ultima_msg: data.ultima_msg,
+      horario: data.horario,
+      status: 'bot',
+      nao_lidas: selTel === telefone ? 0 : (data.nao_lidas || 1),
+      ultimo_timestamp: data.ultimo_timestamp || Date.now(),
+    });
+  }
+  // Atualizar DOM da sidebar sem re-render completo
+  var linha = document.querySelector('.conversa-row[data-tel="' + telefone + '"]');
+  if (linha) {
+    var textoEl = linha.querySelector('.conv-ultima-msg');
+    if (textoEl) textoEl.textContent = data.ultima_msg || textoEl.textContent;
+    var horarioEl = linha.querySelector('.conv-horario');
+    if (horarioEl) horarioEl.textContent = data.horario || horarioEl.textContent;
+    var badgeEl = linha.querySelector('.conv-nao-lidas');
+    var naoLidas = selTel === telefone ? 0 : (contatos[idx] ? (contatos[idx].nao_lidas || 0) : 0);
+    if (badgeEl) {
+      if (naoLidas > 0) { badgeEl.textContent = naoLidas; badgeEl.style.display = ''; }
+      else { badgeEl.style.display = 'none'; }
+    }
+    // Mover para o topo da lista
+    var sidebar = linha.parentElement;
+    if (sidebar) sidebar.prepend(linha);
+  }
+  atualizarBadgeSidebar();
+  atualizarBadgeIntervencao();
+}
+
+function atualizarSidebarConversas() {
+  var container = document.querySelector('.conversas-lista');
+  if (!container) return;
+  var contatos = state.conversas.contatos || [];
+  var selTel = state.conversas.contatoSelecionado?.telefone;
+  var linhas = '';
+  for (var i = 0; i < contatos.length; i++) {
+    var c = contatos[i];
+    var nome = c.nome || c.telefone;
+    var ultima = c.ultima_msg || '';
+    var horario = c.horario || '';
+    var selecionado = c.telefone === selTel ? 'bg-blue-50 border-l-4 border-blue-500' : 'hover:bg-gray-50';
+    var naoLidas = c.telefone === selTel ? 0 : (c.nao_lidas || 0);
+    linhas += '<div class="conversa-row flex items-center gap-3 px-4 py-3 cursor-pointer border-b border-gray-100 ' + selecionado + '" data-tel="' + c.telefone + '" onclick="selectContato(\'' + c.telefone + '\')">' +
+      '<div class="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center flex-shrink-0 text-blue-600 font-semibold text-sm">' + (nome.charAt(0).toUpperCase()) + '</div>' +
+      '<div class="flex-1 min-w-0">' +
+        '<div class="flex items-center justify-between">' +
+          '<span class="text-sm font-medium text-gray-900 truncate">' + esc(nome) + '</span>' +
+          '<span class="conv-horario text-xs text-gray-400 flex-shrink-0 ml-2">' + esc(horario) + '</span>' +
+        '</div>' +
+        '<div class="flex items-center justify-between mt-0.5">' +
+          '<span class="conv-ultima-msg text-xs text-gray-500 truncate">' + esc(ultima) + '</span>' +
+          (naoLidas > 0 ? '<span class="conv-nao-lidas ml-2 w-5 h-5 rounded-full bg-blue-500 text-white text-xs flex items-center justify-center flex-shrink-0">' + naoLidas + '</span>' : '<span class="conv-nao-lidas" style="display:none"></span>') +
+        '</div>' +
+      '</div>' +
+    '</div>';
+  }
+  container.innerHTML = linhas;
 }
 
 function atualizarStatusPolling() {
@@ -2000,7 +2117,7 @@ async function checkSetup() {
       checkDockerStatus(),
       loadChecklist(),
     ]);
-    iniciarPollingConversas();
+    iniciarTempoReal();
   } catch (e) {
     state.setupCompleto = true;
   }

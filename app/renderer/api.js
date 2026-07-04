@@ -1,6 +1,26 @@
 // API WaBot
 window.wabot = {};
 
+// ─── Eventos em tempo real (SSE) ────────────────
+window.wabot.conectarSSE = function(onMessage, onConversation) {
+  if (window.wabot._sse) window.wabot._sse.close();
+  var source = new EventSource('/api/events');
+  source.addEventListener('new_message', function(e) {
+    try { if (onMessage) onMessage(JSON.parse(e.data)); } catch(_) {}
+  });
+  source.addEventListener('conversation_update', function(e) {
+    try { if (onConversation) onConversation(JSON.parse(e.data)); } catch(_) {}
+  });
+  source.onerror = function() {
+    // Reconecta automaticamente após 3s
+    setTimeout(function() {
+      window.wabot.conectarSSE(onMessage, onConversation);
+    }, 3000);
+  };
+  window.wabot._sse = source;
+  return source;
+};
+
 // ─── Docker ───────────────────────────────────────
 window.wabot.dockerStatus = () =>
   fetch('/api/docker/status').then(r => r.json());
@@ -104,3 +124,7 @@ window.wabot.checkUpdate = () =>
 
 window.wabot.applyUpdate = () =>
   fetch('/api/update/apply', { method: 'POST' }).then(r => r.json());
+
+// ─── Reiniciar ─────────────────────────────────────
+window.wabot.restartBot = () =>
+  fetch('/api/restart', { method: 'POST' }).then(r => r.json());

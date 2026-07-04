@@ -10,11 +10,37 @@ const PORT = process.env.PORT || 3001;
 const app = express();
 let dockerManager;
 
+// ─── SSE: clientes conectados ──
+var sseClients = [];
+
+function sseBroadcast(event, data) {
+  var payload = 'event: ' + event + '\ndata: ' + JSON.stringify(data) + '\n\n';
+  sseClients = sseClients.filter(function(c) {
+    try {
+      c.res.write(payload);
+      return true;
+    } catch(e) {
+      return false;
+    }
+  });
+}
+
+app.get('/api/events', function(req, res) {
+  res.writeHead(200, {
+    'Content-Type': 'text/event-stream',
+    'Cache-Control': 'no-cache',
+    'Connection': 'keep-alive',
+    'Access-Control-Allow-Origin': '*',
+  });
+  var client = { id: Date.now(), res: res };
+  sseClients.push(client);
+  req.on('close', function() { sseClients = sseClients.filter(function(c) { return c.id !== client.id; }); });
+});
+
 app.use(express.json({ limit: '50mb' }));
 
-// ─── Renderer: serve do GitHub com fallback local ──
+// ─── Renderer: serve local ──
 var RENDERER_DIR = path.join(__dirname, 'renderer');
-var GITHUB_RAW = 'https://raw.githubusercontent.com/ojuniormartelli/WABOT/main/app/renderer';
 
 var RENDERER_FILES = {
   'api.js': 'application/javascript',
@@ -24,24 +50,10 @@ var RENDERER_FILES = {
 
 for (var fileName in RENDERER_FILES) {
   (function(file, mime) {
-    app.get('/' + file, async function(req, res) {
-      try {
-        var data = await new Promise(function(resolve, reject) {
-          https.get(GITHUB_RAW + '/' + file + '?t=' + Date.now(), function(proxyRes) {
-            if (proxyRes.statusCode !== 200) return reject();
-            var d = '';
-            proxyRes.on('data', function(c) { d += c; });
-            proxyRes.on('end', function() { resolve(d); });
-          }).on('error', reject);
-        });
-        res.setHeader('Content-Type', mime);
-        res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate');
-        res.send(data);
-      } catch (e) {
-        res.sendFile(path.join(RENDERER_DIR, file), {
-          headers: { 'Cache-Control': 'no-store, no-cache, must-revalidate' }
-        });
-      }
+    app.get('/' + file, function(req, res) {
+      res.sendFile(path.join(RENDERER_DIR, file), {
+        headers: { 'Cache-Control': 'no-store, no-cache, must-revalidate' }
+      });
     });
   })(fileName, RENDERER_FILES[fileName]);
 }
@@ -204,6 +216,7 @@ function sendEvolutionMessage(to, text, origem) {
       });
     }
     writeJson('conversas.json', conversas);
+    sseBroadcast('conversation_update', { telefone: to, ultima_msg: text, horario: horario, ultimo_timestamp: Date.now() });
   } catch(e) {
     console.error('[sendEvolutionMessage] erro ao atualizar conversas.json:', e.message);
   }
@@ -213,6 +226,18 @@ function sendEvolutionMessage(to, text, origem) {
     number: to,
     text: text,
   });
+}
+
+// ─── System ───────────────────────────────────────
+
+function marcarMensagemComoLida(remoteJid) {
+  const creds = getCreds();
+  const instance = creds.evolution?.instance_name;
+  if (!instance || !remoteJid) return;
+  evolutionRequest('PUT', `/chat/markMessageAsRead/${encodeURIComponent(instance)}`, {
+    readMessages: true,
+    remoteJid: remoteJid,
+  }).catch(function() {});
 }
 
 // ─── Sistema de Aprendizado Contínuo ─────────────
@@ -612,13 +637,34 @@ app.post('/api/conversa/:telefone/status', (req, res) => {
       }
     }
     if (!achou) {
-      conversas.push({ telefone: tel, status: status, ultimo_timestamp: Date.now(), nao_lidas: 0 });
+      conversas.push({ telefone: tel, status: status, ultima_msg: '', horario: '', ultimo_timestamp: Date.now(), nao_lidas: 0, nome: tel });
     }
     writeJson('conversas.json', conversas);
-    res.json({ success: true });
-  } catch (e) {
-    res.json({ success: false, error: e.message });
+    return res.json({ success: true });
+  } catch (error) {
+    return res.json({ success: false, error: error.message });
   }
+});
+
+// ─── Reiniciar servidor ─────────────────────────
+
+app.post('/api/restart', async (req, res) => {
+  res.json({ success: true, message: 'Reiniciando...' });
+  setTimeout(function() {
+    console.log('[restart] Reiniciando servidor...');
+    const cp = require('child_process');
+    var args = [process.argv[1]];
+    // Preservar argumentos extras (--port, etc)
+    for (var a = 2; a < process.argv.length; a++) args.push(process.argv[a]);
+    var child = cp.spawn(process.execPath, args, {
+      cwd: process.cwd(),
+      detached: true,
+      stdio: 'inherit',
+      env: process.env,
+    });
+    child.unref();
+    process.exit(0);
+  }, 1000);
 });
 
 // ─── Evolution: Listar conversas ───────────────────
@@ -830,6 +876,7 @@ app.post('/api/evolution/send', async (req, res) => {
     const { telefone, mensagem } = req.body || {};
     if (!telefone || !mensagem) return res.json({ success: false, error: 'telefone e mensagem são obrigatórios' });
 
+    marcarMensagemComoLida(telefone + '@s.whatsapp.net');
     const result = await sendEvolutionMessage(telefone, mensagem);
     res.json({ success: result.status < 400, error: result.data?.response?.message || result.error || null });
   } catch (error) {
@@ -1141,7 +1188,9 @@ app.post('/webhook/evolution', async (req, res) => {
             ultimo_timestamp: agora,
           });
         }
-        writeJson('conversas.json', conversas);
+    writeJson('conversas.json', conversas);
+    sseBroadcast('new_message', { telefone: telefone, message: { texto: mensagem, de_bot: false, origem: 'cliente', horario: horario, timestamp: agora }, conversation: { nome: messageData?.pushName || telefone, ultima_msg: mensagem, horario: horario, ultimo_timestamp: agora, nao_lidas: (existente ? existente.nao_lidas : 1) } });
+        sseBroadcast('new_message', { telefone: telefone, message: { texto: mensagem, de_bot: true, origem: 'bot', horario: horario, timestamp: agora }, conversation: { nome: messageData?.pushName || telefone, ultima_msg: mensagem, horario: horario, ultimo_timestamp: agora } });
       }
       return res.json({ success: true, ignored: true });
     }
@@ -1162,6 +1211,7 @@ app.post('/webhook/evolution', async (req, res) => {
           convs.push({ telefone, nome: telefone, ultima_msg: '📞 Chamada de voz', status: 'bot', horario: horarioCall, nao_lidas: 1, ultimo_timestamp: Date.now() });
         }
         writeJson('conversas.json', convs);
+        sseBroadcast('conversation_update', { telefone: telefone, ultima_msg: '📞 Chamada de voz', horario: horarioCall, ultimo_timestamp: Date.now() });
         await sendEvolutionMessage(telefone, 'Infelizmente não conseguimos atender chamadas de voz pelo WhatsApp. Por favor, envie uma mensagem de texto.');
       }
       return res.json({ success: true, call: true });
@@ -1170,6 +1220,10 @@ app.post('/webhook/evolution', async (req, res) => {
     if (!mensagem || !telefone) {
       return res.json({ success: true, ignored: true });
     }
+
+    // Marcar mensagem como lida (blue tick)
+    var remoteJid = messageData?.key?.remoteJid || telefone + '@s.whatsapp.net';
+    marcarMensagemComoLida(remoteJid);
 
     // Salvar mensagem localmente (histórico)
     salvarMensagemLocal(telefone, mensagem, false, 'cliente');
