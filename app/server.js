@@ -204,6 +204,16 @@ function marcarConversaIntervencao(telefone) {
       existente.nao_lidas = (existente.nao_lidas || 0) + 1;
       writeJson('conversas.json', conversas);
     }
+    // Marcar chat como não lido no WhatsApp Web
+    const creds = getCreds();
+    const instance = creds.evolution?.instance_name;
+    if (instance) {
+      const remoteJid = telefone + '@s.whatsapp.net';
+      evolutionRequest('PUT', '/chat/update/' + encodeURIComponent(instance), {
+        remoteJid: remoteJid,
+        unreadCount: 1
+      }).catch(function() {});
+    }
   } catch(e) {
     console.error('[marcarConversaIntervencao] erro:', e.message);
   }
