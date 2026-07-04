@@ -1566,7 +1566,8 @@ function montarPromptIA(mensagem, config, regras, conhecimento, cozinhaFuncionan
 
   prompt += '\n\nDATA/HORA ATUAL: ' + new Date().toLocaleString('pt-BR', { weekday: 'long', hour: '2-digit', minute: '2-digit', hour12: false }) +
     '\n\nMENSAGEM DO CLIENTE: "' + mensagem + '"\n\n' +
-    'Siga todas as REGRAS DO ESTABELECIMENTO e use as INFORMAÇÕES ENCONTRADAS NA BASE DE CONHECIMENTO (se houver) para responder. Interprete e responda de forma natural, como um atendente humano faria — não copie textos literalmente.';
+    'Siga todas as REGRAS DO ESTABELECIMENTO e use as INFORMAÇÕES ENCONTRADAS NA BASE DE CONHECIMENTO (se houver) para responder. Interprete e responda de forma natural, como um atendente humano faria — não copie textos literalmente.\n\n' +
+    'IMPORTANTE: O campo "STATUS ATUAL DA COZINHA" indica se a cozinha está ABERTA ou FECHADA agora. Se estiver FECHADA, informe o cliente educadamente e mencione o próximo horário disponível. Se estiver dentro do horário de agendamento mas a cozinha estiver FECHADA, informe que pode aceitar pedidos agendados.';
 
   return prompt;
 }
