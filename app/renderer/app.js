@@ -66,7 +66,7 @@ var HELP = {
   configuracoes: [
     'Configure os dados do seu negócio para o bot personalizar as respostas.',
     ['Dados Básicos', 'Nome, endereço, telefone e links que o bot usará para informar clientes.'],
-    ['Horários', 'Defina os dias e horários de funcionamento. Fora do horário, o bot usa a mensagem de ausência.'],
+    ['Horários', 'Defina os dias e horários da cozinha e do agendamento de pedidos. A cozinha controla se o restaurante está aberto; o agendamento controla se pode aceitar pedidos.'],
     ['Mensagens Padrão', 'Personalize as mensagens automáticas: saudação, ausência, quando não sabe responder e agradecimento.'],
   ],
 };
@@ -89,7 +89,7 @@ var state = {
     saved: false,
   },
   configuracoes: {
-    config: { nome_negocio: '', endereco: '', telefone: '', site: '', redes_sociais: { instagram: '', facebook: '', ifood: '' }, link_pedido_online: '', observacoes_gerais: '', tipos_atendimento: [], horarios: {}, mensagem_saudacao: 'Olá! Bem-vindo ao {{nome_negocio}}! Faça seu pedido pelo link: {{link_pedido_online}}. Como podemos ajudar?', mensagem_ausencia: '', mensagem_regra_nao_encontrada: '', mensagem_agradecimento: '', receber_chamadas: false, pedidos_aceitos_desde: '08:00' },
+    config: { nome_negocio: '', endereco: '', telefone: '', site: '', redes_sociais: { instagram: '', facebook: '', ifood: '' }, link_pedido_online: '', observacoes_gerais: '', tipos_atendimento: [], horarios: {}, mensagem_saudacao: 'Olá! Bem-vindo ao {{nome_negocio}}! Faça seu pedido pelo link: {{link_pedido_online}}. Como podemos ajudar?', mensagem_ausencia: '', mensagem_regra_nao_encontrada: '', mensagem_agradecimento: '', receber_chamadas: false },
     saving: false,
     saved: false,
   },
@@ -897,13 +897,35 @@ function renderConfiguracoes() {
       '</div>';
     }
 
-    horariosHtml += '<div class="flex flex-wrap items-center gap-2 p-3 bg-gray-50 rounded-lg">' +
-      '<div class="w-24 text-sm font-medium text-gray-700">' + LABELS[d] + '</div>' +
+    var agendamento = h.agendamento || [];
+    var agendamentoHtml = '';
+    for (var pa = 0; pa < agendamento.length; pa++) {
+      var perAg = agendamento[pa];
+      agendamentoHtml += '<div class="flex items-center gap-2">' +
+        '<input type="time" value="' + (perAg.abertura || '08:00') + '" onchange="updateAgendamentoPeriodo(\'' + d + '\',' + pa + ',\'abertura\',this.value)" class="px-2 py-1.5 border border-gray-300 rounded-lg text-sm" />' +
+        '<span class="text-gray-400 text-sm">até</span>' +
+        '<input type="time" value="' + (perAg.fechamento || '23:00') + '" onchange="updateAgendamentoPeriodo(\'' + d + '\',' + pa + ',\'fechamento\',this.value)" class="px-2 py-1.5 border border-gray-300 rounded-lg text-sm" />' +
+        (agendamento.length > 1 ? '<button onclick="removeAgendamentoPeriodo(\'' + d + '\',' + pa + ')" class="text-red-400 hover:text-red-600 p-1">' + I.x(14, '') + '</button>' : '') +
+      '</div>';
+    }
+
+    horariosHtml += '<div class="flex flex-wrap items-start gap-2 p-3 bg-gray-50 rounded-lg">' +
+      '<div class="w-24 text-sm font-medium text-gray-700 mt-1">' + LABELS[d] + '</div>' +
+      '<div class="flex-1 flex flex-col gap-1.5">' +
       '<label class="flex items-center gap-2 cursor-pointer">' +
         '<input type="checkbox" ' + (!fechado ? 'checked' : '') + ' onchange="updateHorario(\'' + d + '\',\'fechado\',!this.checked)" class="w-4 h-4 text-emerald-600 rounded border-gray-300 focus:ring-emerald-500" />' +
         '<span class="text-sm text-gray-600">Aberto</span></label>' +
-      (!fechado ? '<div class="flex flex-col gap-1.5">' + periodosHtml +
-        '<button onclick="addPeriodo(\'' + d + '\')" class="flex items-center gap-1 text-xs text-emerald-600 hover:text-emerald-700">' + I.plus(12, '') + ' Novo período</button></div>' : '') +
+      (!fechado ?
+        '<div class="flex flex-col gap-1.5 pl-1">' +
+          '<span class="text-xs font-medium text-gray-500 uppercase tracking-wide">Cozinha</span>' +
+          '<div class="flex flex-col gap-1.5">' + periodosHtml + '</div>' +
+          '<button onclick="addPeriodo(\'' + d + '\')" class="flex items-center gap-1 text-xs text-emerald-600 hover:text-emerald-700 w-fit">' + I.plus(12, '') + ' Novo período</button>' +
+          '<span class="text-xs font-medium text-gray-500 uppercase tracking-wide mt-2">Agendamento</span>' +
+          '<div class="flex flex-col gap-1.5">' + agendamentoHtml + '</div>' +
+          '<button onclick="addAgendamentoPeriodo(\'' + d + '\')" class="flex items-center gap-1 text-xs text-emerald-600 hover:text-emerald-700 w-fit">' + I.plus(12, '') + ' Novo período</button>' +
+        '</div>'
+      : '') +
+      '</div>' +
     '</div>';
   }
 
@@ -1027,7 +1049,7 @@ window.toggleTipo = function(tipo) {
 
 window.updateHorario = function(dia, campo, valor) {
   if (!state.configuracoes.config.horarios[dia]) {
-    state.configuracoes.config.horarios[dia] = { fechado: false, periodos: [{ abertura: '11:00', fechamento: '23:00' }] };
+    state.configuracoes.config.horarios[dia] = { fechado: false, periodos: [{ abertura: '11:00', fechamento: '23:00' }], agendamento: [{ abertura: '08:00', fechamento: '23:00' }] };
   }
   state.configuracoes.config.horarios[dia][campo] = valor;
 };
@@ -1053,6 +1075,32 @@ window.removePeriodo = function(dia, idx) {
   if (h && h.periodos) {
     h.periodos.splice(idx, 1);
     if (h.periodos.length === 0) h.periodos.push({ abertura: '11:00', fechamento: '23:00' });
+    render();
+    bindConfiguracoes();
+  }
+};
+
+window.updateAgendamentoPeriodo = function(dia, idx, campo, valor) {
+  var h = state.configuracoes.config.horarios[dia];
+  if (h && h.agendamento && h.agendamento[idx]) h.agendamento[idx][campo] = valor;
+};
+
+window.addAgendamentoPeriodo = function(dia) {
+  if (!state.configuracoes.config.horarios[dia]) {
+    state.configuracoes.config.horarios[dia] = { fechado: false, periodos: [{ abertura: '11:00', fechamento: '23:00' }] };
+  }
+  var h = state.configuracoes.config.horarios[dia];
+  if (!h.agendamento) h.agendamento = [];
+  h.agendamento.push({ abertura: '08:00', fechamento: '23:00' });
+  render();
+  bindConfiguracoes();
+};
+
+window.removeAgendamentoPeriodo = function(dia, idx) {
+  var h = state.configuracoes.config.horarios[dia];
+  if (h && h.agendamento) {
+    h.agendamento.splice(idx, 1);
+    if (h.agendamento.length === 0) h.agendamento.push({ abertura: '08:00', fechamento: '23:00' });
     render();
     bindConfiguracoes();
   }
