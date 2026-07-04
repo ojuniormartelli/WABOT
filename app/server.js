@@ -1401,6 +1401,10 @@ app.post('/webhook/evolution', async (req, res) => {
     // 1. SAUDAÇÃO: responder direto, sem consumir IA
     if (isSaudacao) {
       respostaIA = substituirVariaveis(config.mensagem_saudacao, config);
+      // Garantir que o link apareça na saudação
+      if (config.link_pedido_online && respostaIA.indexOf(config.link_pedido_online) < 0) {
+        respostaIA += '\n\n📲 Faça seu pedido pelo link:\n' + config.link_pedido_online;
+      }
     }
 
     // 2. AGRADECIMENTO: responder direto, sem consumir IA
