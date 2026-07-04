@@ -316,24 +316,66 @@ function salvarLearn(data) {
 function buscarRespostaConhecida(mensagem, knowledge) {
   if (!mensagem || !knowledge || !knowledge.respostas || knowledge.respostas.length === 0) return null;
   var msg = mensagem.toLowerCase().trim();
+  var tokensMsg = extrairTokens(mensagem);
   var melhor = null;
   var maiorScore = 0;
   for (var i = 0; i < knowledge.respostas.length; i++) {
     var r = knowledge.respostas[i];
     if (!r.palavras_chave || r.palavras_chave.length === 0) continue;
     var score = 0;
+    // Score por palavra-chave (com peso maior)
     for (var j = 0; j < r.palavras_chave.length; j++) {
       var kw = r.palavras_chave[j].toLowerCase().trim();
       if (msg.indexOf(kw) >= 0) {
-        score += kw.length;
+        score += kw.length * 2;
       }
+    }
+    // Score por similaridade com a pergunta (peso menor, mas ajuda com variações)
+    if (r.pergunta) {
+      var tokensPerg = extrairTokens(r.pergunta);
+      var sim = calcularSimilaridade(tokensMsg, tokensPerg);
+      var scorePerg = Math.max(sim.jaccard, sim.contidos * 0.8) * r.pergunta.length;
+      score += scorePerg;
     }
     if (score > maiorScore) {
       maiorScore = score;
       melhor = r;
     }
   }
+  // Threshold mais baixo para capturar mais perguntas similares
   return maiorScore > 0 ? melhor : null;
+}
+
+function buscarOutrosConhecimentos(mensagem, knowledge, ignorarItem) {
+  if (!mensagem || !knowledge || !Array.isArray(knowledge.respostas)) return [];
+  var msg = mensagem.toLowerCase().trim();
+  var tokensMsg = extrairTokens(mensagem);
+  var resultados = [];
+  for (var i = 0; i < knowledge.respostas.length; i++) {
+    var r = knowledge.respostas[i];
+    if (!r.palavras_chave || r.palavras_chave.length === 0) continue;
+    if (ignorarItem && r.id === ignorarItem.id) continue;
+    var score = 0;
+    // Score por palavra-chave
+    for (var j = 0; j < r.palavras_chave.length; j++) {
+      var kw = r.palavras_chave[j].toLowerCase().trim();
+      if (kw && msg.indexOf(kw) >= 0) {
+        score += kw.length;
+      }
+    }
+    // Score por similaridade com a pergunta
+    if (r.pergunta) {
+      var tokensPerg = extrairTokens(r.pergunta);
+      var sim = calcularSimilaridade(tokensMsg, tokensPerg);
+      score += Math.max(sim.jaccard, sim.contidos * 0.8) * r.pergunta.length;
+    }
+    if (score > 0) {
+      resultados.push({ item: r, score: score });
+    }
+  }
+  // Ordenar por score e retornar os 3 melhores
+  resultados.sort(function(a, b) { return b.score - a.score; });
+  return resultados.slice(0, 3).map(function(r) { return r.item; });
 }
 
 function salvarPerguntaNaoRespondida(telefone, mensagem) {
@@ -1410,8 +1452,9 @@ app.post('/webhook/evolution', async (req, res) => {
       }
     }
 
-    // 3. RESPOSTAS APRENDIDAS: buscar conhecimento (agora usado como contexto, não resposta direta)
+    // 3. RESPOSTAS APRENDIDAS: buscar conhecimento (usado como contexto adicional)
     var conhecimentoEncontrado = null;
+    var outrosConhecimentos = [];
     if (!respostaIA) {
       var knowledge = carregarKnowledge();
       var respostaConhecida = buscarRespostaConhecida(mensagem, knowledge);
@@ -1420,6 +1463,8 @@ app.post('/webhook/evolution', async (req, res) => {
         respostaConhecida.usos = (respostaConhecida.usos || 0) + 1;
         salvarKnowledge(knowledge);
       }
+      // Buscar também outras perguntas relacionadas para contexto adicional
+      outrosConhecimentos = buscarOutrosConhecimentos(mensagem, knowledge, respostaConhecida);
     }
 
     var precisaIntervencao = false;
@@ -1429,9 +1474,9 @@ app.post('/webhook/evolution', async (req, res) => {
     if (!respostaIA) {
       try {
         if (provider === 'groq') {
-          respostaIA = await consultarGroq(mensagem, config, regras, creds, conhecimentoEncontrado, cozinhaFuncionando, proxAbertura);
+          respostaIA = await consultarGroq(mensagem, config, regras, creds, conhecimentoEncontrado, cozinhaFuncionando, proxAbertura, outrosConhecimentos);
         } else {
-          respostaIA = await consultarGemini(mensagem, config, regras, creds, conhecimentoEncontrado, cozinhaFuncionando, proxAbertura);
+          respostaIA = await consultarGemini(mensagem, config, regras, creds, conhecimentoEncontrado, cozinhaFuncionando, proxAbertura, outrosConhecimentos);
         }
         if (respostaIA && respostaIA.indexOf('[NAO_SEI]') === 0) {
           respostaIA = respostaIA.replace('[NAO_SEI]', '').trim();
@@ -1527,7 +1572,7 @@ app.post('/webhook/evolution', async (req, res) => {
 
 // ─── Montar prompt com informações + horários ──────
 
-function montarPromptIA(mensagem, config, regras, conhecimento, cozinhaFuncionando, proxAbertura) {
+function montarPromptIA(mensagem, config, regras, conhecimento, cozinhaFuncionando, proxAbertura, outrosConhecimentos) {
   const regrasAtivas = (regras || []).filter(r => r.ativo);
   var regrasCabecalho = configGet(config, 'rotulos.regras_cabecalho', 'REGRAS DO ESTABELECIMENTO (siga estas instruções quando aplicável):');
   const regrasTexto = regrasAtivas.length > 0
@@ -1618,9 +1663,19 @@ function montarPromptIA(mensagem, config, regras, conhecimento, cozinhaFuncionan
 
   // Conhecimento encontrado (usado como contexto, não resposta literal)
   if (conhecimento && conhecimento.pergunta && conhecimento.resposta) {
-    prompt += '\n\nINFORMAÇÃO ENCONTRADA NA BASE DE CONHECIMENTO:\n' +
-      '- Pergunta similar: "' + conhecimento.pergunta + '"\n' +
-      '- Informação disponível: ' + conhecimento.resposta;
+    prompt += '\n\nINFORMAÇÃO ENCONTRADA NA BASE DE CONHECIMENTO (pergunta similar): "' + conhecimento.pergunta + '"\n' +
+      'Use essa informação para responder a pergunta do cliente de forma natural. ' +
+      'Se a pergunta do cliente for "quais horários?" ou "funciona quando?", mas o conhecimento for sobre "horário de funcionamento", use a resposta do conhecimento adaptada. ' +
+      'Se houver múltiplas formas de perguntar a mesma coisa (ex: "quando funciona", "horários", "está aberto", "que horas abre"), responda usando o conhecimento relacionado.\n' +
+      'Resposta do conhecimento: ' + conhecimento.resposta;
+  }
+
+  // Outros conhecimentos relacionados (contexto adicional)
+  if (outrosConhecimentos && outrosConhecimentos.length > 0) {
+    prompt += '\n\nOUTRAS INFORMAÇÕES RELACIONADAS (use se relevante):';
+    for (var k = 0; k < outrosConhecimentos.length; k++) {
+      prompt += '\n- "' + outrosConhecimentos[k].pergunta + '": ' + outrosConhecimentos[k].resposta;
+    }
   }
 
   prompt += '\n\nDATA/HORA ATUAL: ' + new Date().toLocaleString('pt-BR', { weekday: 'long', hour: '2-digit', minute: '2-digit', hour12: false }) +
@@ -1633,9 +1688,9 @@ function montarPromptIA(mensagem, config, regras, conhecimento, cozinhaFuncionan
 
 // ─── Gemini: Consultar IA ──────────────────────────
 
-async function consultarGemini(mensagem, config, regras, creds, conhecimento, cozinhaFuncionando, proxAbertura) {
+async function consultarGemini(mensagem, config, regras, creds, conhecimento, cozinhaFuncionando, proxAbertura, outrosConhecimentos) {
   return new Promise((resolve) => {
-    const prompt = montarPromptIA(mensagem, config, regras, conhecimento, cozinhaFuncionando, proxAbertura);
+    const prompt = montarPromptIA(mensagem, config, regras, conhecimento, cozinhaFuncionando, proxAbertura, outrosConhecimentos);
 
     const model = creds.gemini?.model || 'gemini-2.0-flash-lite';
     const apiKey = creds.gemini?.api_key;
@@ -1685,11 +1740,11 @@ async function consultarGemini(mensagem, config, regras, creds, conhecimento, co
 
 // ─── Groq: Consultar IA ───────────────────────────
 
-function consultarGroq(mensagem, config, regras, creds, conhecimento, cozinhaFuncionando, proxAbertura) {
+function consultarGroq(mensagem, config, regras, creds, conhecimento, cozinhaFuncionando, proxAbertura, outrosConhecimentos) {
   return new Promise((resolve) => {
     const model = creds.llm?.model || 'llama-3.3-70b-versatile';
     const apiKey = creds.llm?.api_key;
-    const prompt = montarPromptIA(mensagem, config, regras, conhecimento, cozinhaFuncionando, proxAbertura);
+    const prompt = montarPromptIA(mensagem, config, regras, conhecimento, cozinhaFuncionando, proxAbertura, outrosConhecimentos);
 
     const postData = JSON.stringify({
       model: model,
