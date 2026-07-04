@@ -19,64 +19,62 @@
     "segunda": {
       "fechado": false,
       "cozinha": [
-        {
-          "abertura": "11:00",
-          "fechamento": "23:00"
-        }
+        { "abertura": "11:00", "fechamento": "23:00" }
+      ],
+      "agendamento": [
+        { "abertura": "08:00", "fechamento": "23:00" }
       ]
     },
     "terca": {
       "fechado": false,
       "cozinha": [
-        {
-          "abertura": "11:00",
-          "fechamento": "23:00"
-        }
+        { "abertura": "11:00", "fechamento": "23:00" }
+      ],
+      "agendamento": [
+        { "abertura": "08:00", "fechamento": "23:00" }
       ]
     },
     "quarta": {
       "fechado": true,
       "cozinha": [
-        {
-          "abertura": null,
-          "fechamento": null
-        }
-      ]
+        { "abertura": null, "fechamento": null }
+      ],
+      "agendamento": []
     },
     "quinta": {
       "fechado": false,
       "cozinha": [
-        {
-          "abertura": "11:00",
-          "fechamento": "23:00"
-        }
+        { "abertura": "11:00", "fechamento": "23:00" }
+      ],
+      "agendamento": [
+        { "abertura": "08:00", "fechamento": "23:00" }
       ]
     },
     "sexta": {
       "fechado": false,
       "cozinha": [
-        {
-          "abertura": "11:00",
-          "fechamento": "23:00"
-        }
+        { "abertura": "11:00", "fechamento": "23:00" }
+      ],
+      "agendamento": [
+        { "abertura": "08:00", "fechamento": "23:00" }
       ]
     },
     "sabado": {
       "fechado": false,
       "cozinha": [
-        {
-          "abertura": "11:00",
-          "fechamento": "23:00"
-        }
+        { "abertura": "11:00", "fechamento": "23:00" }
+      ],
+      "agendamento": [
+        { "abertura": "08:00", "fechamento": "23:00" }
       ]
     },
     "domingo": {
       "fechado": false,
       "cozinha": [
-        {
-          "abertura": "11:00",
-          "fechamento": "22:00"
-        }
+        { "abertura": "11:00", "fechamento": "22:00" }
+      ],
+      "agendamento": [
+        { "abertura": "08:00", "fechamento": "22:00" }
       ]
     }
   },
@@ -87,7 +85,6 @@
   "registrar_aprendizado_auto": true,
   "timezone": "America/Sao_Paulo",
   "receber_chamadas": false,
-  "pedidos_aceitos_desde": "08:00",
   "mensagens": {
     "chamada_rejeitada": "Infelizmente não conseguimos atender chamadas de voz pelo WhatsApp. Por favor, envie uma mensagem de texto.",
     "audio_rejeitado": "Infelizmente não consigo ouvir mensagens de áudio. Por favor, digite sua mensagem.",
@@ -99,7 +96,6 @@
     ],
     "horarios_cabecalho": "Aqui estão nossos horários de funcionamento:",
     "texto_fechado": "FECHADO",
-    "pedido_antecipado": "📦 Pedidos para viagem podem ser feitos a partir das {{pedidos_aceitos_desde}} (pedido antecipado).",
     "rodape_pedido_link": "📲 Faça seu pedido pelo link: {{link_pedido_online}}"
   },
   "deteccao": {
@@ -114,17 +110,11 @@
   "rotulos": {
     "regras_cabecalho": "REGRAS DO ESTABELECIMENTO (siga estas instruções quando aplicável):",
     "horarios": "HORÁRIOS DE FUNCIONAMENTO (cozinha):",
-    "janelas_pedido": "JANELAS DE PEDIDO (para hoje):",
-    "aceitacao_pedidos_fallback": "ACEITAÇÃO DE PEDIDOS: Pedidos podem ser feitos a partir das {{pedidos_aceitos_desde}} da manhã.",
+    "rotulo_agendamento": "HORÁRIOS PARA AGENDAMENTO:",
     "tipos_atendimento": {
       "consumo_local": "consumo no local",
       "retirada": "retirada",
       "delivery": "delivery"
-    },
-    "refeicoes": {
-      "almoco": "Almoço",
-      "jantar": "Jantar",
-      "jantar_inicio": "17:00"
     }
   }
 }

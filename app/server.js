@@ -1308,6 +1308,7 @@ app.post('/webhook/evolution', async (req, res) => {
     // Verificar horário de funcionamento
     const config = readJson('config.json') || {};
     var foraHorario = false;
+    var cozinhaFuncionando = false;
     var proxAbertura = null;
     if (config.horarios) {
       var diasSemana = ['domingo', 'segunda', 'terca', 'quarta', 'quinta', 'sexta', 'sabado'];
@@ -1319,23 +1320,28 @@ app.post('/webhook/evolution', async (req, res) => {
         } else {
           var agora = new Date();
           var minAgora = agora.getHours() * 60 + agora.getMinutes();
-          var periodos = configDia.periodos || configDia.cozinha || [];
-          var minPedido = parseInt((config.pedidos_aceitos_desde || '08:00').split(':')[0]) * 60 + parseInt((config.pedidos_aceitos_desde || '08:00').split(':')[1] || '0');
-          var dentro = false;
-          var ultimoFechamento = 0;
-          for (var p = 0; p < periodos.length; p++) {
-            var hab = periodos[p].abertura || '00:00';
-            var hfe = periodos[p].fechamento || '23:59';
+          var periodosCozinha = configDia.periodos || configDia.cozinha || [];
+          var periodosAgendamento = configDia.agendamento || configDia.cozinha || [];
+
+          // Verificar cozinha
+          for (var p = 0; p < periodosCozinha.length; p++) {
+            var hab = periodosCozinha[p].abertura || '00:00';
+            var hfe = periodosCozinha[p].fechamento || '23:59';
             var pAbb = parseInt(hab.split(':')[0]) * 60 + parseInt(hab.split(':')[1] || '0');
             var pFee = parseInt(hfe.split(':')[0]) * 60 + parseInt(hfe.split(':')[1] || '0');
-            if (pFee > ultimoFechamento) ultimoFechamento = pFee;
-            if (minAgora >= pAbb && minAgora < pFee) { dentro = true; break; }
+            if (minAgora >= pAbb && minAgora < pFee) { cozinhaFuncionando = true; }
             if (minAgora < pAbb && (!proxAbertura || pAbb < proxAbertura)) proxAbertura = pAbb;
           }
-          // Se está fora do horário da cozinha mas dentro do horário de pedidos, não trava
-          if (!dentro && minAgora >= minPedido && minAgora < ultimoFechamento) {
-            dentro = true;
-            if (proxAbertura === null || minPedido < proxAbertura) proxAbertura = minPedido;
+
+          // Verificar agendamento (para bloqueio de pedidos)
+          var dentro = false;
+          for (var pa = 0; pa < periodosAgendamento.length; pa++) {
+            var aab = periodosAgendamento[pa].abertura;
+            var afe = periodosAgendamento[pa].fechamento;
+            if (!aab || !afe) continue;
+            var paAbb = parseInt(aab.split(':')[0]) * 60 + parseInt(aab.split(':')[1] || '0');
+            var paFee = parseInt(afe.split(':')[0]) * 60 + parseInt(afe.split(':')[1] || '0');
+            if (minAgora >= paAbb && minAgora < paFee) { dentro = true; break; }
           }
           if (!dentro) foraHorario = true;
         }
@@ -1396,9 +1402,9 @@ app.post('/webhook/evolution', async (req, res) => {
     if (!respostaIA) {
       try {
         if (provider === 'groq') {
-          respostaIA = await consultarGroq(mensagem, config, regras, creds, conhecimentoEncontrado, foraHorario, proxAbertura);
+          respostaIA = await consultarGroq(mensagem, config, regras, creds, conhecimentoEncontrado, cozinhaFuncionando, proxAbertura);
         } else {
-          respostaIA = await consultarGemini(mensagem, config, regras, creds, conhecimentoEncontrado, foraHorario, proxAbertura);
+          respostaIA = await consultarGemini(mensagem, config, regras, creds, conhecimentoEncontrado, cozinhaFuncionando, proxAbertura);
         }
         if (respostaIA && respostaIA.indexOf('[NAO_SEI]') === 0) {
           respostaIA = respostaIA.replace('[NAO_SEI]', '').trim();
@@ -1462,7 +1468,7 @@ app.post('/webhook/evolution', async (req, res) => {
 
 // ─── Montar prompt com informações + horários ──────
 
-function montarPromptIA(mensagem, config, regras, conhecimento, foraHorario, proxAbertura) {
+function montarPromptIA(mensagem, config, regras, conhecimento, cozinhaFuncionando, proxAbertura) {
   const regrasAtivas = (regras || []).filter(r => r.ativo);
   var regrasCabecalho = configGet(config, 'rotulos.regras_cabecalho', 'REGRAS DO ESTABELECIMENTO (siga estas instruções quando aplicável):');
   const regrasTexto = regrasAtivas.length > 0
@@ -1480,77 +1486,54 @@ function montarPromptIA(mensagem, config, regras, conhecimento, foraHorario, pro
   if (config.redes_sociais?.ifood) redesHtml.push('Ifood: ' + config.redes_sociais.ifood);
   const redesTexto = redesHtml.length > 0 ? '- Redes sociais: ' + redesHtml.join(' | ') : '';
 
-  // Formatar horários
+  // Formatar horários (cozinha + agendamento)
   var horariosTexto = '';
   if (config.horarios) {
     var dias = ['domingo', 'segunda', 'terca', 'quarta', 'quinta', 'sexta', 'sabado'];
     var nomesDias = { 'domingo': 'Domingo', 'segunda': 'Segunda', 'terca': 'Terça', 'quarta': 'Quarta', 'quinta': 'Quinta', 'sexta': 'Sexta', 'sabado': 'Sábado' };
     var textoFechado = configGet(config, 'mensagens.texto_fechado', 'FECHADO');
-    var linhas = [];
+    var rotuloAgendamento = configGet(config, 'rotulos.rotulo_agendamento', 'HORÁRIOS PARA AGENDAMENTO:');
+    var linhasCozinha = [];
+    var linhasAgendamento = [];
     for (var d = 0; d < dias.length; d++) {
       var dia = dias[d];
       var info = config.horarios[dia];
       if (!info) continue;
       if (info.fechado) {
-        linhas.push('- ' + (nomesDias[dia] || dia) + ': ' + textoFechado);
+        var nomeDia = nomesDias[dia] || dia;
+        linhasCozinha.push('- ' + nomeDia + ': ' + textoFechado);
         continue;
       }
-      var partesCozinha = [];
-      var partesEncomendas = [];
       var periodos = info.periodos || info.cozinha || [];
-      if (periodos.length > 0) {
-        for (var p = 0; p < periodos.length; p++) {
-          if (periodos[p].abertura) {
-            partesCozinha.push(periodos[p].abertura + ' às ' + periodos[p].fechamento);
-          }
+      var partes = [];
+      for (var p = 0; p < periodos.length; p++) {
+        if (periodos[p].abertura) {
+          partes.push(periodos[p].abertura + ' às ' + periodos[p].fechamento);
         }
       }
-      if (info.encomendas && info.encomendas.length > 0) {
-        for (var p2 = 0; p2 < info.encomendas.length; p2++) {
-          if (info.encomendas[p2].abertura) {
-            partesEncomendas.push(info.encomendas[p2].abertura + ' às ' + info.encomendas[p2].fechamento);
-          }
-        }
+      if (partes.length > 0) {
+        linhasCozinha.push('- ' + (nomesDias[dia] || dia) + ': ' + partes.join(', '));
       }
-      var linha = '';
-      if (partesCozinha.length > 0) linha += 'Funcionamento: ' + partesCozinha.join(', ');
-      if (partesEncomendas.length > 0) {
-        if (linha) linha += ' | ';
-        linha += 'Encomendas: ' + partesEncomendas.join(', ');
-      }
-      if (linha) linhas.push('- ' + (nomesDias[dia] || dia) + ': ' + linha);
-    }
-    if (linhas.length > 0) {
-      horariosTexto = '\n' + (configGet(config, 'rotulos.horarios', 'HORÁRIOS DE FUNCIONAMENTO (cozinha):')) + '\n' + linhas.join('\n');
-    }
-  }
 
-  var aceitaPedidosDesde = config.pedidos_aceitos_desde || '08:00';
-  var rotulosRefeicoes = configGet(config, 'rotulos.refeicoes', { almoco: 'Almoço', jantar: 'Jantar', jantar_inicio: '17:00' });
-  var janelasPedido = '';
-  var hojeIdx = new Date().getDay();
-  var diasSemana2 = ['domingo', 'segunda', 'terca', 'quarta', 'quinta', 'sexta', 'sabado'];
-  var configHoje = config.horarios?.[diasSemana2[hojeIdx]];
-  if (configHoje && !configHoje.fechado) {
-    var periodosHoje = configHoje.periodos || configHoje.cozinha || [];
-    if (periodosHoje.length > 0) {
-      janelasPedido = '\n' + configGet(config, 'rotulos.janelas_pedido', 'JANELAS DE PEDIDO (para hoje):') + '\n';
-      for (var pp = 0; pp < periodosHoje.length; pp++) {
-        if (periodosHoje[pp].abertura && periodosHoje[pp].fechamento) {
-          var aberturaPeriodo = periodosHoje[pp].abertura;
-          var fechamentoPeriodo = periodosHoje[pp].fechamento;
-          var horaAbertura = parseInt(aberturaPeriodo.split(':')[0]);
-          var nomeRefeicao = horaAbertura < 16 ? rotulosRefeicoes.almoco : rotulosRefeicoes.jantar;
-          var inicioPedido = nomeRefeicao === rotulosRefeicoes.almoco ? aceitaPedidosDesde : (rotulosRefeicoes.jantar_inicio || '17:00');
-          janelasPedido += '- ' + nomeRefeicao + ': pedidos a partir das ' + inicioPedido + ' até as ' + fechamentoPeriodo + ' (cozinha funciona das ' + aberturaPeriodo + ' às ' + fechamentoPeriodo + ')\n';
+      // Agendamento
+      var periodosAg = info.agendamento || [];
+      var partesAg = [];
+      for (var pa = 0; pa < periodosAg.length; pa++) {
+        if (periodosAg[pa].abertura) {
+          partesAg.push(periodosAg[pa].abertura + ' às ' + periodosAg[pa].fechamento);
         }
       }
+      if (partesAg.length > 0) {
+        linhasAgendamento.push('- ' + (nomesDias[dia] || dia) + ': ' + partesAg.join(', '));
+      }
+    }
+    if (linhasCozinha.length > 0) {
+      horariosTexto += '\n' + (configGet(config, 'rotulos.horarios', 'HORÁRIOS DE FUNCIONAMENTO (cozinha):')) + '\n' + linhasCozinha.join('\n');
+    }
+    if (linhasAgendamento.length > 0) {
+      horariosTexto += '\n\n' + rotuloAgendamento + '\n' + linhasAgendamento.join('\n');
     }
   }
-  if (!janelasPedido) {
-    janelasPedido = '\n' + substituirVariaveis(configGet(config, 'rotulos.aceitacao_pedidos_fallback', 'ACEITAÇÃO DE PEDIDOS: Pedidos podem ser feitos a partir das {{pedidos_aceitos_desde}} da manhã.'), config) + '\n';
-  }
-  var pedidoTexto = janelasPedido;
 
   var rotulosAtendimento = configGet(config, 'rotulos.tipos_atendimento', { consumo_local: 'consumo no local', retirada: 'retirada', delivery: 'delivery' });
   var tiposTexto = Array.isArray(config.tipos_atendimento) ? config.tipos_atendimento.map(function(t) { return rotulosAtendimento[t] || t; }).join(', ') : '';
@@ -1566,9 +1549,9 @@ function montarPromptIA(mensagem, config, regras, conhecimento, foraHorario, pro
     '- Observações: ' + (config.observacoes_gerais || '') +
     horariosTexto;
 
-  // Status atual do restaurante
-  prompt += '\n\nSTATUS ATUAL: ' + (foraHorario ? 'FECHADO' : 'ABERTO') +
-    (foraHorario && proxAbertura !== null ? ' (próxima abertura: ' + proxAbertura + ')' : '');
+  // Status atual do restaurante (cozinha funcionando agora?)
+  prompt += '\n\nSTATUS ATUAL DA COZINHA: ' + (cozinhaFuncionando ? 'ABERTA' : 'FECHADA') +
+    (!cozinhaFuncionando && proxAbertura !== null ? ' (próxima abertura: ' + proxAbertura + ')' : '');
 
   if (regrasTexto) {
     prompt += '\n\n' + regrasTexto;
@@ -1581,8 +1564,7 @@ function montarPromptIA(mensagem, config, regras, conhecimento, foraHorario, pro
       '- Informação disponível: ' + conhecimento.resposta;
   }
 
-  prompt += pedidoTexto +
-    '\n\nDATA/HORA ATUAL: ' + new Date().toLocaleString('pt-BR', { weekday: 'long', hour: '2-digit', minute: '2-digit', hour12: false }) +
+  prompt += '\n\nDATA/HORA ATUAL: ' + new Date().toLocaleString('pt-BR', { weekday: 'long', hour: '2-digit', minute: '2-digit', hour12: false }) +
     '\n\nMENSAGEM DO CLIENTE: "' + mensagem + '"\n\n' +
     'Siga todas as REGRAS DO ESTABELECIMENTO e use as INFORMAÇÕES ENCONTRADAS NA BASE DE CONHECIMENTO (se houver) para responder. Interprete e responda de forma natural, como um atendente humano faria — não copie textos literalmente.';
 
@@ -1591,9 +1573,9 @@ function montarPromptIA(mensagem, config, regras, conhecimento, foraHorario, pro
 
 // ─── Gemini: Consultar IA ──────────────────────────
 
-async function consultarGemini(mensagem, config, regras, creds, conhecimento, foraHorario, proxAbertura) {
+async function consultarGemini(mensagem, config, regras, creds, conhecimento, cozinhaFuncionando, proxAbertura) {
   return new Promise((resolve) => {
-    const prompt = montarPromptIA(mensagem, config, regras, conhecimento, foraHorario, proxAbertura);
+    const prompt = montarPromptIA(mensagem, config, regras, conhecimento, cozinhaFuncionando, proxAbertura);
 
     const model = creds.gemini?.model || 'gemini-2.0-flash-lite';
     const apiKey = creds.gemini?.api_key;
@@ -1643,11 +1625,11 @@ async function consultarGemini(mensagem, config, regras, creds, conhecimento, fo
 
 // ─── Groq: Consultar IA ───────────────────────────
 
-function consultarGroq(mensagem, config, regras, creds, conhecimento, foraHorario, proxAbertura) {
+function consultarGroq(mensagem, config, regras, creds, conhecimento, cozinhaFuncionando, proxAbertura) {
   return new Promise((resolve) => {
     const model = creds.llm?.model || 'llama-3.3-70b-versatile';
     const apiKey = creds.llm?.api_key;
-    const prompt = montarPromptIA(mensagem, config, regras, conhecimento, foraHorario, proxAbertura);
+    const prompt = montarPromptIA(mensagem, config, regras, conhecimento, cozinhaFuncionando, proxAbertura);
 
     const postData = JSON.stringify({
       model: model,
