@@ -1909,22 +1909,85 @@ function salvarKnowledge(knowledge) {
   writeJson('aprendizados.json', knowledge.respostas || []);
 }
 
+function normalizeText(t) {
+  if (!t) return '';
+  return t.toLowerCase()
+    .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+    .replace(/[^a-z0-9\s]/g, ' ')
+    .replace(/\s+/g, ' ').trim();
+}
+
+function extrairTokens(t) {
+  if (!t) return [];
+  var stopwords = {a:1,o:1,e:1,de:1,da:1,do:1,em:1,para:1,com:1,um:1,uma:1,uns:1,umas:1,
+    na:1,no:1,nas:1,nos:1,por:1,pra:1,pro:1,se:1,que:1,é:1,tem:1,sao:1,são:1,esta:1,está:1,como:1,
+    voce:1,você:1,meu:1,minha:1,seu:1,sua:1,teu:1,tua:1,isso:1,isto:1,aquilo:1,qual:1,
+    quem:1,quando:1,onde:1,porque:1,porque:1,pode:1,vai:1,vao:1,vão:1,ter:1,mais:1,mas:1,muito:1,bem:1,
+    ainda:1,ja:1,já:1,so:1,só:1,sim:1,nao:1,não:1,tudo:1,todo:1,toda:1,todos:1,todas:1,
+    algum:1,alguns:1,alguma:1,algumas:1,esses:1,essas:1,esse:1,essa:1,este:1,esta:1,
+    estes:1,estas:1,aquele:1,aquela:1,aqueles:1,aquelas:1,sobre:1,sem:1,entre:1,ate:1,até:1};
+  var palavras = normalizeText(t).split(/\s+/).filter(function(p) { return p.length > 2 && !stopwords[p]; });
+  var unicas = [];
+  for (var i = 0; i < palavras.length; i++) {
+    if (unicas.indexOf(palavras[i]) < 0) unicas.push(palavras[i]);
+  }
+  return unicas;
+}
+
+function calcularSimilaridade(tokensMsg, tokensPergunta) {
+  if (!tokensMsg || !tokensPergunta || tokensMsg.length === 0 || tokensPergunta.length === 0) return { jaccard: 0, contidos: 0 };
+  var perguntaSet = {};
+  for (var i = 0; i < tokensPergunta.length; i++) perguntaSet[tokensPergunta[i]] = true;
+  var interseccao = 0;
+  for (var i = 0; i < tokensMsg.length; i++) {
+    if (perguntaSet[tokensMsg[i]]) interseccao++;
+  }
+  var uniaoSet = {};
+  for (var i = 0; i < tokensPergunta.length; i++) uniaoSet[tokensPergunta[i]] = true;
+  for (var i = 0; i < tokensMsg.length; i++) uniaoSet[tokensMsg[i]] = true;
+  var uniaoCount = 0;
+  for (var k in uniaoSet) uniaoCount++;
+  var jaccard = uniaoCount > 0 ? interseccao / uniaoCount : 0;
+  var contidos = 0;
+  for (var i = 0; i < tokensMsg.length; i++) {
+    for (var j = 0; j < tokensPergunta.length; j++) {
+      if (tokensPergunta[j].indexOf(tokensMsg[i]) >= 0 || tokensMsg[i].indexOf(tokensPergunta[j]) >= 0) { contidos++; break; }
+    }
+  }
+  return { jaccard: jaccard, contidos: tokensMsg.length > 0 ? contidos / tokensMsg.length : 0 };
+}
+
 function buscarRespostaConhecida(mensagem, knowledge) {
   if (!mensagem || !knowledge || !Array.isArray(knowledge.respostas)) return null;
-  var msg = mensagem.toLowerCase().trim();
+  var msgNorm = normalizeText(mensagem);
+  var tokensMsg = extrairTokens(mensagem);
   var melhor = null;
-  var maiorMatches = 0;
+  var maiorScore = 0;
   for (var i = 0; i < knowledge.respostas.length; i++) {
     var item = knowledge.respostas[i];
-    if (!item.palavras_chave || !Array.isArray(item.palavras_chave) || item.palavras_chave.length === 0) continue;
-    var matches = 0;
-    for (var j = 0; j < item.palavras_chave.length; j++) {
-      var p = (item.palavras_chave[j] || '').toLowerCase().trim();
-      if (p && msg.indexOf(p) >= 0) { matches++; }
+    // Score de palavras-chave
+    var scoreKW = 0;
+    var palavras = item.palavras_chave;
+    if (palavras && Array.isArray(palavras) && palavras.length > 0) {
+      var achados = 0;
+      for (var j = 0; j < palavras.length; j++) {
+        var kw = (palavras[j] || '').toLowerCase().trim();
+        if (kw && msgNorm.indexOf(kw) >= 0) achados++;
+      }
+      scoreKW = achados / palavras.length;
     }
-    if (matches > maiorMatches) { maiorMatches = matches; melhor = item; }
+    // Score de similaridade com a pergunta
+    var scorePerg = 0;
+    if (item.pergunta) {
+      var tokensPerg = extrairTokens(item.pergunta);
+      var sim = calcularSimilaridade(tokensMsg, tokensPerg);
+      scorePerg = Math.max(sim.jaccard, sim.contidos * 0.8);
+    }
+    // Score combinado (pesos: 40% keywords, 60% similaridade pergunta)
+    var score = scoreKW * 0.4 + scorePerg * 0.6;
+    if (score > maiorScore) { maiorScore = score; melhor = item; }
   }
-  return maiorMatches > 0 ? melhor : null;
+  return maiorScore >= 0.1 ? melhor : null;
 }
 
 function salvarPerguntaNaoRespondida(telefone, mensagem) {
