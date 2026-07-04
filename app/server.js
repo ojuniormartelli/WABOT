@@ -660,6 +660,27 @@ app.post('/api/conversa/:telefone/status', (req, res) => {
   }
 });
 
+// ─── Iniciar atendimento (saudação + link) ────
+
+app.post('/api/conversa/:telefone/iniciar', async (req, res) => {
+  try {
+    var tel = req.params.telefone;
+    var config = readJson('config.json') || {};
+    var nomeNegocio = config.nome_negocio || 'Restaurante';
+    var linkPedido = config.link_pedido_online || '';
+    var saudacao = (config.mensagem_saudacao || 'Olá! Bem-vindo ao {{nome_negocio}}! Como podemos ajudar?')
+      .replace(/\{\{nome_negocio\}\}/g, nomeNegocio);
+    var mensagem = saudacao;
+    if (linkPedido) {
+      mensagem += '\n\n📲 Faça seu pedido pelo link:\n' + linkPedido;
+    }
+    await sendEvolutionMessage(tel, mensagem, 'bot');
+    return res.json({ success: true, message: 'Mensagem enviada' });
+  } catch (error) {
+    return res.json({ success: false, error: error.message });
+  }
+});
+
 // ─── Reiniciar servidor ─────────────────────────
 
 app.post('/api/restart', async (req, res) => {

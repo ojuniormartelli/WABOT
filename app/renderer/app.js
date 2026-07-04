@@ -1286,6 +1286,7 @@ function renderChatView(contato) {
     '</div>' +
 
     '<div class="bg-white px-4 py-2 flex items-center gap-1.5 border-b border-gray-200 flex-shrink-0 overflow-x-auto">' +
+      '<button onclick="iniciarAtendimento()" class="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-lg bg-emerald-50 text-emerald-700 border border-emerald-200 hover:bg-emerald-100 whitespace-nowrap" ' + (estaIgnoradoPermanente || estaPausaTemporaria ? 'disabled' : '') + '>' + I.zap(14, '') + ' Iniciar Atendimento</button>' +
       '<button onclick="alterarStatus(\'humano\')" class="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-lg bg-white border border-gray-300 hover:bg-gray-50 disabled:opacity-40 whitespace-nowrap" ' + (estaIgnoradoPermanente || estaPausaTemporaria ? 'disabled' : '') + '>' + I.pause(14, '') + ' Modo Humano</button>' +
       '<button onclick="alterarStatus(\'bot\')" class="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-lg bg-white border border-gray-300 hover:bg-gray-50 disabled:opacity-40 whitespace-nowrap" ' + (!estaIgnoradoPermanente && !estaPausaTemporaria && !estaIntervencao ? 'disabled' : '') + '>' + I.play(14, '') + ' Reativar Bot</button>' +
       '<span class="text-gray-300 mx-0.5">|</span>' +
@@ -1303,6 +1304,25 @@ function renderChatView(contato) {
       '</div>' +
     '</div></div>';
 }
+
+window.iniciarAtendimento = async function() {
+  var contato = state.conversas.contatoSelecionado;
+  if (!contato || !contato.telefone) return;
+  if (!confirm('Enviar saudação com link do estabelecimento para ' + (contato.nome || contato.telefone) + '?')) return;
+  try {
+    var r = await fetch('/api/conversa/' + encodeURIComponent(contato.telefone) + '/iniciar', { method: 'POST' });
+    var data = await r.json();
+    if (data.success) {
+      await loadMensagens();
+      render();
+      bindChat();
+    } else {
+      alert('Erro ao iniciar atendimento: ' + (data.error || 'desconhecido'));
+    }
+  } catch(e) {
+    alert('Erro de rede ao iniciar atendimento');
+  }
+};
 
 window.ignorarContato = async function() {
   var contato = state.conversas.contatoSelecionado;
