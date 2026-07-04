@@ -700,7 +700,7 @@ app.post('/api/conversa/:telefone/iniciar', async (req, res) => {
     var config = readJson('config.json') || {};
     var nomeNegocio = config.nome_negocio || 'Restaurante';
     var linkPedido = config.link_pedido_online || '';
-    var saudacao = (config.mensagem_saudacao || 'Olá! Bem-vindo ao {{nome_negocio}}! Como podemos ajudar?')
+    var saudacao = (config.mensagem_saudacao || 'Olá! Bem-vindo ao {{nome_negocio}}! Faça seu pedido pelo link: {{link_pedido_online}}. Como podemos ajudar?')
       .replace(/\{\{nome_negocio\}\}/g, nomeNegocio);
     var mensagem = saudacao;
     if (linkPedido) {
@@ -1619,7 +1619,30 @@ function montarPromptIA(mensagem, config, regras) {
   }
 
   var aceitaPedidosDesde = config.pedidos_aceitos_desde || '08:00';
-  var pedidoTexto = '\nACEITAÇÃO DE PEDIDOS: Pedidos (encomendas) podem ser feitos a partir das ' + aceitaPedidosDesde + ' da manhã, mesmo que a cozinha ainda não tenha aberto. Se o cliente quiser fazer um pedido antes do horário da cozinha, atenda normalmente e informe que a cozinha abre no horário indicado.\n';
+  var janelasPedido = '';
+  var hojeIdx = new Date().getDay();
+  var diasSemana2 = ['domingo', 'segunda', 'terca', 'quarta', 'quinta', 'sexta', 'sabado'];
+  var configHoje = config.horarios?.[diasSemana2[hojeIdx]];
+  if (configHoje && !configHoje.fechado) {
+    var periodosHoje = configHoje.periodos || configHoje.cozinha || [];
+    if (periodosHoje.length > 0) {
+      janelasPedido = '\nJANELAS DE PEDIDO (para hoje):\n';
+      for (var pp = 0; pp < periodosHoje.length; pp++) {
+        if (periodosHoje[pp].abertura && periodosHoje[pp].fechamento) {
+          var aberturaPeriodo = periodosHoje[pp].abertura;
+          var fechamentoPeriodo = periodosHoje[pp].fechamento;
+          var horaAbertura = parseInt(aberturaPeriodo.split(':')[0]);
+          var nomeRefeicao = horaAbertura < 16 ? 'Almoço' : 'Jantar';
+          var inicioPedido = nomeRefeicao === 'Almoço' ? aceitaPedidosDesde : '17:00';
+          janelasPedido += '- ' + nomeRefeicao + ': pedidos a partir das ' + inicioPedido + ' até as ' + fechamentoPeriodo + ' (cozinha funciona das ' + aberturaPeriodo + ' às ' + fechamentoPeriodo + ')\n';
+        }
+      }
+    }
+  }
+  if (!janelasPedido) {
+    janelasPedido = '\nACEITAÇÃO DE PEDIDOS: Pedidos podem ser feitos a partir das ' + aceitaPedidosDesde + ' da manhã.\n';
+  }
+  var pedidoTexto = janelasPedido;
 
   return 'Você é o assistente virtual do ' + (config.nome_negocio || 'restaurante') + '. Responda em português, de forma natural, amigável e objetiva.\n\n' +
     'INFORMAÇÕES DO RESTAURANTE:\n' +
@@ -1642,10 +1665,16 @@ function montarPromptIA(mensagem, config, regras) {
     '4. Se o cliente agradecer, responda educadamente ("Por nada!", "Disponha!", etc.).\n' +
     '5. IMPORTANTE: Se você NÃO souber responder algo com segurança, comece sua resposta EXATAMENTE com "[NAO_SEI] " e depois diga educadamente que um atendente humano vai ajudar.\n' +
     '6. NÃO invente informações que não estão nos dados acima. Mas use seu bom senso: se perguntarem sobre prato específico e você não tem o cardápio, sugira o link de pedido online.\n' +
-    '7. NÃO inicie respostas com saudações, a menos que o cliente tenha mandado apenas uma saudação.\n' +
+    '7. Se o cliente enviar "olá", "bom dia", "boa tarde" etc. (saudação simples), responda com saudação curta e já emenda o assunto. Se o cliente já mandou uma pergunta junto com a saudação, NÃO use saudação, vá direto ao ponto.\n' +
     '8. Sempre ofereça o link de pedido online quando for relevante: ' + (config.link_pedido_online || '') + '\n' +
-    '9. Para perguntas sobre horários, repita EXATAMENTE os horários listados acima sem modificar. Se houver dois períodos (ex: 08:00 às 14:00, 18:00 às 22:00), mencione AMBOS.\n' +
-    '10. Se o cliente quiser fazer um pedido e estiver antes do horário da cozinha mas dentro do horário de aceitação de pedidos, atenda o pedido e avise que a cozinha abrirá no horário indicado.';
+    '9. Para perguntas sobre horários ou se está aberto/fechado, responda com esta estrutura obrigatória:\n' +
+    '   - Primeiro: confirme se está aberto ou fechado no momento.\n' +
+    '   - Depois: informe os HORÁRIOS DA COZINHA exatamente como estão listados acima (ex: "cozinha funciona das 11:00 às 14:30 e das 18:00 às 22:00").\n' +
+    '   - Depois: informe as JANELAS DE PEDIDO conforme listado acima (ex: "para o almoço você pode fazer pedidos a partir das 08:00 até as 14:30; para o jantar, pedidos a partir das 17:00 até as 22:00").\n' +
+    '   - Por fim: ofereça o link de pedido online.\n' +
+    '   IMPORTANTE: use os VALORES REAIS listados em JANELAS DE PEDIDO e HORÁRIOS, não invente.\n' +
+    '10. Se o cliente quiser fazer um pedido e estiver antes do horário da cozinha mas dentro do horário de aceitação de pedidos, atenda o pedido e avise que a cozinha abrirá no horário indicado.\n' +
+    '11. NUNCA use "Dia!" sozinho. Se for usar saudação, use "Bom dia!", "Boa tarde!" ou "Boa noite!" completos.';
 }
 
 // ─── Gemini: Consultar IA ──────────────────────────
