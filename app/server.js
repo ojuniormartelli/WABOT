@@ -10,6 +10,17 @@ const PORT = process.env.PORT || 3001;
 const app = express();
 let dockerManager;
 
+// ─── Timezone: usar do config.json se disponível ──
+try {
+  var cfgTz = JSON.parse(fs.readFileSync(path.join(__dirname, 'data/config.json'), 'utf-8'));
+  if (cfgTz && cfgTz.timezone) {
+    process.env.TZ = cfgTz.timezone;
+    console.log('[timezone] Configurado:', cfgTz.timezone);
+  }
+} catch(e) {
+  // Se não conseguir ler, mantém TZ atual
+}
+
 // ─── SSE: clientes conectados ──
 var sseClients = [];
 
@@ -1560,6 +1571,7 @@ function montarPromptIA(mensagem, config, regras) {
     '- Observações: ' + (config.observacoes_gerais || '') +
     horariosTexto +
     '\n\n' + regrasTexto +
+    '\n\nDATA/HORA ATUAL: ' + new Date().toLocaleString('pt-BR', { weekday: 'long', hour: '2-digit', minute: '2-digit', hour12: false }) +
     '\n\nMENSAGEM DO CLIENTE: "' + mensagem + '"\n\n' +
     'INSTRUÇÕES:\n' +
     '1. Use TODAS as informações acima para responder. Use também seu conhecimento geral sobre restaurantes para interpretar o que o cliente está perguntando.\n' +

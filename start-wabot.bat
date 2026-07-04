@@ -1,7 +1,6 @@
 @echo off
 title WaBot - Inicio Rapido
 
-set TZ=America/Sao_Paulo
 set WABOT_DIR=%~dp0
 
 echo Iniciando Evolution API + PostgreSQL (Docker)...
@@ -24,8 +23,8 @@ if errorlevel 1 (
   exit /b 1
 )
 
-REM Iniciar Node.js oculto (Start-Process direto, sem cmd)
-powershell -Command "Start-Process -WindowStyle Hidden -FilePath node -ArgumentList 'app/server.js'"
+REM Iniciar Node.js oculto
+start /b /min "" node app/server.js
 
 echo.
 echo WaBot iniciado em segundo plano!
