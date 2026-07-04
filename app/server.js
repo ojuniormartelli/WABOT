@@ -241,14 +241,24 @@ function sendEvolutionMessage(to, text, origem) {
 
 // ─── System ───────────────────────────────────────
 
-function marcarMensagemComoLida(remoteJid) {
+function marcarMensagemComoLida(remoteJid, messageId) {
   const creds = getCreds();
   const instance = creds.evolution?.instance_name;
   if (!instance || !remoteJid) return;
-  evolutionRequest('PUT', `/chat/markMessageAsRead/${encodeURIComponent(instance)}`, {
-    readMessages: true,
-    remoteJid: remoteJid,
-  }).catch(function() {});
+  var payload;
+  if (messageId) {
+    payload = {
+      readMessages: [{
+        remoteJid: remoteJid,
+        id: messageId,
+        fromMe: false,
+      }],
+    };
+  } else {
+    payload = { readMessages: true, remoteJid: remoteJid };
+  }
+  evolutionRequest('PUT', `/chat/markMessageAsRead/${encodeURIComponent(instance)}`, payload)
+    .catch(function() {});
 }
 
 // ─── Sistema de Aprendizado Contínuo ─────────────
@@ -1245,9 +1255,10 @@ app.post('/webhook/evolution', async (req, res) => {
       return res.json({ success: true, ignored: true });
     }
 
-    // Marcar mensagem como lida (blue tick)
+    // Marcar mensagem como lida (blue tick) — passa o messageId para bater no WhatsApp
     var remoteJid = messageData?.key?.remoteJid || telefone + '@s.whatsapp.net';
-    marcarMensagemComoLida(remoteJid);
+    var msgId = messageData?.key?.id;
+    marcarMensagemComoLida(remoteJid, msgId);
 
     // Salvar mensagem localmente (histórico)
     salvarMensagemLocal(telefone, mensagem, false, 'cliente');
