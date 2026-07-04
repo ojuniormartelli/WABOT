@@ -1667,8 +1667,8 @@ function montarPromptIA(mensagem, config, regras) {
     '2. Responda de forma breve, educada e natural, como um atendente de restaurante de verdade.\n' +
     '3. Se o cliente enviar uma saudação (oi, olá, bom dia etc.), responda com uma saudação amigável.\n' +
     '4. Se o cliente agradecer, responda educadamente ("Por nada!", "Disponha!", etc.).\n' +
-    '5. IMPORTANTE: Se você NÃO souber responder algo com segurança, comece sua resposta EXATAMENTE com "[NAO_SEI] " e depois diga educadamente que um atendente humano vai ajudar.\n' +
-    '6. NÃO invente informações que não estão nos dados acima. Mas use seu bom senso: se perguntarem sobre prato específico e você não tem o cardápio, sugira o link de pedido online.\n' +
+    '5. IMPORTANTE: Sempre tente ajudar com base nas informações disponíveis. Se o cliente quiser fazer um pedido, peça para ele usar o link de pedido online. Se perguntar sobre prato específico e você não tiver o cardápio, sugira o link de pedido online. Só use "[NAO_SEI] " se realmente não houver NENHUMA informação relevante para responder.\n' +
+    '6. NÃO invente informações que não estão nos dados acima. Se o cliente quiser fazer um pedido, NUNCA diga que não sabe — peça para usar o link de pedido online. Se perguntarem sobre prato específico e você não tem o cardápio, sugira o link de pedido online.\n' +
     '7. Se o cliente enviar "olá", "bom dia", "boa tarde" etc. (saudação simples), responda com saudação curta e já emenda o assunto. Se o cliente já mandou uma pergunta junto com a saudação, NÃO use saudação, vá direto ao ponto.\n' +
     '8. Sempre ofereça o link de pedido online quando for relevante: ' + (config.link_pedido_online || '') + '\n' +
     '9. Para perguntas sobre horários ou se está aberto/fechado, responda com esta estrutura obrigatória:\n' +
