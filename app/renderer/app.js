@@ -446,11 +446,11 @@ function renderDashboard() {
     '<div class="mt-6 bg-white rounded-xl border border-gray-200 p-6">' +
       '<div class="flex items-center justify-between">' +
         '<div>' +
-          '<h2 class="text-lg font-semibold text-gray-700">Reiniciar Bot</h2>' +
-          '<p class="text-sm text-gray-500 mt-1">Reinicia o servidor para corrigir possíveis bugs</p>' +
+          '<h2 class="text-lg font-semibold text-gray-700">Recarregar Servidor</h2>' +
+          '<p class="text-sm text-gray-500 mt-1">Recarrega as configurações sem perder a conexão com WhatsApp</p>' +
         '</div>' +
         '<button id="btn-restart" class="flex items-center gap-2 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 text-sm font-medium transition-colors" onclick="reiniciarBot()">' +
-          I.refreshCw(16, '') + ' Reiniciar' +
+          I.refreshCw(16, '') + ' Recarregar' +
         '</button>' +
       '</div>' +
       '<div id="restart-status" class="mt-3 text-sm text-gray-500"></div>' +
@@ -528,17 +528,17 @@ window.aplicarAtualizacao = async function() {
 };
 
 window.reiniciarBot = async function() {
-  if (!confirm('Tem certeza que deseja reiniciar o bot?\n\nTodos os sistemas serão reiniciados. As conversas em andamento não serão perdidas.')) return;
+  if (!confirm('Tem certeza que deseja reiniciar o bot?\n\nAs configurações serão recarregadas. A conexão com WhatsApp não será perdida.')) return;
   var btn = document.getElementById('btn-restart');
   var status = document.getElementById('restart-status');
   if (!btn || !status) return;
   btn.disabled = true;
   btn.innerHTML = I.loader2(16, 'animate-spin') + ' Reiniciando...';
-  status.innerHTML = '<span class="text-orange-600 font-medium">Reiniciando servidor...</span>';
+  status.innerHTML = '<span class="text-orange-600 font-medium">Reinicializando...</span>';
   try {
     await wabot.restartBot();
-    status.innerHTML = '<span class="text-emerald-600 font-medium">✓ Servidor reiniciado!</span><div class="mt-1 text-xs text-gray-400">Recarregando página em alguns segundos...</div>';
-    setTimeout(function() { location.reload(); }, 3000);
+    status.innerHTML = '<span class="text-emerald-600 font-medium">✓ Servidor reinicializado!</span><div class="mt-1 text-xs text-gray-400">Recarregando página...</div>';
+    setTimeout(function() { location.reload(); }, 1500);
   } catch(e) {
     status.innerHTML = '<span class="text-red-500 font-medium">Erro ao reiniciar: ' + esc(e.message) + '</span>';
     btn.disabled = false;

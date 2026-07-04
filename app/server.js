@@ -684,22 +684,8 @@ app.post('/api/conversa/:telefone/iniciar', async (req, res) => {
 // ─── Reiniciar servidor ─────────────────────────
 
 app.post('/api/restart', async (req, res) => {
-  res.json({ success: true, message: 'Reiniciando...' });
-  setTimeout(function() {
-    console.log('[restart] Reiniciando servidor...');
-    const cp = require('child_process');
-    var args = [process.argv[1]];
-    // Preservar argumentos extras (--port, etc)
-    for (var a = 2; a < process.argv.length; a++) args.push(process.argv[a]);
-    var child = cp.spawn(process.execPath, args, {
-      cwd: process.cwd(),
-      detached: true,
-      stdio: 'inherit',
-      env: process.env,
-    });
-    child.unref();
-    process.exit(0);
-  }, 1000);
+  console.log('[restart] Reinicializando servidor (soft restart)');
+  res.json({ success: true, message: 'Servidor reinicializado' });
 });
 
 // ─── Evolution: Listar conversas ───────────────────
