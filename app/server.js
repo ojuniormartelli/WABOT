@@ -1036,6 +1036,22 @@ function detectarAgradecimento(texto, config) {
   return false;
 }
 
+function detectarAtendenteHumano(texto, config) {
+  if (!texto) return false;
+  var t = texto.toLowerCase().trim();
+  var padroes = configGet(config, 'deteccao.atendente_humano', [
+    'quero falar com atendente', 'quero falar com humano', 'falar com atendente', 'falar com humano',
+    'falar com uma pessoa', 'falar com pessoa', 'me chama alguém', 'me chama alguem', 'chama atendente',
+    'chama humano', 'suporte humano', 'atendente por favor', 'quero atendente', 'preciso de atendente',
+    'preciso falar com alguém', 'preciso falar com alguem', 'falar com responsavel', 'falar com responsável',
+    'atendimento humano'
+  ]);
+  for (var i = 0; i < padroes.length; i++) {
+    if (t.indexOf(padroes[i]) >= 0) return true;
+  }
+  return false;
+}
+
 function isApenasSaudacao(texto, config) {
   if (!texto) return false;
   var lista = configGet(config, 'deteccao.saudacao', ['oi', 'olá', 'ola', 'bom dia', 'boa tarde', 'boa noite', 'eae', 'iae', 'hello', 'hi', 'hey', 'opa', 'fala']);
@@ -1407,6 +1423,7 @@ app.post('/webhook/evolution', async (req, res) => {
     }
 
     var precisaIntervencao = false;
+    var clientePediuAtendente = detectarAtendenteHumano(mensagem, config);
 
     // 4. IA: consultar LLM (com conhecimento encontrado como contexto)
     if (!respostaIA) {
@@ -1420,7 +1437,7 @@ app.post('/webhook/evolution', async (req, res) => {
           respostaIA = respostaIA.replace('[NAO_SEI]', '').trim();
           if (respostaIA.length === 0) respostaIA = null;
           salvarPerguntaNaoRespondida(telefone, mensagem);
-          precisaIntervencao = true;
+          // NÃO ativar intervenção automática — só responde "não entendi"
         }
       } catch (iaErr) {
         console.error('[webhook] erro IA:', iaErr.message);
@@ -1428,10 +1445,11 @@ app.post('/webhook/evolution', async (req, res) => {
       }
     }
 
-    // 5. FALLBACK: mensagem genérica
+    // 5. FALLBACK: mensagem genérica (não entendi)
+    var foiFallback = false;
     if (!respostaIA) {
-      respostaIA = substituirVariaveis(config.mensagem_regra_nao_encontrada, config) || 'Vou verificar com um atendente humano.';
-      precisaIntervencao = true;
+      respostaIA = substituirVariaveis(config.mensagem_nao_entendi, config) || 'Desculpe, não entendi muito bem o que você quis dizer. Você pode reformular sua pergunta ou me enviar de outra maneira?';
+      foiFallback = true;
     }
 
     if (respostaIA) {
@@ -1463,8 +1481,39 @@ app.post('/webhook/evolution', async (req, res) => {
           }
         }
         await sendEvolutionMessage(telefone, respostaIA);
-        if (precisaIntervencao) {
+
+        // Intervenção SOMENTE se cliente pediu explicitamente atendente humano
+        if (clientePediuAtendente) {
           marcarConversaIntervencao(telefone);
+        }
+        // Se foi fallback (não entendi), incrementar contador e oferecer atendente após X tentativas
+        else if (foiFallback) {
+          try {
+            var convList = readJson('conversas.json') || [];
+            var conv = convList.find(c => c.telefone === telefone);
+            if (conv) {
+              conv.contador_nao_entendi = (conv.contador_nao_entendi || 0) + 1;
+              writeJson('conversas.json', convList);
+              // Após 3 tentativas sem entender, oferecer atendente (sem ativar intervenção)
+              if (conv.contador_nao_entendi === 3) {
+                var msgOferecer = substituirVariaveis(config.mensagem_oferecer_atendente, config) || 'Se preferir, posso chamar um atendente humano para te ajudar. Quer que eu faça isso?';
+                setTimeout(function() {
+                  sendEvolutionMessage(telefone, msgOferecer);
+                }, 1500);
+              }
+            }
+          } catch(e) {}
+        }
+        // Resetar contador se a mensagem foi entendida (resposta normal da IA)
+        else if (!foiFallback) {
+          try {
+            var convList2 = readJson('conversas.json') || [];
+            var conv2 = convList2.find(c => c.telefone === telefone);
+            if (conv2 && conv2.contador_nao_entendi) {
+              conv2.contador_nao_entendi = 0;
+              writeJson('conversas.json', convList2);
+            }
+          } catch(e) {}
         }
       }
     }
