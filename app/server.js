@@ -983,73 +983,7 @@ function responderHorarios(config) {
   return 'Aqui estão nossos horários de funcionamento:\n\n' + linhas.join('\n') + '\n\n📲 Peça pelo link: ' + (config.link_pedido_online || '');
 }
 
-function agendarLembrete(telefone, nome, proxMinutos, config) {
-  try {
-    var agora = new Date();
-    var dataLembrete;
-    if (proxMinutos !== null) {
-      // Próximo período ainda hoje
-      dataLembrete = new Date(agora.getFullYear(), agora.getMonth(), agora.getDate(), Math.floor(proxMinutos / 60), proxMinutos % 60, 0);
-      if (dataLembrete <= agora) dataLembrete = null;
-    }
-    // Se não achou período hoje, buscar próximo dia com horário
-    if (!dataLembrete) {
-      var diasSemana = ['domingo', 'segunda', 'terca', 'quarta', 'quinta', 'sexta', 'sabado'];
-      for (var d = 1; d <= 7; d++) {
-        var idx = (agora.getDay() + d) % 7;
-        var cfgDia = config?.horarios?.[diasSemana[idx]];
-        if (!cfgDia || cfgDia.fechado) continue;
-        var periodos = cfgDia.periodos || cfgDia.cozinha || [];
-        if (periodos.length > 0) {
-          var hab = periodos[0].abertura || '11:00';
-          dataLembrete = new Date(agora.getFullYear(), agora.getMonth(), agora.getDate() + d, parseInt(hab.split(':')[0]), parseInt(hab.split(':')[1] || '0'), 0);
-          break;
-        }
-      }
-    }
-    if (!dataLembrete) return;
-    var lembretes = readJson('lembretes.json') || [];
-    if (!Array.isArray(lembretes)) lembretes = [];
-    lembretes.push({
-      id: 'lembrete-' + Date.now(),
-      telefone: telefone,
-      nome: nome || telefone,
-      enviar_em: dataLembrete.toISOString(),
-      enviado: false,
-    });
-    writeJson('lembretes.json', lembretes);
-    console.log('[agendarLembrete] lembrete agendado para', telefone, 'em', dataLembrete.toLocaleString('pt-BR'));
-  } catch(e) {
-    console.error('[agendarLembrete] erro:', e.message);
-  }
-}
 
-function verificarLembretes() {
-  try {
-    var lembretes = readJson('lembretes.json') || [];
-    if (!Array.isArray(lembretes) || lembretes.length === 0) return;
-    var agora = new Date();
-    var modificado = false;
-    for (var i = 0; i < lembretes.length; i++) {
-      var lem = lembretes[i];
-      if (lem.enviado) continue;
-      var dataEnv = new Date(lem.enviar_em);
-      if (dataEnv <= agora) {
-        var msg = '🕐 Olá ' + (lem.nome || '') + '! O estabelecimento já está aberto! 😊\n\nEstamos prontos para atender você. Se tiver ficado com alguma dúvida ou quiser fazer um pedido, é só nos chamar!';
-        sendEvolutionMessage(lem.telefone, msg);
-        lem.enviado = true;
-        modificado = true;
-        console.log('[verificarLembretes] lembrete enviado para', lem.telefone);
-      }
-    }
-    if (modificado) writeJson('lembretes.json', lembretes);
-  } catch(e) {
-    console.error('[verificarLembretes] erro:', e.message);
-  }
-}
-
-// Iniciar verificação de lembretes a cada 60 segundos
-setInterval(verificarLembretes, 60000);
 
 function detectarSaudacao(texto) {
   if (!texto) return false;
@@ -1490,12 +1424,7 @@ app.post('/webhook/evolution', async (req, res) => {
         var msgPedidoFora = config.mensagem_ausencia || 'Olá! 😊 No momento estamos fora do horário de funcionamento.';
         var horariosTexto = responderHorarios(config);
         if (horariosTexto) msgPedidoFora += '\n\n' + horariosTexto;
-        msgPedidoFora += '\n\nAssim que abrirmos, enviaremos uma mensagem para lembrar você! 🕐';
         await sendEvolutionMessage(telefone, msgPedidoFora);
-        // Agendar lembrete para o próximo horário de abertura
-        if (proxAbertura !== null) {
-          agendarLembrete(telefone, messageData?.pushName || telefone, proxAbertura, config);
-        }
       } else {
         // Resposta normal do bot
         if (!isSaudacao && !isAgradecimento) {
