@@ -1276,11 +1276,8 @@ app.post('/webhook/evolution', async (req, res) => {
       return res.json({ success: true, ignored: true });
     }
 
-    // Marcar mensagem como lida (blue tick + limpar badge de conversa no WhatsApp Web)
     var remoteJid = messageData?.key?.remoteJid || telefone + '@s.whatsapp.net';
     var msgId = messageData?.key?.id;
-    marcarMensagemComoLida(remoteJid, msgId);
-    marcarTodasMensagensComoLida(remoteJid);
 
     // Salvar mensagem localmente (histórico)
     salvarMensagemLocal(telefone, mensagem, false, 'cliente');
@@ -1296,7 +1293,7 @@ app.post('/webhook/evolution', async (req, res) => {
       existente.horario = horario;
       existente.nao_lidas = (existente.nao_lidas || 0) + 1;
       existente.ultimo_timestamp = agora;
-      if (existente.nome === existente.telefone && messageData?.pushName) {
+      if (messageData?.pushName && messageData.pushName !== existente.nome && messageData.pushName !== existente.telefone) {
         existente.nome = messageData.pushName;
       }
     } else {
@@ -1346,6 +1343,10 @@ app.post('/webhook/evolution', async (req, res) => {
     if (isIgnorado) {
       return res.json({ success: true, ignored: true });
     }
+
+    // Marcar mensagem como lida (só para não-ignorados)
+    marcarMensagemComoLida(remoteJid, msgId);
+    marcarTodasMensagensComoLida(remoteJid);
 
     // Verificar horário de funcionamento
     const config = readJson('config.json') || {};
