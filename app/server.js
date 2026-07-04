@@ -980,7 +980,12 @@ function responderHorarios(config) {
     }
   }
   if (linhas.length === 0) return null;
-  return 'Aqui estão nossos horários de funcionamento:\n\n' + linhas.join('\n') + '\n\n📲 Peça pelo link: ' + (config.link_pedido_online || '');
+  var resposta = 'Aqui estão nossos horários de funcionamento:\n\n' + linhas.join('\n');
+  if (config.pedidos_aceitos_desde) {
+    resposta += '\n\n📦 Pedidos para viagem podem ser feitos a partir das ' + config.pedidos_aceitos_desde + ' (pedido antecipado).';
+  }
+  resposta += '\n\n📲 Faça seu pedido pelo link: ' + (config.link_pedido_online || '');
+  return resposta;
 }
 
 
