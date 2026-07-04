@@ -1143,7 +1143,7 @@ function renderConversas() {
       '<div class="w-12 h-12 rounded-full bg-emerald-100 flex items-center justify-center flex-shrink-0">' + I.messageSquare(20, 'text-emerald-600') + '</div>' +
       '<div class="flex-1 min-w-0">' +
         '<div class="flex items-center justify-between mb-1">' +
-          '<span class="font-medium text-gray-800 text-sm truncate">' + esc(c.nome) + '</span>' +
+          '<span class="font-medium text-gray-800 text-sm truncate">' + esc(c.nome || c.telefone) + '</span>' +
           '<span class="text-xs text-gray-400 flex-shrink-0 ml-2">' + esc(c.horario || '') + '</span>' +
         '</div>' +
         '<p class="text-sm text-gray-500 truncate">' + esc(c.ultima_msg) + '</p>' +

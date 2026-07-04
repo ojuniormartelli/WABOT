@@ -738,9 +738,9 @@ app.get('/api/evolution/conversations', async (req, res) => {
             var ec = evoPorTelefone[convs[j].telefone];
             if (ec) {
               if (ec.unreadCount > 0 && convs[j].nao_lidas > 0) convs[j].nao_lidas = ec.unreadCount;
-              // Atualizar status se tiver info mais recente
+              // Atualizar nome se estiver vazio (só pushName, não ec.name que pode vir errado)
               if (!convs[j].nome || convs[j].nome === convs[j].telefone) {
-                convs[j].nome = ec.name || ec.pushName || convs[j].nome;
+                convs[j].nome = ec.pushName || convs[j].nome;
               }
             }
           }
