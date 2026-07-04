@@ -939,13 +939,23 @@ app.post('/api/evolution/send', async (req, res) => {
 
 // ─── Webhook Evolution (receber msgs direto) ──
 
+function configGet(obj, path, defaultValue) {
+  var parts = path.split('.');
+  var current = obj || {};
+  for (var i = 0; i < parts.length; i++) {
+    if (current == null || typeof current !== 'object') return defaultValue;
+    current = current[parts[i]];
+  }
+  return current !== undefined && current !== null ? current : defaultValue;
+}
+
 function horarioHojeTexto(config) {
   if (!config || !config.horarios) return '';
   var dias = ['domingo', 'segunda', 'terca', 'quarta', 'quinta', 'sexta', 'sabado'];
   var hoje = dias[new Date().getDay()];
   var info = config.horarios[hoje];
   if (!info) return '';
-  if (info.fechado) return 'FECHADO';
+  if (info.fechado) return configGet(config, 'mensagens.texto_fechado', 'FECHADO');
   var periodos = info.periodos || info.cozinha || [];
   if (periodos.length === 0) return '';
   return periodos.map(function(p) { return p.abertura + ' às ' + p.fechamento; }).join(', ');
@@ -965,12 +975,16 @@ function responderHorarios(config) {
   if (!config || !config.horarios) return null;
   var dias = ['domingo', 'segunda', 'terca', 'quarta', 'quinta', 'sexta', 'sabado'];
   var nomesDias = { 'domingo': 'Domingo', 'segunda': 'Segunda', 'terca': 'Terça', 'quarta': 'Quarta', 'quinta': 'Quinta', 'sexta': 'Sexta', 'sabado': 'Sábado' };
+  var textoFechado = configGet(config, 'mensagens.texto_fechado', 'FECHADO');
+  var cabecalho = configGet(config, 'mensagens.horarios_cabecalho', 'Aqui estão nossos horários de funcionamento:');
+  var pedidoAntecipado = configGet(config, 'mensagens.pedido_antecipado', '📦 Pedidos para viagem podem ser feitos a partir das {{pedidos_aceitos_desde}} (pedido antecipado).');
+  var rodapeLink = configGet(config, 'mensagens.rodape_pedido_link', '📲 Faça seu pedido pelo link: {{link_pedido_online}}');
   var linhas = [];
   for (var d = 0; d < dias.length; d++) {
     var info = config.horarios[dias[d]];
     if (!info) continue;
     if (info.fechado) {
-      linhas.push(nomesDias[dias[d]] + ': FECHADO');
+      linhas.push(nomesDias[dias[d]] + ': ' + textoFechado);
       continue;
     }
     var periodos = info.periodos || info.cozinha || [];
@@ -980,20 +994,20 @@ function responderHorarios(config) {
     }
   }
   if (linhas.length === 0) return null;
-  var resposta = 'Aqui estão nossos horários de funcionamento:\n\n' + linhas.join('\n');
+  var resposta = cabecalho + '\n\n' + linhas.join('\n');
   if (config.pedidos_aceitos_desde) {
-    resposta += '\n\n📦 Pedidos para viagem podem ser feitos a partir das ' + config.pedidos_aceitos_desde + ' (pedido antecipado).';
+    resposta += '\n\n' + substituirVariaveis(pedidoAntecipado, config);
   }
-  resposta += '\n\n📲 Faça seu pedido pelo link: ' + (config.link_pedido_online || '');
+  resposta += '\n\n' + substituirVariaveis(rodapeLink, config);
   return resposta;
 }
 
 
 
-function detectarSaudacao(texto) {
+function detectarSaudacao(texto, config) {
   if (!texto) return false;
   var t = texto.toLowerCase().trim();
-  var saudacoes = ['oi', 'olá', 'ola', 'bom dia', 'boa tarde', 'boa noite', 'eae', 'iae', 'hello', 'hi', 'hey', 'fala', 'salve', 'e aí', 'e ai'];
+  var saudacoes = configGet(config, 'deteccao.saudacao', ['oi', 'olá', 'ola', 'bom dia', 'boa tarde', 'boa noite', 'eae', 'iae', 'hello', 'hi', 'hey', 'fala', 'salve', 'e aí', 'e ai']);
   var palavras = t.split(/\s+/).filter(function(p) { return p.length > 0; });
   if (palavras.length <= 6) {
     return saudacoes.some(function(s) { return t.indexOf(s) >= 0; });
@@ -1001,10 +1015,10 @@ function detectarSaudacao(texto) {
   return saudacoes.some(function(s) { return t.indexOf(s) === 0; });
 }
 
-function detectarAgradecimento(texto) {
+function detectarAgradecimento(texto, config) {
   if (!texto) return false;
   var t = texto.toLowerCase().trim();
-  var palavras = ['obrigado', 'obrigada', 'valeu', 'brigado', 'brigada', 'agradeço', 'agradeco', 'thanks', 'thank', 'tks', 'mt obg', 'muito obrigado', 'muito obrigada', 'obg', 'agradecido', 'agradecida'];
+  var palavras = configGet(config, 'deteccao.agradecimento', ['obrigado', 'obrigada', 'valeu', 'brigado', 'brigada', 'agradeço', 'agradeco', 'thanks', 'thank', 'tks', 'mt obg', 'muito obrigado', 'muito obrigada', 'obg', 'agradecido', 'agradecida']);
   var tokens = t.split(/\s+/).filter(function(p) { return p.length > 0; });
   if (tokens.length <= 8) {
     return palavras.some(function(p) { return t.indexOf(p) >= 0; });
@@ -1012,26 +1026,30 @@ function detectarAgradecimento(texto) {
   return false;
 }
 
-function isApenasSaudacao(texto) {
+function isApenasSaudacao(texto, config) {
   if (!texto) return false;
-  return /^(oi|olá|ola|bom dia|boa tarde|boa noite|eae|iae|hello|hi|hey|opa|fala)[\s!.,;:?]*$/i.test(texto.trim());
+  var lista = configGet(config, 'deteccao.saudacao', ['oi', 'olá', 'ola', 'bom dia', 'boa tarde', 'boa noite', 'eae', 'iae', 'hello', 'hi', 'hey', 'opa', 'fala']);
+  var pattern = '^(' + lista.map(function(s) { return s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'); }).join('|') + ')[\\s!.,;:?]*$';
+  return new RegExp(pattern, 'i').test(texto.trim());
 }
 
-function isApenasAgradecimento(texto) {
+function isApenasAgradecimento(texto, config) {
   if (!texto) return false;
-  return /^(obrigado|obrigada|valeu|brigado|brigada|thanks|thank you|muito obrigado|agradecido)[\s!.,]*$/i.test(texto.trim());
+  var lista = configGet(config, 'deteccao.agradecimento', ['obrigado', 'obrigada', 'valeu', 'brigado', 'brigada', 'thanks', 'thank you', 'muito obrigado', 'agradecido']);
+  var pattern = '^(' + lista.map(function(s) { return s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'); }).join('|') + ')[\\s!.,]*$';
+  return new RegExp(pattern, 'i').test(texto.trim());
 }
 
-function detectarIncerteza(texto) {
+function detectarIncerteza(texto, config) {
   if (!texto) return false;
   var t = texto.toLowerCase().trim();
-  var padroes = [
+  var padroes = configGet(config, 'deteccao.incerteza', [
     'não sei', 'nao sei', 'não tenho essa informaç', 'nao tenho essa informaç',
     'não tenho certeza', 'nao tenho certeza', 'vou verificar com um atendente',
     'vou verificar com o atendente', 'não encontrei', 'nao encontrei',
     'infelizmente não', 'infelizmente nao', 'não consigo informar', 'nao consigo informar',
     'atendente humano', 'vou passar para', 'não posso informar', 'nao posso informar',
-  ];
+  ]);
   for (var i = 0; i < padroes.length; i++) {
     if (t.indexOf(padroes[i]) >= 0) return true;
   }
@@ -1205,7 +1223,7 @@ app.post('/webhook/evolution', async (req, res) => {
         sseBroadcast('conversation_update', { telefone: telefone, ultima_msg: '📞 Chamada de voz', horario: horarioCall, ultimo_timestamp: Date.now() });
         const callCfg = readJson('config.json') || {};
         if (!callCfg.receber_chamadas) {
-          await sendEvolutionMessage(telefone, 'Infelizmente não conseguimos atender chamadas de voz pelo WhatsApp. Por favor, envie uma mensagem de texto.');
+          await sendEvolutionMessage(telefone, configGet(callCfg, 'mensagens.chamada_rejeitada', 'Infelizmente não conseguimos atender chamadas de voz pelo WhatsApp. Por favor, envie uma mensagem de texto.'));
         }
       }
       return res.json({ success: true, call: true });
@@ -1250,7 +1268,7 @@ app.post('/webhook/evolution', async (req, res) => {
 
     // ─── Auto-resposta para áudio (antes do check de ignorados) ─
     if (messageData?.message?.audioMessage) {
-      await sendEvolutionMessage(telefone, 'Infelizmente não consigo ouvir mensagens de áudio. Por favor, digite sua mensagem.');
+      await sendEvolutionMessage(telefone, configGet(config, 'mensagens.audio_rejeitado', 'Infelizmente não consigo ouvir mensagens de áudio. Por favor, digite sua mensagem.'));
       return res.json({ success: true, audio: true });
     }
 
@@ -1334,13 +1352,12 @@ app.post('/webhook/evolution', async (req, res) => {
     }
 
     var respostaIA = null;
-    var isSaudacao = detectarSaudacao(mensagem);
-    var isAgradecimento = detectarAgradecimento(mensagem);
+    var isSaudacao = detectarSaudacao(mensagem, config);
+    var isAgradecimento = detectarAgradecimento(mensagem, config);
 
     // 1. SAUDAÇÃO: responder direto, sem consumir IA
     if (isSaudacao) {
       respostaIA = substituirVariaveis(config.mensagem_saudacao, config);
-      // Garantir que o link apareça na saudação
       if (config.link_pedido_online && respostaIA.indexOf(config.link_pedido_online) < 0) {
         respostaIA += '\n\n📲 Faça seu pedido pelo link:\n' + config.link_pedido_online;
       }
@@ -1351,12 +1368,12 @@ app.post('/webhook/evolution', async (req, res) => {
       if (config.mensagem_agradecimento) {
         respostaIA = substituirVariaveis(config.mensagem_agradecimento, config);
       } else {
-        var msgsAgradecimento = [
+        var msgsAgradecimento = configGet(config, 'mensagens.agradecimento_variacoes', [
           'Por nada! Fico à disposição.',
           'Disponha! Quando precisar, é só chamar.',
           'Imagina! Estamos aqui para ajudar.',
           'Por nada! Tenha um ótimo dia!',
-        ];
+        ]);
         respostaIA = msgsAgradecimento[Math.floor(Math.random() * msgsAgradecimento.length)];
       }
     }
@@ -1372,22 +1389,9 @@ app.post('/webhook/evolution', async (req, res) => {
       }
     }
 
-    // 4. FUNCIONAMENTO: resposta direta do config
-    if (!respostaIA) {
-      var msgNormalizada = (mensagem || '').toLowerCase().trim();
-      var palavrasFuncionamento = ['funcionamento', 'aberto', 'fechado', 'abrir', 'fecha', 'atende', 'abre', 'até que horas', 'que horas'];
-      var palavrasPratos = ['prato', 'pratos', 'almoço', 'almoco', 'jantar', 'encomenda', 'encomendas', 'pedido'];
-      var temPalavraFuncionamento = palavrasFuncionamento.some(function(p) { return msgNormalizada.indexOf(p) >= 0; });
-      var temPalavraPrato = palavrasPratos.some(function(p) { return msgNormalizada.indexOf(p) >= 0; });
-      var temSoHorario = !temPalavraPrato && (msgNormalizada.indexOf('horário') >= 0 || msgNormalizada.indexOf('horario') >= 0);
-      if ((temPalavraFuncionamento || temSoHorario) && !temPalavraPrato) {
-        respostaIA = responderHorarios(config);
-      }
-    }
-
     var precisaIntervencao = false;
 
-    // 5. IA: consultar LLM
+    // 4. IA: consultar LLM
     if (!respostaIA) {
       try {
         if (provider === 'groq') {
@@ -1395,7 +1399,6 @@ app.post('/webhook/evolution', async (req, res) => {
         } else {
           respostaIA = await consultarGemini(mensagem, config, regras, creds);
         }
-        // Se IA respondeu que não sabe, salvar para aprendizado
         if (respostaIA && respostaIA.indexOf('[NAO_SEI]') === 0) {
           respostaIA = respostaIA.replace('[NAO_SEI]', '').trim();
           if (respostaIA.length === 0) respostaIA = null;
@@ -1408,32 +1411,25 @@ app.post('/webhook/evolution', async (req, res) => {
       }
     }
 
-    // 6. FALLBACK: regra local ou mensagem genérica
+    // 5. FALLBACK: mensagem genérica
     if (!respostaIA) {
-      var regraLocal = buscarRegraLocal(mensagem, regras);
-      if (regraLocal) {
-        respostaIA = substituirVariaveis(regraLocal.instrucao, config);
-      } else {
-        respostaIA = substituirVariaveis(config.mensagem_regra_nao_encontrada, config) || 'Vou verificar com um atendente humano.';
-        precisaIntervencao = true;
-      }
+      respostaIA = substituirVariaveis(config.mensagem_regra_nao_encontrada, config) || 'Vou verificar com um atendente humano.';
+      precisaIntervencao = true;
     }
 
     if (respostaIA) {
       // Fora do horário: detectar se o cliente quer fazer pedido
       var msgNormalizada = (mensagem || '').toLowerCase().trim();
-      var palavrasPedido = ['quero pedir', 'fazer um pedido', 'queria pedir', 'gostaria de pedir', 'quero fazer', 'quero comprar', 'pedido', 'encomenda', 'encomendar', 'pedir agora', 'pode anotar', 'vou querer', 'eu quero'];
+      var palavrasPedido = configGet(config, 'deteccao.pedido', ['quero pedir', 'fazer um pedido', 'queria pedir', 'gostaria de pedir', 'quero fazer', 'quero comprar', 'pedido', 'encomenda', 'encomendar', 'pedir agora', 'pode anotar', 'vou querer', 'eu quero']);
       var ehPedido = palavrasPedido.some(function(p) { return msgNormalizada.indexOf(p) >= 0; });
       if (foraHorario && ehPedido) {
-        // Responder informando que está fora do horário
         var msgPedidoFora = config.mensagem_ausencia || 'Olá! 😊 No momento estamos fora do horário de funcionamento.';
         var horariosTexto = responderHorarios(config);
         if (horariosTexto) msgPedidoFora += '\n\n' + horariosTexto;
         await sendEvolutionMessage(telefone, msgPedidoFora);
       } else {
-        // Resposta normal do bot
         if (!isSaudacao && !isAgradecimento) {
-          var saudacoesStrip = ['olá', 'olá,', 'oi,', 'oi ', 'bom dia,', 'bom dia!', 'boa tarde,', 'boa tarde!', 'boa noite,', 'boa noite!'];
+          var saudacoesStrip = configGet(config, 'deteccao.prefixos_saudacao_para_remover', ['olá', 'olá,', 'oi,', 'oi ', 'bom dia,', 'bom dia!', 'boa tarde,', 'boa tarde!', 'boa noite,', 'boa noite!']);
           var respTrim = respostaIA.trim();
           for (var s = 0; s < saudacoesStrip.length; s++) {
             if (respTrim.toLowerCase().startsWith(saudacoesStrip[s])) {
@@ -1463,42 +1459,13 @@ app.post('/webhook/evolution', async (req, res) => {
   }
 });
 
-// ─── Regras: fallback local quando Gemini falha ────
-
-function buscarRegraLocal(mensagem, regras) {
-  const palavrasPorRegra = {
-    'reg-2': ['cardápio', 'cardapio', 'menu', 'pedido', 'cardapio online', 'fazer um pedido', 'quero pedir'],
-    'reg-3': ['onde fica', 'endereço', 'endereco', 'localização', 'localizacao', 'como chegar', 'fica'],
-    'reg-4': ['telefone', 'contato', 'whatsapp', 'ligar', 'celular', 'número', 'numero', 'falar com'],
-    'reg-5': ['entrega', 'delivery', 'entregar', 'receber em casa', 'busc', 'motoboy', 'trabalham com entrega', 'faz entrega', 'vocês entregam'],
-    'reg-6': ['horário', 'horario', 'funcionamento', 'aberto', 'fechado', 'abrir', 'fecha', 'até que horas'],
-  };
-  var msg = mensagem.toLowerCase().trim();
-  var melhorRegra = null;
-  var maiorScore = 0;
-  for (var i = 0; i < regras.length; i++) {
-    var r = regras[i];
-    var palavras = palavrasPorRegra[r.id];
-    if (!palavras || !r.ativo) continue;
-    for (var j = 0; j < palavras.length; j++) {
-      if (msg.indexOf(palavras[j]) >= 0) {
-        var score = palavras[j].length;
-        if (score > maiorScore) {
-          maiorScore = score;
-          melhorRegra = r;
-        }
-      }
-    }
-  }
-  return melhorRegra;
-}
-
 // ─── Montar prompt com informações + horários ──────
 
 function montarPromptIA(mensagem, config, regras) {
   const regrasAtivas = (regras || []).filter(r => r.ativo);
+  var regrasCabecalho = configGet(config, 'rotulos.regras_cabecalho', 'REGRAS DO ESTABELECIMENTO (siga estas instruções quando aplicável):');
   const regrasTexto = regrasAtivas.length > 0
-    ? 'REGRAS DO ESTABELECIMENTO (siga estas instruções quando aplicável):\n' +
+    ? regrasCabecalho + '\n' +
       regrasAtivas.map((r, i) => {
         const instrucaoComVariaveis = substituirVariaveis(r.instrucao, config);
         return `${i + 1}. ${instrucaoComVariaveis}`;
@@ -1506,10 +1473,10 @@ function montarPromptIA(mensagem, config, regras) {
     : '';
 
   const redesHtml = [];
-  if (config.site) redesHtml.push(`Site: ${config.site}`);
-  if (config.redes_sociais?.instagram) redesHtml.push(`Instagram: ${config.redes_sociais.instagram}`);
-  if (config.redes_sociais?.facebook) redesHtml.push(`Facebook: ${config.redes_sociais.facebook}`);
-  if (config.redes_sociais?.ifood) redesHtml.push(`Ifood: ${config.redes_sociais.ifood}`);
+  if (config.site) redesHtml.push('Site: ' + config.site);
+  if (config.redes_sociais?.instagram) redesHtml.push('Instagram: ' + config.redes_sociais.instagram);
+  if (config.redes_sociais?.facebook) redesHtml.push('Facebook: ' + config.redes_sociais.facebook);
+  if (config.redes_sociais?.ifood) redesHtml.push('Ifood: ' + config.redes_sociais.ifood);
   const redesTexto = redesHtml.length > 0 ? '- Redes sociais: ' + redesHtml.join(' | ') : '';
 
   // Formatar horários
@@ -1517,13 +1484,14 @@ function montarPromptIA(mensagem, config, regras) {
   if (config.horarios) {
     var dias = ['domingo', 'segunda', 'terca', 'quarta', 'quinta', 'sexta', 'sabado'];
     var nomesDias = { 'domingo': 'Domingo', 'segunda': 'Segunda', 'terca': 'Terça', 'quarta': 'Quarta', 'quinta': 'Quinta', 'sexta': 'Sexta', 'sabado': 'Sábado' };
+    var textoFechado = configGet(config, 'mensagens.texto_fechado', 'FECHADO');
     var linhas = [];
     for (var d = 0; d < dias.length; d++) {
       var dia = dias[d];
       var info = config.horarios[dia];
       if (!info) continue;
       if (info.fechado) {
-        linhas.push('- ' + (nomesDias[dia] || dia) + ': FECHADO');
+        linhas.push('- ' + (nomesDias[dia] || dia) + ': ' + textoFechado);
         continue;
       }
       var partesCozinha = [];
@@ -1552,11 +1520,12 @@ function montarPromptIA(mensagem, config, regras) {
       if (linha) linhas.push('- ' + (nomesDias[dia] || dia) + ': ' + linha);
     }
     if (linhas.length > 0) {
-      horariosTexto = '\nHORÁRIOS DE FUNCIONAMENTO (cozinha):\n' + linhas.join('\n');
+      horariosTexto = '\n' + (configGet(config, 'rotulos.horarios', 'HORÁRIOS DE FUNCIONAMENTO (cozinha):')) + '\n' + linhas.join('\n');
     }
   }
 
   var aceitaPedidosDesde = config.pedidos_aceitos_desde || '08:00';
+  var rotulosRefeicoes = configGet(config, 'rotulos.refeicoes', { almoco: 'Almoço', jantar: 'Jantar', jantar_inicio: '17:00' });
   var janelasPedido = '';
   var hojeIdx = new Date().getDay();
   var diasSemana2 = ['domingo', 'segunda', 'terca', 'quarta', 'quinta', 'sexta', 'sabado'];
@@ -1564,55 +1533,48 @@ function montarPromptIA(mensagem, config, regras) {
   if (configHoje && !configHoje.fechado) {
     var periodosHoje = configHoje.periodos || configHoje.cozinha || [];
     if (periodosHoje.length > 0) {
-      janelasPedido = '\nJANELAS DE PEDIDO (para hoje):\n';
+      janelasPedido = '\n' + configGet(config, 'rotulos.janelas_pedido', 'JANELAS DE PEDIDO (para hoje):') + '\n';
       for (var pp = 0; pp < periodosHoje.length; pp++) {
         if (periodosHoje[pp].abertura && periodosHoje[pp].fechamento) {
           var aberturaPeriodo = periodosHoje[pp].abertura;
           var fechamentoPeriodo = periodosHoje[pp].fechamento;
           var horaAbertura = parseInt(aberturaPeriodo.split(':')[0]);
-          var nomeRefeicao = horaAbertura < 16 ? 'Almoço' : 'Jantar';
-          var inicioPedido = nomeRefeicao === 'Almoço' ? aceitaPedidosDesde : '17:00';
+          var nomeRefeicao = horaAbertura < 16 ? rotulosRefeicoes.almoco : rotulosRefeicoes.jantar;
+          var inicioPedido = nomeRefeicao === rotulosRefeicoes.almoco ? aceitaPedidosDesde : (rotulosRefeicoes.jantar_inicio || '17:00');
           janelasPedido += '- ' + nomeRefeicao + ': pedidos a partir das ' + inicioPedido + ' até as ' + fechamentoPeriodo + ' (cozinha funciona das ' + aberturaPeriodo + ' às ' + fechamentoPeriodo + ')\n';
         }
       }
     }
   }
   if (!janelasPedido) {
-    janelasPedido = '\nACEITAÇÃO DE PEDIDOS: Pedidos podem ser feitos a partir das ' + aceitaPedidosDesde + ' da manhã.\n';
+    janelasPedido = '\n' + substituirVariaveis(configGet(config, 'rotulos.aceitacao_pedidos_fallback', 'ACEITAÇÃO DE PEDIDOS: Pedidos podem ser feitos a partir das {{pedidos_aceitos_desde}} da manhã.'), config) + '\n';
   }
   var pedidoTexto = janelasPedido;
 
-  return 'Você é o assistente virtual do ' + (config.nome_negocio || 'restaurante') + '. Responda em português, de forma natural, amigável e objetiva.\n\n' +
+  var rotulosAtendimento = configGet(config, 'rotulos.tipos_atendimento', { consumo_local: 'consumo no local', retirada: 'retirada', delivery: 'delivery' });
+  var tiposTexto = Array.isArray(config.tipos_atendimento) ? config.tipos_atendimento.map(function(t) { return rotulosAtendimento[t] || t; }).join(', ') : '';
+
+  var prompt = 'Você é o assistente virtual do ' + (config.nome_negocio || 'restaurante') + '. Responda em português, de forma natural, amigável e objetiva.\n\n' +
     'INFORMAÇÕES DO RESTAURANTE:\n' +
     '- Nome: ' + (config.nome_negocio || '') + '\n' +
     '- Endereço: ' + (config.endereco || '') + '\n' +
     '- Telefone: ' + (config.telefone || '') +
     (redesTexto || '') + '\n' +
-    '- Tipos de atendimento: ' + (Array.isArray(config.tipos_atendimento) ? config.tipos_atendimento.map(function(t) { return t === 'consumo_local' ? 'consumo no local' : t === 'retirada' ? 'retirada' : t; }).join(', ') : '') + '\n' +
+    '- Tipos de atendimento: ' + tiposTexto + '\n' +
     '- Pedidos online: ' + (config.link_pedido_online || '') + '\n' +
     '- Observações: ' + (config.observacoes_gerais || '') +
-    horariosTexto +
-    '\n\n' + regrasTexto +
-    pedidoTexto +
+    horariosTexto;
+
+  if (regrasTexto) {
+    prompt += '\n\n' + regrasTexto;
+  }
+
+  prompt += pedidoTexto +
     '\n\nDATA/HORA ATUAL: ' + new Date().toLocaleString('pt-BR', { weekday: 'long', hour: '2-digit', minute: '2-digit', hour12: false }) +
     '\n\nMENSAGEM DO CLIENTE: "' + mensagem + '"\n\n' +
-    'INSTRUÇÕES:\n' +
-    '1. Use TODAS as informações acima para responder. Use também seu conhecimento geral sobre restaurantes para interpretar o que o cliente está perguntando.\n' +
-    '2. Responda de forma breve, educada e natural, como um atendente de restaurante de verdade.\n' +
-    '3. Se o cliente enviar uma saudação (oi, olá, bom dia etc.), responda com uma saudação amigável.\n' +
-    '4. Se o cliente agradecer, responda educadamente ("Por nada!", "Disponha!", etc.).\n' +
-    '5. IMPORTANTE: Sempre tente ajudar com base nas informações disponíveis. Se o cliente quiser fazer um pedido, peça para ele usar o link de pedido online. Se perguntar sobre prato específico e você não tiver o cardápio, sugira o link de pedido online. Só use "[NAO_SEI] " se realmente não houver NENHUMA informação relevante para responder.\n' +
-    '6. NÃO invente informações que não estão nos dados acima. Se o cliente quiser fazer um pedido, NUNCA diga que não sabe — peça para usar o link de pedido online. Se perguntarem sobre prato específico e você não tem o cardápio, sugira o link de pedido online.\n' +
-    '7. Se o cliente enviar "olá", "bom dia", "boa tarde" etc. (saudação simples), responda com saudação curta e já emenda o assunto. Se o cliente já mandou uma pergunta junto com a saudação, NÃO use saudação, vá direto ao ponto.\n' +
-    '8. Sempre ofereça o link de pedido online quando for relevante: ' + (config.link_pedido_online || '') + '\n' +
-    '9. Para perguntas sobre horários ou se está aberto/fechado, responda com esta estrutura obrigatória:\n' +
-    '   - Primeiro: confirme se está aberto ou fechado no momento.\n' +
-    '   - Depois: informe os HORÁRIOS DA COZINHA exatamente como estão listados acima (ex: "cozinha funciona das 11:00 às 14:30 e das 18:00 às 22:00").\n' +
-    '   - Depois: informe as JANELAS DE PEDIDO conforme listado acima (ex: "para o almoço você pode fazer pedidos a partir das 08:00 até as 14:30; para o jantar, pedidos a partir das 17:00 até as 22:00").\n' +
-    '   - Por fim: ofereça o link de pedido online.\n' +
-    '   IMPORTANTE: use os VALORES REAIS listados em JANELAS DE PEDIDO e HORÁRIOS, não invente.\n' +
-    '10. Se o cliente quiser fazer um pedido e estiver antes do horário da cozinha mas dentro do horário de aceitação de pedidos, atenda o pedido e avise que a cozinha abrirá no horário indicado.\n' +
-    '11. NUNCA use "Dia!" sozinho. Se for usar saudação, use "Bom dia!", "Boa tarde!" ou "Boa noite!" completos.';
+    'Siga todas as REGRAS DO ESTABELECIMENTO listadas acima. Use seu conhecimento geral sobre restaurantes para interpretar o que o cliente está perguntando. Responda com base APENAS nas informações fornecidas e nas regras ativas.';
+
+  return prompt;
 }
 
 // ─── Gemini: Consultar IA ──────────────────────────
@@ -1678,7 +1640,7 @@ function consultarGroq(mensagem, config, regras, creds) {
     const postData = JSON.stringify({
       model: model,
       messages: [
-        { role: 'system', content: 'Você é um assistente virtual de restaurante. Responda em português, de forma natural e amigável.' },
+        { role: 'system', content: 'Você é o assistente virtual do ' + (config.nome_negocio || 'restaurante') + '. Responda em português, de forma natural e amigável.' },
         { role: 'user', content: prompt },
       ],
       temperature: 0.7,

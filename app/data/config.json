@@ -87,5 +87,44 @@
   "registrar_aprendizado_auto": true,
   "timezone": "America/Sao_Paulo",
   "receber_chamadas": false,
-  "pedidos_aceitos_desde": "08:00"
+  "pedidos_aceitos_desde": "08:00",
+  "mensagens": {
+    "chamada_rejeitada": "Infelizmente não conseguimos atender chamadas de voz pelo WhatsApp. Por favor, envie uma mensagem de texto.",
+    "audio_rejeitado": "Infelizmente não consigo ouvir mensagens de áudio. Por favor, digite sua mensagem.",
+    "agradecimento_variacoes": [
+      "Por nada! Fico à disposição.",
+      "Disponha! Quando precisar, é só chamar.",
+      "Imagina! Estamos aqui para ajudar.",
+      "Por nada! Tenha um ótimo dia!"
+    ],
+    "horarios_cabecalho": "Aqui estão nossos horários de funcionamento:",
+    "texto_fechado": "FECHADO",
+    "pedido_antecipado": "📦 Pedidos para viagem podem ser feitos a partir das {{pedidos_aceitos_desde}} (pedido antecipado).",
+    "rodape_pedido_link": "📲 Faça seu pedido pelo link: {{link_pedido_online}}"
+  },
+  "deteccao": {
+    "saudacao": ["oi", "olá", "ola", "bom dia", "boa tarde", "boa noite", "eae", "iae", "hello", "hi", "hey", "fala", "salve", "e aí", "e ai"],
+    "agradecimento": ["obrigado", "obrigada", "valeu", "brigado", "brigada", "agradeço", "agradeco", "thanks", "thank", "tks", "mt obg", "muito obrigado", "muito obrigada", "obg", "agradecido", "agradecida"],
+    "funcionamento": ["funcionamento", "aberto", "fechado", "abrir", "fecha", "atende", "abre", "até que horas", "que horas"],
+    "pratos": ["prato", "pratos", "almoço", "almoco", "jantar", "encomenda", "encomendas", "pedido"],
+    "pedido": ["quero pedir", "fazer um pedido", "queria pedir", "gostaria de pedir", "quero fazer", "quero comprar", "pedido", "encomenda", "encomendar", "pedir agora", "pode anotar", "vou querer", "eu quero"],
+    "incerteza": ["não sei", "nao sei", "não tenho essa informaç", "nao tenho essa informaç", "não tenho certeza", "nao tenho certeza", "vou verificar com um atendente", "vou verificar com o atendente", "não encontrei", "nao encontrei", "infelizmente não", "infelizmente nao", "não consigo informar", "nao consigo informar", "atendente humano", "vou passar para", "não posso informar", "nao posso informar"],
+    "prefixos_saudacao_para_remover": ["olá", "olá,", "oi,", "oi ", "bom dia,", "bom dia!", "boa tarde,", "boa tarde!", "boa noite,", "boa noite!"]
+  },
+  "rotulos": {
+    "regras_cabecalho": "REGRAS DO ESTABELECIMENTO (siga estas instruções quando aplicável):",
+    "horarios": "HORÁRIOS DE FUNCIONAMENTO (cozinha):",
+    "janelas_pedido": "JANELAS DE PEDIDO (para hoje):",
+    "aceitacao_pedidos_fallback": "ACEITAÇÃO DE PEDIDOS: Pedidos podem ser feitos a partir das {{pedidos_aceitos_desde}} da manhã.",
+    "tipos_atendimento": {
+      "consumo_local": "consumo no local",
+      "retirada": "retirada",
+      "delivery": "delivery"
+    },
+    "refeicoes": {
+      "almoco": "Almoço",
+      "jantar": "Jantar",
+      "jantar_inicio": "17:00"
+    }
+  }
 }
