@@ -1378,12 +1378,13 @@ app.post('/webhook/evolution', async (req, res) => {
       }
     }
 
-    // 3. RESPOSTAS APRENDIDAS: verificar knowledge base
+    // 3. RESPOSTAS APRENDIDAS: buscar conhecimento (agora usado como contexto, não resposta direta)
+    var conhecimentoEncontrado = null;
     if (!respostaIA) {
       var knowledge = carregarKnowledge();
       var respostaConhecida = buscarRespostaConhecida(mensagem, knowledge);
       if (respostaConhecida) {
-        respostaIA = substituirVariaveis(respostaConhecida.resposta, config);
+        conhecimentoEncontrado = respostaConhecida;
         respostaConhecida.usos = (respostaConhecida.usos || 0) + 1;
         salvarKnowledge(knowledge);
       }
@@ -1391,13 +1392,13 @@ app.post('/webhook/evolution', async (req, res) => {
 
     var precisaIntervencao = false;
 
-    // 4. IA: consultar LLM
+    // 4. IA: consultar LLM (com conhecimento encontrado como contexto)
     if (!respostaIA) {
       try {
         if (provider === 'groq') {
-          respostaIA = await consultarGroq(mensagem, config, regras, creds);
+          respostaIA = await consultarGroq(mensagem, config, regras, creds, conhecimentoEncontrado);
         } else {
-          respostaIA = await consultarGemini(mensagem, config, regras, creds);
+          respostaIA = await consultarGemini(mensagem, config, regras, creds, conhecimentoEncontrado);
         }
         if (respostaIA && respostaIA.indexOf('[NAO_SEI]') === 0) {
           respostaIA = respostaIA.replace('[NAO_SEI]', '').trim();
@@ -1461,7 +1462,7 @@ app.post('/webhook/evolution', async (req, res) => {
 
 // ─── Montar prompt com informações + horários ──────
 
-function montarPromptIA(mensagem, config, regras) {
+function montarPromptIA(mensagem, config, regras, conhecimento) {
   const regrasAtivas = (regras || []).filter(r => r.ativo);
   var regrasCabecalho = configGet(config, 'rotulos.regras_cabecalho', 'REGRAS DO ESTABELECIMENTO (siga estas instruções quando aplicável):');
   const regrasTexto = regrasAtivas.length > 0
@@ -1569,19 +1570,26 @@ function montarPromptIA(mensagem, config, regras) {
     prompt += '\n\n' + regrasTexto;
   }
 
+  // Conhecimento encontrado (usado como contexto, não resposta literal)
+  if (conhecimento && conhecimento.pergunta && conhecimento.resposta) {
+    prompt += '\n\nINFORMAÇÃO ENCONTRADA NA BASE DE CONHECIMENTO:\n' +
+      '- Pergunta similar: "' + conhecimento.pergunta + '"\n' +
+      '- Informação disponível: ' + conhecimento.resposta;
+  }
+
   prompt += pedidoTexto +
     '\n\nDATA/HORA ATUAL: ' + new Date().toLocaleString('pt-BR', { weekday: 'long', hour: '2-digit', minute: '2-digit', hour12: false }) +
     '\n\nMENSAGEM DO CLIENTE: "' + mensagem + '"\n\n' +
-    'Siga todas as REGRAS DO ESTABELECIMENTO listadas acima. Use seu conhecimento geral sobre restaurantes para interpretar o que o cliente está perguntando. Responda com base APENAS nas informações fornecidas e nas regras ativas.';
+    'Siga todas as REGRAS DO ESTABELECIMENTO e use as INFORMAÇÕES ENCONTRADAS NA BASE DE CONHECIMENTO (se houver) para responder. Interprete e responda de forma natural, como um atendente humano faria — não copie textos literalmente.';
 
   return prompt;
 }
 
 // ─── Gemini: Consultar IA ──────────────────────────
 
-async function consultarGemini(mensagem, config, regras, creds) {
+async function consultarGemini(mensagem, config, regras, creds, conhecimento) {
   return new Promise((resolve) => {
-    const prompt = montarPromptIA(mensagem, config, regras);
+    const prompt = montarPromptIA(mensagem, config, regras, conhecimento);
 
     const model = creds.gemini?.model || 'gemini-2.0-flash-lite';
     const apiKey = creds.gemini?.api_key;
@@ -1631,11 +1639,11 @@ async function consultarGemini(mensagem, config, regras, creds) {
 
 // ─── Groq: Consultar IA ───────────────────────────
 
-function consultarGroq(mensagem, config, regras, creds) {
+function consultarGroq(mensagem, config, regras, creds, conhecimento) {
   return new Promise((resolve) => {
     const model = creds.llm?.model || 'llama-3.3-70b-versatile';
     const apiKey = creds.llm?.api_key;
-    const prompt = montarPromptIA(mensagem, config, regras);
+    const prompt = montarPromptIA(mensagem, config, regras, conhecimento);
 
     const postData = JSON.stringify({
       model: model,
