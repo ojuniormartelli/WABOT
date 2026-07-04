@@ -113,9 +113,9 @@ function salvarMensagemLocal(telefone, texto, deBot, origem) {
     var msgs = [];
     try { msgs = JSON.parse(fs.readFileSync(arquivo, 'utf-8') || '[]'); } catch(e) {}
     if (!Array.isArray(msgs)) msgs = [];
-    // Dedup: se a última mensagem for igual e tiver menos de 3s, ignora
+    // Dedup: se a última mensagem for igual e tiver menos de 10s, ignora
     var ultima = msgs.length > 0 ? msgs[msgs.length - 1] : null;
-    if (ultima && ultima.texto === texto && ultima.de_bot === (deBot || false) && (Date.now() - (ultima.timestamp || 0)) < 3000) {
+    if (ultima && ultima.texto === texto && ultima.de_bot === (deBot || false) && (Date.now() - (ultima.timestamp || 0)) < 10000) {
       return;
     }
     msgs.push({
@@ -1233,7 +1233,7 @@ app.post('/webhook/evolution', async (req, res) => {
         } else {
           conversas.push({
             telefone,
-            nome: messageData?.pushName || telefone,
+            nome: telefone,
             ultima_msg: mensagem,
             status: 'bot',
             horario,
@@ -1242,7 +1242,7 @@ app.post('/webhook/evolution', async (req, res) => {
           });
         }
     writeJson('conversas.json', conversas);
-        sseBroadcast('new_message', { telefone: telefone, message: { texto: mensagem, de_bot: true, origem: 'bot', horario: horario, timestamp: agora }, conversation: { nome: messageData?.pushName || telefone, ultima_msg: mensagem, horario: horario, ultimo_timestamp: agora } });
+        sseBroadcast('new_message', { telefone: telefone, message: { texto: mensagem, de_bot: true, origem: 'bot', horario: horario, timestamp: agora }, conversation: { nome: telefone, ultima_msg: mensagem, horario: horario, ultimo_timestamp: agora } });
       }
       return res.json({ success: true, ignored: true });
     }
@@ -1296,6 +1296,9 @@ app.post('/webhook/evolution', async (req, res) => {
       existente.horario = horario;
       existente.nao_lidas = (existente.nao_lidas || 0) + 1;
       existente.ultimo_timestamp = agora;
+      if (existente.nome === existente.telefone && messageData?.pushName) {
+        existente.nome = messageData.pushName;
+      }
     } else {
       conversas.push({
         telefone,

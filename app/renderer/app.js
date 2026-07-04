@@ -1517,7 +1517,13 @@ async function loadMensagens() {
   try {
     var result = await wabot.evolutionHistory(contato.telefone);
     if (result.success && Array.isArray(result.data)) {
-      state.chat.mensagens = result.data;
+      var dedup = {};
+      state.chat.mensagens = result.data.filter(function(m) {
+        var key = m.texto + '|' + m.de_bot + '|' + m.horario;
+        if (dedup[key]) return false;
+        dedup[key] = true;
+        return true;
+      });
     }
   } catch(e) {}
   render();
