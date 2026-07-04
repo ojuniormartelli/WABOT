@@ -113,6 +113,11 @@ function salvarMensagemLocal(telefone, texto, deBot, origem) {
     var msgs = [];
     try { msgs = JSON.parse(fs.readFileSync(arquivo, 'utf-8') || '[]'); } catch(e) {}
     if (!Array.isArray(msgs)) msgs = [];
+    // Dedup: se a última mensagem for igual e tiver menos de 3s, ignora
+    var ultima = msgs.length > 0 ? msgs[msgs.length - 1] : null;
+    if (ultima && ultima.texto === texto && ultima.de_bot === (deBot || false) && (Date.now() - (ultima.timestamp || 0)) < 3000) {
+      return;
+    }
     msgs.push({
       id: Date.now().toString() + Math.random().toString(36).substring(2, 8),
       texto: texto,
@@ -245,20 +250,37 @@ function marcarMensagemComoLida(remoteJid, messageId) {
   const creds = getCreds();
   const instance = creds.evolution?.instance_name;
   if (!instance || !remoteJid) return;
-  var payload;
+  var keys = [];
   if (messageId) {
-    payload = {
-      readMessages: [{
-        remoteJid: remoteJid,
-        id: messageId,
-        fromMe: false,
-      }],
-    };
-  } else {
-    payload = { readMessages: true, remoteJid: remoteJid };
+    keys.push({ remoteJid: remoteJid, id: messageId, fromMe: false });
   }
-  evolutionRequest('PUT', `/chat/markMessageAsRead/${encodeURIComponent(instance)}`, payload)
+  if (keys.length === 0) return;
+  evolutionRequest('POST', `/chat/markMessageAsRead/${encodeURIComponent(instance)}`, { readMessages: keys })
     .catch(function() {});
+}
+
+function marcarTodasMensagensComoLida(remoteJid) {
+  var evoInstance = '';
+  try {
+    const creds = getCreds();
+    evoInstance = creds.evolution?.instance_name;
+  } catch(e) {}
+  if (!evoInstance || !remoteJid) return;
+  evolutionRequest('POST', '/chat/findMessages/' + encodeURIComponent(evoInstance), {
+    where: { key: { remoteJid: remoteJid } },
+    limit: 100, offset: 0,
+  }).then(function(resp) {
+    var registros = resp?.data || [];
+    if (!Array.isArray(registros) || registros.length === 0) return;
+    var keys = registros
+      .filter(function(m) { return !m.key?.fromMe; })
+      .map(function(m) { return { remoteJid: remoteJid, id: m.key?.id, fromMe: false }; })
+      .filter(function(k) { return k.id; });
+    if (keys.length > 0) {
+      evolutionRequest('POST', '/chat/markMessageAsRead/' + encodeURIComponent(evoInstance), { readMessages: keys })
+        .catch(function() {});
+    }
+  }).catch(function() {});
 }
 
 // ─── Sistema de Aprendizado Contínuo ─────────────
@@ -1220,7 +1242,6 @@ app.post('/webhook/evolution', async (req, res) => {
           });
         }
     writeJson('conversas.json', conversas);
-    sseBroadcast('new_message', { telefone: telefone, message: { texto: mensagem, de_bot: false, origem: 'cliente', horario: horario, timestamp: agora }, conversation: { nome: messageData?.pushName || telefone, ultima_msg: mensagem, horario: horario, ultimo_timestamp: agora, nao_lidas: (existente ? existente.nao_lidas : 1) } });
         sseBroadcast('new_message', { telefone: telefone, message: { texto: mensagem, de_bot: true, origem: 'bot', horario: horario, timestamp: agora }, conversation: { nome: messageData?.pushName || telefone, ultima_msg: mensagem, horario: horario, ultimo_timestamp: agora } });
       }
       return res.json({ success: true, ignored: true });
@@ -1255,10 +1276,11 @@ app.post('/webhook/evolution', async (req, res) => {
       return res.json({ success: true, ignored: true });
     }
 
-    // Marcar mensagem como lida (blue tick) — passa o messageId para bater no WhatsApp
+    // Marcar mensagem como lida (blue tick + limpar badge de conversa no WhatsApp Web)
     var remoteJid = messageData?.key?.remoteJid || telefone + '@s.whatsapp.net';
     var msgId = messageData?.key?.id;
     marcarMensagemComoLida(remoteJid, msgId);
+    marcarTodasMensagensComoLida(remoteJid);
 
     // Salvar mensagem localmente (histórico)
     salvarMensagemLocal(telefone, mensagem, false, 'cliente');
