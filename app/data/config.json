@@ -86,5 +86,6 @@
   "mensagem_agradecimento": "Por nada! Ficamos felizes em ajudar. 😊 Se precisar de mais alguma coisa, é só chamar!",
   "registrar_aprendizado_auto": true,
   "timezone": "America/Sao_Paulo",
-  "receber_chamadas": false
+  "receber_chamadas": false,
+  "pedidos_aceitos_desde": "08:00"
 }

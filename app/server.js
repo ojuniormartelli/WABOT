@@ -1337,14 +1337,22 @@ app.post('/webhook/evolution', async (req, res) => {
           var agora = new Date();
           var minAgora = agora.getHours() * 60 + agora.getMinutes();
           var periodos = configDia.periodos || configDia.cozinha || [];
+          var minPedido = parseInt((config.pedidos_aceitos_desde || '08:00').split(':')[0]) * 60 + parseInt((config.pedidos_aceitos_desde || '08:00').split(':')[1] || '0');
           var dentro = false;
+          var ultimoFechamento = 0;
           for (var p = 0; p < periodos.length; p++) {
             var hab = periodos[p].abertura || '00:00';
             var hfe = periodos[p].fechamento || '23:59';
             var pAbb = parseInt(hab.split(':')[0]) * 60 + parseInt(hab.split(':')[1] || '0');
             var pFee = parseInt(hfe.split(':')[0]) * 60 + parseInt(hfe.split(':')[1] || '0');
+            if (pFee > ultimoFechamento) ultimoFechamento = pFee;
             if (minAgora >= pAbb && minAgora < pFee) { dentro = true; break; }
             if (minAgora < pAbb && (!proxAbertura || pAbb < proxAbertura)) proxAbertura = pAbb;
+          }
+          // Se está fora do horário da cozinha mas dentro do horário de pedidos, não trava
+          if (!dentro && minAgora >= minPedido && minAgora < ultimoFechamento) {
+            dentro = true;
+            if (proxAbertura === null || minPedido < proxAbertura) proxAbertura = minPedido;
           }
           if (!dentro) foraHorario = true;
         }
@@ -1580,9 +1588,12 @@ function montarPromptIA(mensagem, config, regras) {
       if (linha) linhas.push('- ' + (nomesDias[dia] || dia) + ': ' + linha);
     }
     if (linhas.length > 0) {
-      horariosTexto = '\nHORÁRIOS DE FUNCIONAMENTO:\n' + linhas.join('\n');
+      horariosTexto = '\nHORÁRIOS DE FUNCIONAMENTO (cozinha):\n' + linhas.join('\n');
     }
   }
+
+  var aceitaPedidosDesde = config.pedidos_aceitos_desde || '08:00';
+  var pedidoTexto = '\nACEITAÇÃO DE PEDIDOS: Pedidos (encomendas) podem ser feitos a partir das ' + aceitaPedidosDesde + ' da manhã, mesmo que a cozinha ainda não tenha aberto. Se o cliente quiser fazer um pedido antes do horário da cozinha, atenda normalmente e informe que a cozinha abre no horário indicado.\n';
 
   return 'Você é o assistente virtual do ' + (config.nome_negocio || 'restaurante') + '. Responda em português, de forma natural, amigável e objetiva.\n\n' +
     'INFORMAÇÕES DO RESTAURANTE:\n' +
@@ -1595,6 +1606,7 @@ function montarPromptIA(mensagem, config, regras) {
     '- Observações: ' + (config.observacoes_gerais || '') +
     horariosTexto +
     '\n\n' + regrasTexto +
+    pedidoTexto +
     '\n\nDATA/HORA ATUAL: ' + new Date().toLocaleString('pt-BR', { weekday: 'long', hour: '2-digit', minute: '2-digit', hour12: false }) +
     '\n\nMENSAGEM DO CLIENTE: "' + mensagem + '"\n\n' +
     'INSTRUÇÕES:\n' +
@@ -1606,7 +1618,8 @@ function montarPromptIA(mensagem, config, regras) {
     '6. NÃO invente informações que não estão nos dados acima. Mas use seu bom senso: se perguntarem sobre prato específico e você não tem o cardápio, sugira o link de pedido online.\n' +
     '7. NÃO inicie respostas com saudações, a menos que o cliente tenha mandado apenas uma saudação.\n' +
     '8. Sempre ofereça o link de pedido online quando for relevante: ' + (config.link_pedido_online || '') + '\n' +
-    '9. Para perguntas sobre horários, repita EXATAMENTE os horários listados acima sem modificar. Se houver dois períodos (ex: 08:00 às 14:00, 18:00 às 22:00), mencione AMBOS.';
+    '9. Para perguntas sobre horários, repita EXATAMENTE os horários listados acima sem modificar. Se houver dois períodos (ex: 08:00 às 14:00, 18:00 às 22:00), mencione AMBOS.\n' +
+    '10. Se o cliente quiser fazer um pedido e estiver antes do horário da cozinha mas dentro do horário de aceitação de pedidos, atenda o pedido e avise que a cozinha abrirá no horário indicado.';
 }
 
 // ─── Gemini: Consultar IA ──────────────────────────

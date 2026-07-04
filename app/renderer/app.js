@@ -89,7 +89,7 @@ var state = {
     saved: false,
   },
   configuracoes: {
-    config: { nome_negocio: '', endereco: '', telefone: '', site: '', redes_sociais: { instagram: '', facebook: '', ifood: '' }, link_pedido_online: '', observacoes_gerais: '', tipos_atendimento: [], horarios: {}, mensagem_saudacao: '', mensagem_ausencia: '', mensagem_regra_nao_encontrada: '', mensagem_agradecimento: '', receber_chamadas: false },
+    config: { nome_negocio: '', endereco: '', telefone: '', site: '', redes_sociais: { instagram: '', facebook: '', ifood: '' }, link_pedido_online: '', observacoes_gerais: '', tipos_atendimento: [], horarios: {}, mensagem_saudacao: '', mensagem_ausencia: '', mensagem_regra_nao_encontrada: '', mensagem_agradecimento: '', receber_chamadas: false, pedidos_aceitos_desde: '08:00' },
     saving: false,
     saved: false,
   },
