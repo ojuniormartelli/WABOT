@@ -115,6 +115,13 @@ window.wabot.aprendizadoAdicionar = (data) =>
     body: JSON.stringify(data),
   }).then(r => r.json());
 
+window.wabot.aprendizadoEditar = (id, data) =>
+  fetch('/api/aprendizado/respostas/' + id, {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(data),
+  }).then(r => r.json());
+
 window.wabot.aprendizadoRemover = (id) =>
   fetch('/api/aprendizado/respostas/' + id, { method: 'DELETE' }).then(r => r.json());
 

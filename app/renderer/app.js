@@ -118,6 +118,10 @@ var state = {
     novaPergunta: '',
     novaResposta: '',
     novasPalavrasChave: '',
+    editandoId: null,
+    editandoPergunta: '',
+    editandoResposta: '',
+    editandoPalavras: '',
   },
   dashboard: { checklist: [] },
 };
@@ -1825,20 +1829,41 @@ function renderAprendizado() {
   }
   for (var i = 0; i < respostas.length; i++) {
     var r = respostas[i];
+    var editando = a.editandoId === r.id;
     respostasHtml += '<div class="bg-white rounded-xl border border-gray-200 p-4 group hover:border-gray-300 transition-colors">' +
       '<div class="flex items-start gap-3">' +
         '<div class="w-9 h-9 bg-emerald-100 rounded-lg flex items-center justify-center flex-shrink-0">' + I.checkCircle2(18, 'text-emerald-600') + '</div>' +
         '<div class="flex-1 min-w-0">' +
-          '<p class="text-xs font-medium text-gray-500 mb-1">Pergunta:</p>' +
-          '<p class="text-sm text-gray-700 font-medium mb-2">' + esc(r.pergunta) + '</p>' +
-          '<p class="text-xs font-medium text-gray-500 mb-1">Resposta:</p>' +
-          '<p class="text-sm text-gray-600 mb-2 whitespace-pre-wrap">' + esc(r.resposta) + '</p>' +
-          '<div class="flex items-center gap-3 text-xs text-gray-400">' +
-            '<span>Usos: ' + (r.usos || 0) + '</span>' +
-            '<span>Palavras-chave: ' + (Array.isArray(r.palavras_chave) ? r.palavras_chave.join(', ') : '') + '</span>' +
-          '</div>' +
+          (editando
+            ? '<div class="space-y-3">' +
+                '<div><p class="text-xs font-medium text-gray-500 mb-1">Pergunta:</p>' +
+                '<input type="text" id="edit-pergunta-' + r.id + '" value="' + esc(a.editandoPergunta) + '" class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-emerald-500" /></div>' +
+                '<div><p class="text-xs font-medium text-gray-500 mb-1">Resposta:</p>' +
+                '<textarea rows="3" id="edit-resposta-' + r.id + '" class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-emerald-500">' + esc(a.editandoResposta) + '</textarea></div>' +
+                '<div><p class="text-xs font-medium text-gray-500 mb-1">Palavras-chave (separadas por vírgula):</p>' +
+                '<input type="text" id="edit-palavras-' + r.id + '" value="' + esc(a.editandoPalavras) + '" class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-emerald-500" /></div>' +
+              '</div>'
+            : '' +
+              '<p class="text-xs font-medium text-gray-500 mb-1">Pergunta:</p>' +
+              '<p class="text-sm text-gray-700 font-medium mb-2">' + esc(r.pergunta) + '</p>' +
+              '<p class="text-xs font-medium text-gray-500 mb-1">Resposta:</p>' +
+              '<p class="text-sm text-gray-600 mb-2 whitespace-pre-wrap">' + esc(r.resposta) + '</p>' +
+              '<div class="flex items-center gap-3 text-xs text-gray-400">' +
+                '<span>Usos: ' + (r.usos || 0) + '</span>' +
+                '<span>Palavras-chave: ' + (Array.isArray(r.palavras_chave) ? r.palavras_chave.join(', ') : '') + '</span>' +
+              '</div>'
+          ) +
         '</div>' +
-        '<button onclick="removerRespostaAprendizada(\'' + r.id + '\')" class="text-red-300 hover:text-red-600 p-1 opacity-0 group-hover:opacity-100 transition-opacity">' + I.trash2(16, '') + '</button>' +
+        (editando
+          ? '<div class="flex flex-col gap-1">' +
+              '<button onclick="salvarEdicaoAprendizado(\'' + r.id + '\')" class="text-emerald-500 hover:text-emerald-700 p-1" title="Salvar">' + I.save(16, '') + '</button>' +
+              '<button onclick="cancelarEdicaoAprendizado()" class="text-gray-400 hover:text-gray-600 p-1" title="Cancelar">' + I.x(16, '') + '</button>' +
+            '</div>'
+          : '<div class="flex flex-col gap-1">' +
+              '<button onclick="editarRespostaAprendizada(\'' + r.id + '\')" class="text-blue-300 hover:text-blue-600 p-1 opacity-0 group-hover:opacity-100 transition-opacity" title="Editar">' + I.fileText(16, '') + '</button>' +
+              '<button onclick="removerRespostaAprendizada(\'' + r.id + '\')" class="text-red-300 hover:text-red-600 p-1 opacity-0 group-hover:opacity-100 transition-opacity" title="Excluir">' + I.trash2(16, '') + '</button>' +
+            '</div>'
+        ) +
       '</div>' +
     '</div>';
   }
@@ -1941,6 +1966,50 @@ window.removerRespostaAprendizada = async function(id) {
   } catch(e) {
     alert('Erro: ' + e.message);
   }
+};
+
+window.editarRespostaAprendizada = function(id) {
+  var a = state.aprendizado;
+  var r = a.respostas.find(function(x) { return x.id === id; });
+  if (!r) return;
+  a.editandoId = id;
+  a.editandoPergunta = r.pergunta;
+  a.editandoResposta = r.resposta;
+  a.editandoPalavras = Array.isArray(r.palavras_chave) ? r.palavras_chave.join(', ') : '';
+  render();
+  bindAprendizado();
+};
+
+window.salvarEdicaoAprendizado = async function(id) {
+  var pergunta = document.getElementById('edit-pergunta-' + id);
+  var resposta = document.getElementById('edit-resposta-' + id);
+  var palavras = document.getElementById('edit-palavras-' + id);
+  if (!pergunta || !resposta) return;
+  var pVal = pergunta.value.trim();
+  var rVal = resposta.value.trim();
+  var kwVal = palavras ? palavras.value.split(',').map(function(s) { return s.trim(); }).filter(function(s) { return s.length > 0; }) : [];
+  if (!pVal || !rVal) { alert('Preencha pergunta e resposta'); return; }
+  try {
+    var result = await fetch('/api/aprendizado/respostas/' + id, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ pergunta: pVal, resposta: rVal, palavras_chave: kwVal.length > 0 ? kwVal : undefined }),
+    }).then(function(r) { return r.json(); });
+    if (result.success) {
+      state.aprendizado.editandoId = null;
+      await loadAprendizado();
+      render();
+      bindAprendizado();
+    }
+  } catch(e) {
+    alert('Erro ao salvar: ' + e.message);
+  }
+};
+
+window.cancelarEdicaoAprendizado = function() {
+  state.aprendizado.editandoId = null;
+  render();
+  bindAprendizado();
 };
 
 window.adicionarConhecimentoManual = async function() {
