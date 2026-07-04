@@ -1396,9 +1396,9 @@ app.post('/webhook/evolution', async (req, res) => {
     if (!respostaIA) {
       try {
         if (provider === 'groq') {
-          respostaIA = await consultarGroq(mensagem, config, regras, creds, conhecimentoEncontrado);
+          respostaIA = await consultarGroq(mensagem, config, regras, creds, conhecimentoEncontrado, foraHorario, proxAbertura);
         } else {
-          respostaIA = await consultarGemini(mensagem, config, regras, creds, conhecimentoEncontrado);
+          respostaIA = await consultarGemini(mensagem, config, regras, creds, conhecimentoEncontrado, foraHorario, proxAbertura);
         }
         if (respostaIA && respostaIA.indexOf('[NAO_SEI]') === 0) {
           respostaIA = respostaIA.replace('[NAO_SEI]', '').trim();
@@ -1462,7 +1462,7 @@ app.post('/webhook/evolution', async (req, res) => {
 
 // ─── Montar prompt com informações + horários ──────
 
-function montarPromptIA(mensagem, config, regras, conhecimento) {
+function montarPromptIA(mensagem, config, regras, conhecimento, foraHorario, proxAbertura) {
   const regrasAtivas = (regras || []).filter(r => r.ativo);
   var regrasCabecalho = configGet(config, 'rotulos.regras_cabecalho', 'REGRAS DO ESTABELECIMENTO (siga estas instruções quando aplicável):');
   const regrasTexto = regrasAtivas.length > 0
@@ -1566,6 +1566,10 @@ function montarPromptIA(mensagem, config, regras, conhecimento) {
     '- Observações: ' + (config.observacoes_gerais || '') +
     horariosTexto;
 
+  // Status atual do restaurante
+  prompt += '\n\nSTATUS ATUAL: ' + (foraHorario ? 'FECHADO' : 'ABERTO') +
+    (foraHorario && proxAbertura !== null ? ' (próxima abertura: ' + proxAbertura + ')' : '');
+
   if (regrasTexto) {
     prompt += '\n\n' + regrasTexto;
   }
@@ -1587,9 +1591,9 @@ function montarPromptIA(mensagem, config, regras, conhecimento) {
 
 // ─── Gemini: Consultar IA ──────────────────────────
 
-async function consultarGemini(mensagem, config, regras, creds, conhecimento) {
+async function consultarGemini(mensagem, config, regras, creds, conhecimento, foraHorario, proxAbertura) {
   return new Promise((resolve) => {
-    const prompt = montarPromptIA(mensagem, config, regras, conhecimento);
+    const prompt = montarPromptIA(mensagem, config, regras, conhecimento, foraHorario, proxAbertura);
 
     const model = creds.gemini?.model || 'gemini-2.0-flash-lite';
     const apiKey = creds.gemini?.api_key;
@@ -1639,11 +1643,11 @@ async function consultarGemini(mensagem, config, regras, creds, conhecimento) {
 
 // ─── Groq: Consultar IA ───────────────────────────
 
-function consultarGroq(mensagem, config, regras, creds, conhecimento) {
+function consultarGroq(mensagem, config, regras, creds, conhecimento, foraHorario, proxAbertura) {
   return new Promise((resolve) => {
     const model = creds.llm?.model || 'llama-3.3-70b-versatile';
     const apiKey = creds.llm?.api_key;
-    const prompt = montarPromptIA(mensagem, config, regras, conhecimento);
+    const prompt = montarPromptIA(mensagem, config, regras, conhecimento, foraHorario, proxAbertura);
 
     const postData = JSON.stringify({
       model: model,
