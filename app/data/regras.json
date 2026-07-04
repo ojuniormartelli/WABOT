@@ -28,5 +28,10 @@
     "id": "reg-6",
     "instrucao": "Quando o cliente perguntar sobre horários, informe os horários de funcionamento do salão, retirada e encomendas.",
     "ativo": true
+  },
+  {
+    "id": "reg-7",
+    "instrucao": "IMPORTANTE: O restaurante NÃO trabalha com reserva de mesas. Nunca sugira ou mencione a opção de reserva de mesas para o cliente. Se o cliente perguntar sobre reserva, avise que não trabalhamos com reservas.",
+    "ativo": true
   }
 ]
