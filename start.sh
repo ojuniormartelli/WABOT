@@ -1,6 +1,8 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
+export TZ=America/Sao_Paulo
+
 WABOT_DIR="$(cd "$(dirname "$0")" && pwd)"
 
 echo "Iniciando Evolution API + PostgreSQL (Docker)..."

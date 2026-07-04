@@ -839,13 +839,26 @@ app.post('/api/evolution/send', async (req, res) => {
 
 // ─── Webhook Evolution (receber msgs direto) ──
 
+function horarioHojeTexto(config) {
+  if (!config || !config.horarios) return '';
+  var dias = ['domingo', 'segunda', 'terca', 'quarta', 'quinta', 'sexta', 'sabado'];
+  var hoje = dias[new Date().getDay()];
+  var info = config.horarios[hoje];
+  if (!info) return '';
+  if (info.fechado) return 'FECHADO';
+  var periodos = info.periodos || info.cozinha || [];
+  if (periodos.length === 0) return '';
+  return periodos.map(function(p) { return p.abertura + ' às ' + p.fechamento; }).join(', ');
+}
+
 function substituirVariaveis(texto, config) {
   if (!texto || !config) return texto;
   return texto
     .replace(/\{\{link_pedido_online\}\}/g, config.link_pedido_online || '')
     .replace(/\{\{endereco\}\}/g, config.endereco || '')
     .replace(/\{\{telefone\}\}/g, config.telefone || '')
-    .replace(/\{\{nome_negocio\}\}/g, config.nome_negocio || '');
+    .replace(/\{\{nome_negocio\}\}/g, config.nome_negocio || '')
+    .replace(/\{\{horario_hoje\}\}/g, horarioHojeTexto(config));
 }
 
 function responderHorarios(config) {
@@ -860,8 +873,9 @@ function responderHorarios(config) {
       linhas.push(nomesDias[dias[d]] + ': FECHADO');
       continue;
     }
-    if (info.cozinha && info.cozinha.length > 0) {
-      var hrs = info.cozinha.map(function(p) { return p.abertura + ' às ' + p.fechamento; }).join(', ');
+    var periodos = info.periodos || info.cozinha || [];
+    if (periodos.length > 0) {
+      var hrs = periodos.map(function(p) { return p.abertura + ' às ' + p.fechamento; }).join(', ');
       linhas.push(nomesDias[dias[d]] + ': ' + hrs);
     }
   }
@@ -1453,10 +1467,11 @@ function montarPromptIA(mensagem, config, regras) {
       }
       var partesCozinha = [];
       var partesEncomendas = [];
-      if (info.cozinha && info.cozinha.length > 0) {
-        for (var p = 0; p < info.cozinha.length; p++) {
-          if (info.cozinha[p].abertura) {
-            partesCozinha.push(info.cozinha[p].abertura + ' às ' + info.cozinha[p].fechamento);
+      var periodos = info.periodos || info.cozinha || [];
+      if (periodos.length > 0) {
+        for (var p = 0; p < periodos.length; p++) {
+          if (periodos[p].abertura) {
+            partesCozinha.push(periodos[p].abertura + ' às ' + periodos[p].fechamento);
           }
         }
       }

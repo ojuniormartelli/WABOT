@@ -1,6 +1,7 @@
 @echo off
 title WaBot - Inicio Rapido
 
+set TZ=America/Sao_Paulo
 set WABOT_DIR=%~dp0
 
 echo Iniciando Evolution API + PostgreSQL (Docker)...
