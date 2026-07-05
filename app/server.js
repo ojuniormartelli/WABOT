@@ -1528,11 +1528,19 @@ app.post('/webhook/evolution', async (req, res) => {
               break;
             }
           }
-          var tempoLimite = 2 * 60 * 60 * 1000;
-          var ultimoTs = typeof existente?.ultimo_timestamp === 'number' ? existente.ultimo_timestamp : 0;
-          if (config.mensagem_saudacao && (!existente || (Date.now() - ultimoTs) > tempoLimite)) {
-            respostaIA = substituirVariaveis(config.mensagem_saudacao, config) + ' ' + respostaIA.charAt(0).toLowerCase() + respostaIA.slice(1);
+        }
+        // Saudação condicional: só na primeira mensagem ou quando usuário saudar
+        var precisaSaudar = false;
+        if (config.mensagem_saudacao) {
+          var saudacaoTexto = substituirVariaveis(config.mensagem_saudacao, config);
+          var jaSaudacao = (respostaIA === saudacaoTexto);
+          if (!jaSaudacao) {
+            if (!existente) precisaSaudar = true;       // primeira mensagem
+            if (isSaudacao) precisaSaudar = true;        // usuário saudou
           }
+        }
+        if (precisaSaudar) {
+          respostaIA = saudacaoTexto + '\n\n' + respostaIA;
         }
         await sendEvolutionMessage(telefone, respostaIA);
 
@@ -1619,10 +1627,13 @@ function responderIntencaoOperacional(intencao, dadosNegocio, config, cozinhaFun
     
     case 'delivery':
       if (dadosNegocio.delivery_ativo) {
-        resposta = link ? 'Sim! Delivery disponível. ' + montarRespostaHorario(dadosNegocio, config, cozinhaFuncionando, proxApertura) : null;
+        resposta = link ? 'Sim! Delivery disponível! Faça seu pedido pelo link: ' + link : 'Sim! Delivery disponível!';
       } else {
-        var txtRetirada = dadosNegocio.retirada_ativa ? 'Se preferir, você pode fazer seu pedido para retirada.' : '';
-        resposta = 'No momento não trabalhamos com delivery.' + (link && dadosNegocio.retirada_ativa ? ' ' + txtRetirada + ' Link: ' + link : '');
+        resposta = 'No momento não trabalhamos com delivery.';
+        if (dadosNegocio.retirada_ativa) {
+          resposta += ' Se preferir, você pode fazer seu pedido para retirada.';
+          if (link) resposta += ' Link: ' + link;
+        }
       }
       break;
     
@@ -2392,7 +2403,22 @@ app.post('/api/intencao/testar', (req, res) => {
     'Ligar para o restaurante',
     'Como chegar',
     'Endereço do local',
-    'Chama um atendente'
+    'Chama um atendente',
+    // ─── Frases de delivery para validação ──
+    'Vocês fazem delivery?',
+    'tem delivery?',
+    'tem entrega?',
+    'faz entrega?',
+    'vocês entregam?',
+    'entrega em casa?',
+    'tem entrega em domicílio?',
+    'entrega em domicílio?',
+    'posso pedir em casa?',
+    'posso pedir para casa?',
+    'quero receber em casa',
+    'leva em casa?',
+    'ifood?',
+    'tem ifood?'
   ];
   var resultados = [];
   var dadosNegocio = readJson('dados_negocio.json') || {};

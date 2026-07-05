@@ -59,10 +59,10 @@
       "palavra": ["retirada", "buscar", "levar"]
     },
     "delivery": {
-      "prioridade": 82,
-      "frase_exata": ["tem delivery", "faz delivery", "voces entregam", "da para entregar", "entrega em casa", "delivery disponivel", "pedir em casa", "da para pedir em casa", "voces entregam em casa", "receber em casa", "tem entrega em domicilio", "entrega em domicilio", "pedir para casa"],
-      "expressao": ["delivery", "entrega", "domicilio", "tele entrega", "telefone para delivery"],
-      "palavra": ["entrega", "domicilio"]
+      "prioridade": 85,
+      "frase_exata": ["tem delivery", "faz delivery", "voces entregam", "da para entregar", "entrega em casa", "delivery disponivel", "pedir em casa", "da para pedir em casa", "voces entregam em casa", "receber em casa", "tem entrega em domicilio", "entrega em domicilio", "pedir para casa", "tem entrega", "faz entrega", "leva em casa", "entrega em domicilio"],
+      "expressao": ["delivery", "entrega", "domicilio", "tele entrega", "ifood"],
+      "palavra": ["entrega", "domicilio", "ifood", "leva"]
     },
     "reserva": {
       "prioridade": 50,
