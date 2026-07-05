@@ -346,57 +346,6 @@ function buscarRespostaConhecida(mensagem, knowledge) {
   return maiorScore > 0 ? melhor : null;
 }
 
-function buscarOutrosConhecimentos(mensagem, knowledge, ignorarItem) {
-  if (!mensagem || !knowledge || !Array.isArray(knowledge.respostas)) return [];
-  var msg = mensagem.toLowerCase().trim();
-  var tokensMsg = extrairTokens(mensagem);
-  var resultados = [];
-  for (var i = 0; i < knowledge.respostas.length; i++) {
-    var r = knowledge.respostas[i];
-    if (!r.palavras_chave || r.palavras_chave.length === 0) continue;
-    if (ignorarItem && r.id === ignorarItem.id) continue;
-    var score = 0;
-    // Score por palavra-chave
-    for (var j = 0; j < r.palavras_chave.length; j++) {
-      var kw = r.palavras_chave[j].toLowerCase().trim();
-      if (kw && msg.indexOf(kw) >= 0) {
-        score += kw.length;
-      }
-    }
-    // Score por similaridade com a pergunta
-    if (r.pergunta) {
-      var tokensPerg = extrairTokens(r.pergunta);
-      var sim = calcularSimilaridade(tokensMsg, tokensPerg);
-      score += Math.max(sim.jaccard, sim.contidos * 0.8) * r.pergunta.length;
-    }
-    if (score > 0) {
-      resultados.push({ item: r, score: score });
-    }
-  }
-  // Ordenar por score e retornar os 3 melhores
-  resultados.sort(function(a, b) { return b.score - a.score; });
-  return resultados.slice(0, 3).map(function(r) { return r.item; });
-}
-
-function salvarPerguntaNaoRespondida(telefone, mensagem) {
-  var learn = carregarLearn();
-  // Evitar duplicatas (mesma pergunta do mesmo telefone)
-  for (var i = 0; i < learn.perguntas.length; i++) {
-    var p = learn.perguntas[i];
-    if (!p.respondida && p.telefone === telefone && p.mensagem === mensagem) return;
-  }
-  learn.perguntas.push({
-    id: Date.now().toString(36) + Math.random().toString(36).substring(2, 6),
-    telefone: telefone,
-    mensagem: mensagem,
-    data: new Date().toISOString(),
-    respondida: false,
-    resposta: null,
-  });
-  salvarLearn(learn);
-  console.log('[learn] Pergunta salva para aprendizado:', mensagem.substring(0, 80));
-}
-
 // ─── Health Check e Versão (para Landing Page Vercel) ──
 
 app.get('/api/health', async (req, res) => {
@@ -1081,17 +1030,67 @@ function detectarAgradecimento(texto, config) {
 function detectarAtendenteHumano(texto, config) {
   if (!texto) return false;
   var t = texto.toLowerCase().trim();
-  var padroes = configGet(config, 'deteccao.atendente_humano', [
-    'quero falar com atendente', 'quero falar com humano', 'falar com atendente', 'falar com humano',
-    'falar com uma pessoa', 'falar com pessoa', 'me chama alguém', 'me chama alguem', 'chama atendente',
-    'chama humano', 'suporte humano', 'atendente por favor', 'quero atendente', 'preciso de atendente',
-    'preciso falar com alguém', 'preciso falar com alguem', 'falar com responsavel', 'falar com responsável',
-    'atendimento humano'
-  ]);
+  var padroes = configGet(config, 'deteccao.atendente_humano', ['quero falar com atendente', 'quero falar com humano', 'falar com atendente', 'falar com humano', 'falar com uma pessoa', 'falar com pessoa', 'me chama alguém', 'me chama alguem', 'chama atendente', 'chama humano', 'suporte humano', 'atendente por favor', 'quero atendente', 'preciso de atendente', 'preciso falar com alguém', 'preciso falar com alguem', 'falar com responsavel', 'falar com responsável', 'atendimento humano']);
   for (var i = 0; i < padroes.length; i++) {
     if (t.indexOf(padroes[i]) >= 0) return true;
   }
   return false;
+}
+
+function normalizarTexto(texto) {
+  return texto.toLowerCase()
+    .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+    .replace(/[^a-z0-9\s]/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
+function detectarIntencaoOperacional(mensagem, dadosNegocio) {
+  if (!mensagem) return null;
+  var msg = normalizarTexto(mensagem);
+  var pkw = dadosNegocio.palavras_chave || {};
+  
+  var scores = {};
+  var tipos = ['atendente', 'horario', 'delivery', 'retirada', 'pedido', 'reserva', 'endereco', 'telefone'];
+  
+  for (var i = 0; i < tipos.length; i++) {
+    var tipo = tipos[i];
+    var kw = pkw[tipo] || {};
+    var score = 0;
+    
+    // Pesos: frase exata = 10, expressão = 5, palavra = 1
+    var frases = (kw.frase_exata || []).map(normalizarTexto);
+    var expressoes = (kw.expressao || []).map(normalizarTexto);
+    var palavras = (kw.palavra || []).map(normalizarTexto);
+    var prioridade = kw.prioridade || 0;
+    
+    for (var j = 0; j < frases.length; j++) {
+      if (msg.indexOf(frases[j]) >= 0) score += 10;
+    }
+    for (var j = 0; j < expressoes.length; j++) {
+      if (msg.indexOf(expressoes[j]) >= 0) score += 5;
+    }
+    for (var j = 0; j < palavras.length; j++) {
+      if (msg.indexOf(palavras[j]) >= 0) score += 1;
+    }
+    
+    // Score final = score + prioridade (garante que intenções prioritárias ganhem)
+    if (score > 0) {
+      scores[tipo] = score + prioridade;
+      console.log('[intencao] "' + mensagem + '" -> ' + tipo + ' (score: ' + scores[tipo] + ', base: ' + score + ', prio: ' + prioridade + ')');
+    }
+  }
+  
+  var maxTipo = null;
+  var maxScore = 0;
+  for (var tipo in scores) {
+    if (scores[tipo] > maxScore) {
+      maxScore = scores[tipo];
+      maxTipo = tipo;
+    }
+  }
+  
+  return maxScore > 0 ? maxTipo : null;
 }
 
 function isApenasSaudacao(texto, config) {
@@ -1452,31 +1451,41 @@ app.post('/webhook/evolution', async (req, res) => {
       }
     }
 
-    // 3. RESPOSTAS APRENDIDAS: buscar conhecimento (usado como contexto adicional)
-    var conhecimentoEncontrado = null;
-    var outrosConhecimentos = [];
+    // 3. INTENÇÕES OPERACIONAIS: usar dados estruturados (mais confiável que matching)
+    var respostaOperacional = null;
+    if (!respostaIA) {
+      var dadosNegocio = readJson('dados_negocio.json') || {};
+      var intencao = detectarIntencaoOperacional(mensagem, dadosNegocio);
+      if (intencao) {
+        respostaOperacional = responderIntencaoOperacional(intencao, dadosNegocio, config, cozinhaFuncionando, proxAbertura);
+      }
+    }
+    // Se encontrou intenção operacional, usa como resposta
+    if (respostaOperacional) {
+      respostaIA = respostaOperacional;
+    }
+
+    // 4. CONHECIMENTO COMO CONTEXTO: para perguntas que não são operacionais
+    var knowledgeText = '';
     if (!respostaIA) {
       var knowledge = carregarKnowledge();
-      var respostaConhecida = buscarRespostaConhecida(mensagem, knowledge);
-      if (respostaConhecida) {
-        conhecimentoEncontrado = respostaConhecida;
-        respostaConhecida.usos = (respostaConhecida.usos || 0) + 1;
-        salvarKnowledge(knowledge);
+      if (knowledge.respostas && knowledge.respostas.length > 0) {
+        knowledgeText = knowledge.respostas.map(function(r) {
+          return r.pergunta + ' >>> ' + r.resposta;
+        }).join('\n\n');
       }
-      // Buscar também outras perguntas relacionadas para contexto adicional
-      outrosConhecimentos = buscarOutrosConhecimentos(mensagem, knowledge, respostaConhecida);
     }
 
     var precisaIntervencao = false;
     var clientePediuAtendente = detectarAtendenteHumano(mensagem, config);
 
-    // 4. IA: consultar LLM (com conhecimento encontrado como contexto)
+    // 4. IA: consultar LLM (com todo conhecimento como contexto)
     if (!respostaIA) {
       try {
         if (provider === 'groq') {
-          respostaIA = await consultarGroq(mensagem, config, regras, creds, conhecimentoEncontrado, cozinhaFuncionando, proxAbertura, outrosConhecimentos);
+          respostaIA = await consultarGroq(mensagem, config, regras, creds, knowledgeText, cozinhaFuncionando, proxAbertura);
         } else {
-          respostaIA = await consultarGemini(mensagem, config, regras, creds, conhecimentoEncontrado, cozinhaFuncionando, proxAbertura, outrosConhecimentos);
+          respostaIA = await consultarGemini(mensagem, config, regras, creds, knowledgeText, cozinhaFuncionando, proxAbertura);
         }
         if (respostaIA && respostaIA.indexOf('[NAO_SEI]') === 0) {
           respostaIA = respostaIA.replace('[NAO_SEI]', '').trim();
@@ -1549,8 +1558,8 @@ app.post('/webhook/evolution', async (req, res) => {
             }
           } catch(e) {}
         }
-        // Resetar contador se a mensagem foi entendida (resposta normal da IA)
-        else if (!foiFallback) {
+        // Resetar contador se houve resposta (operacional ou IA)
+        else {
           try {
             var convList2 = readJson('conversas.json') || [];
             var conv2 = convList2.find(c => c.telefone === telefone);
@@ -1570,9 +1579,126 @@ app.post('/webhook/evolution', async (req, res) => {
   }
 });
 
+// ─── Responder intenções operacionais com dados estruturados ──
+
+function responderIntencaoOperacional(intencao, dadosNegocio, config, cozinhaFuncionando, proxApertura) {
+  var resposta = null;
+  var politicas = dadosNegocio.politicas || {};
+  var link = dadosNegocio.link_pedido_online || config.link_pedido_online || '';
+  
+  switch (intencao) {
+    case 'horario':
+      resposta = montarRespostaHorario(dadosNegocio, config, cozinhaFuncionando, proxApertura);
+      break;
+    
+    case 'endereco':
+      var end = dadosNegocio.endereco || config.endereco || '';
+      resposta = end ? end : null;
+      break;
+    
+    case 'telefone':
+      var tel = dadosNegocio.telefone || config.telefone || '';
+      resposta = tel ? formatarTelefone(tel) : null;
+      break;
+    
+    case 'pedido':
+      if (dadosNegocio.retirada_ativa || dadosNegocio.delivery_ativo) {
+        resposta = link;
+      } else if (link) {
+        resposta = 'No momento não estamos trabalhando com delivery ou retirada. ' + montarRespostaHorario(dadosNegocio, config, cozinhaFuncionando, proxApertura);
+      }
+      break;
+    
+    case 'retirada':
+      if (dadosNegocio.retirada_ativa) {
+        resposta = link ? 'Sim! Retirada disponível. ' + link : 'Retirada disponível. ' + montarRespostaHorario(dadosNegocio, config, cozinhaFuncionando, proxApertura);
+      } else {
+        resposta = 'No momento não estamos trabalhando com retirada. ' + montarRespostaHorario(dadosNegocio, config, cozinhaFuncionando, proxApertura);
+      }
+      break;
+    
+    case 'delivery':
+      if (dadosNegocio.delivery_ativo) {
+        resposta = link ? 'Sim! Delivery disponível. ' + montarRespostaHorario(dadosNegocio, config, cozinhaFuncionando, proxApertura) : null;
+      } else {
+        var txtRetirada = dadosNegocio.retirada_ativa ? 'Se preferir, você pode fazer seu pedido para retirada.' : '';
+        resposta = 'No momento não trabalhamos com delivery.' + (link && dadosNegocio.retirada_ativa ? ' ' + txtRetirada + ' Link: ' + link : '');
+      }
+      break;
+    
+    case 'reserva':
+      if (politicas.reserva_mesas === false) {
+        resposta = 'Não trabalhamos com reserva de mesas. O atendimento é por ordem de chegada. ' + montarRespostaHorario(dadosNegocio, config, cozinhaFuncionando, proxApertura);
+      }
+      break;
+      
+    case 'atendente':
+      if (politicas.atendente_humano !== false) {
+        resposta = config.mensagem_oferecer_atendente || dadosNegocio.mensagens_padrao.oferecer_atendente || 'Claro! Vou chamar um atendente para te ajudar.';
+      }
+      break;
+  }
+  
+  console.log('[resposta_operacional] intencao: ' + intencao + ' -> "' + resposta + '"');
+  return resposta;
+}
+
+function formatarTelefone(tel) {
+  if (!tel) return '';
+  var digits = tel.replace(/\D/g, '');
+  if (digits.length === 13) return '+55 (' + digits.substring(2, 4) + ') ' + digits.substring(4, 9) + '-' + digits.substring(9);
+  if (digits.length === 12) return '+55 (' + digits.substring(2, 4) + ') ' + digits.substring(4, 8) + '-' + digits.substring(8);
+  if (digits.length === 11) return '(' + digits.substring(0, 2) + ') ' + digits.substring(2, 7) + '-' + digits.substring(7);
+  if (digits.length === 10) return '(' + digits.substring(0, 2) + ') ' + digits.substring(2, 6) + '-' + digits.substring(6);
+  return tel;
+}
+
+function montarRespostaHorario(dadosNegocio, config, cozinhaFuncionando, proxApertura) {
+  var horarios = dadosNegocio.horarios || {};
+  var politicas = dadosNegocio.politicas || {};
+  var dias = ['domingo', 'segunda', 'terca', 'quarta', 'quinta', 'sexta', 'sabado'];
+  var nomesDias = { domingo: 'Domingo', segunda: 'Segunda', terca: 'Terça', quarta: 'Quarta', quinta: 'Quinta', sexta: 'Sexta', sabado: 'Sábado' };
+  
+  // Informar status de aberto/fechado agora
+  var txt = '';
+  if (cozinhaFuncionando) {
+    txt = 'Estamos ABERTOS agora! ';
+  } else if (proxApertura !== null) {
+    var proxHoras = Math.floor(proxApertura / 60) + ':' + String(proxApertura % 60).padStart(2, '0');
+    txt = 'Estamos fechados. Próxima abertura: ' + proxHoras + '. ';
+  }
+  
+  // Adicionar política de encomendas
+  var politicaTxt = '';
+  if (politicas.encomenda_almoco_desde) {
+    politicaTxt += 'Pedidos antecipados (almoço) a partir das ' + politicas.encomenda_almoco_desde + '. ';
+  }
+  if (politicas.encomenda_jantar_desde) {
+    politicaTxt += 'Pedidos antecipados (jantar) a partir das ' + politicas.encomenda_jantar_desde + '. ';
+  }
+  
+  return txt + politicaTxt + 'Horários: ' + formatarHorariosResumo(horarios, nomesDias, configGet(config, 'mensagens.texto_fechado', 'Fechado'));
+}
+
+function formatarHorariosResumo(horarios, nomesDias, textoFechado) {
+  var dias = ['segunda', 'terca', 'quarta', 'quinta', 'sexta', 'sabado', 'domingo'];
+  var resumo = [];
+  for (var i = 0; i < dias.length; i++) {
+    var dia = dias[i];
+    var h = horarios[dia];
+    if (!h) continue;
+    if (h.fechado) {
+      resumo.push(nomesDias[dia].substring(0, 3) + ': ' + textoFechado);
+    } else {
+      resumo.push(nomesDias[dia].substring(0, 3) + ': ' + (h.abertura || '—') + '-' + (h.fechamento || '—'));
+    }
+  }
+  return resumo.join(', ');
+}
+
 // ─── Montar prompt com informações + horários ──────
 
-function montarPromptIA(mensagem, config, regras, conhecimento, cozinhaFuncionando, proxAbertura, outrosConhecimentos) {
+function montarPromptIA(mensagem, config, regras, knowledgeText, cozinhaFuncionando, proxAbertura) {
   const regrasAtivas = (regras || []).filter(r => r.ativo);
   var regrasCabecalho = configGet(config, 'rotulos.regras_cabecalho', 'REGRAS DO ESTABELECIMENTO (siga estas instruções quando aplicável):');
   const regrasTexto = regrasAtivas.length > 0
@@ -1657,30 +1783,18 @@ function montarPromptIA(mensagem, config, regras, conhecimento, cozinhaFuncionan
   prompt += '\n\nSTATUS ATUAL DA COZINHA: ' + (cozinhaFuncionando ? 'ABERTA' : 'FECHADA') +
     (!cozinhaFuncionando && proxAbertura !== null ? ' (próxima abertura: ' + proxAbertura + ')' : '');
 
-  if (regrasTexto) {
+if (regrasTexto) {
     prompt += '\n\n' + regrasTexto;
   }
 
-  // Conhecimento encontrado (usado como contexto, não resposta literal)
-  if (conhecimento && conhecimento.pergunta && conhecimento.resposta) {
-    prompt += '\n\nINFORMAÇÃO ENCONTRADA NA BASE DE CONHECIMENTO (pergunta similar): "' + conhecimento.pergunta + '"\n' +
-      'Use essa informação para responder a pergunta do cliente de forma natural. ' +
-      'Se a pergunta do cliente for "quais horários?" ou "funciona quando?", mas o conhecimento for sobre "horário de funcionamento", use a resposta do conhecimento adaptada. ' +
-      'Se houver múltiplas formas de perguntar a mesma coisa (ex: "quando funciona", "horários", "está aberto", "que horas abre"), responda usando o conhecimento relacionado.\n' +
-      'Resposta do conhecimento: ' + conhecimento.resposta;
-  }
-
-  // Outros conhecimentos relacionados (contexto adicional)
-  if (outrosConhecimentos && outrosConhecimentos.length > 0) {
-    prompt += '\n\nOUTRAS INFORMAÇÕES RELACIONADAS (use se relevante):';
-    for (var k = 0; k < outrosConhecimentos.length; k++) {
-      prompt += '\n- "' + outrosConhecimentos[k].pergunta + '": ' + outrosConhecimentos[k].resposta;
-    }
+  // Base de conhecimento (RAG - todo o texto para a IA decidir)
+  if (knowledgeText && knowledgeText.length > 0) {
+    prompt += '\n\nBASE DE CONHECIMENTO (use informações relevantes para responder):\n' + knowledgeText;
   }
 
   prompt += '\n\nDATA/HORA ATUAL: ' + new Date().toLocaleString('pt-BR', { weekday: 'long', hour: '2-digit', minute: '2-digit', hour12: false }) +
     '\n\nMENSAGEM DO CLIENTE: "' + mensagem + '"\n\n' +
-    'Siga todas as REGRAS DO ESTABELECIMENTO e use as INFORMAÇÕES ENCONTRADAS NA BASE DE CONHECIMENTO (se houver) para responder. Interprete e responda de forma natural, como um atendente humano faria — não copie textos literalmente.\n\n' +
+    'Siga todas as REGRAS DO ESTABELECIMENTO e use a BASE DE CONHECIMENTO (se houver) para responder. Interprete e responda de forma natural, como um atendente humano faria — não copie textos literalmente.\n\n' +
     'IMPORTANTE: O campo "STATUS ATUAL DA COZINHA" indica se a cozinha está ABERTA ou FECHADA agora. Se estiver FECHADA, informe o cliente educadamente e mencione o próximo horário disponível. Se estiver dentro do horário de agendamento mas a cozinha estiver FECHADA, informe que pode aceitar pedidos agendados.';
 
   return prompt;
@@ -1688,9 +1802,9 @@ function montarPromptIA(mensagem, config, regras, conhecimento, cozinhaFuncionan
 
 // ─── Gemini: Consultar IA ──────────────────────────
 
-async function consultarGemini(mensagem, config, regras, creds, conhecimento, cozinhaFuncionando, proxAbertura, outrosConhecimentos) {
+async function consultarGemini(mensagem, config, regras, creds, knowledgeText, cozinhaFuncionando, proxAbertura) {
   return new Promise((resolve) => {
-    const prompt = montarPromptIA(mensagem, config, regras, conhecimento, cozinhaFuncionando, proxAbertura, outrosConhecimentos);
+    const prompt = montarPromptIA(mensagem, config, regras, knowledgeText, cozinhaFuncionando, proxAbertura);
 
     const model = creds.gemini?.model || 'gemini-2.0-flash-lite';
     const apiKey = creds.gemini?.api_key;
@@ -1740,11 +1854,11 @@ async function consultarGemini(mensagem, config, regras, creds, conhecimento, co
 
 // ─── Groq: Consultar IA ───────────────────────────
 
-function consultarGroq(mensagem, config, regras, creds, conhecimento, cozinhaFuncionando, proxAbertura, outrosConhecimentos) {
+function consultarGroq(mensagem, config, regras, creds, knowledgeText, cozinhaFuncionando, proxAbertura) {
   return new Promise((resolve) => {
     const model = creds.llm?.model || 'llama-3.3-70b-versatile';
     const apiKey = creds.llm?.api_key;
-    const prompt = montarPromptIA(mensagem, config, regras, conhecimento, cozinhaFuncionando, proxAbertura, outrosConhecimentos);
+    const prompt = montarPromptIA(mensagem, config, regras, knowledgeText, cozinhaFuncionando, proxAbertura);
 
     const postData = JSON.stringify({
       model: model,
@@ -2245,6 +2359,53 @@ app.delete('/api/aprendizado/respostas/:id', (req, res) => {
 app.post('/api/dbg/error', (req, res) => {
   console.error('[FRONTEND ERROR]', req.body?.msg);
   res.json({ ok: true });
+});
+
+// ─── Teste de intenções operacionais ───────────────
+
+app.post('/api/intencao/testar', (req, res) => {
+  var mensagens = req.body.mensagens || [
+    'Estão abertos?',
+    'Estão funcionando?',
+    'Qual o horário?',
+    'Que horas abre hoje?',
+    'Posso pedir agora?',
+    'Dá para retirar?',
+    'Vocês entregam?',
+    'Posso reservar mesa?',
+    'Qual o telefone?',
+    'Onde fica o restaurante?',
+    'Quero falar com atendente',
+    'Quero falar com humano',
+    'Que horas abre?',
+    'Que horas fecha?',
+    'Estão abertos hoje?',
+    'Funcionam no domingo?',
+    'Tem delivery?',
+    'Fazem delivery?',
+    'Dá para encomendar?',
+    'Quero um lanche',
+    'Cardápio?',
+    'Quero reservar',
+    'Reservar mesa',
+    'Meu telefone',
+    'Ligar para o restaurante',
+    'Como chegar',
+    'Endereço do local',
+    'Chama um atendente'
+  ];
+  var resultados = [];
+  var dadosNegocio = readJson('dados_negocio.json') || {};
+  var config = readJson('config.json') || {};
+  
+  for (var i = 0; i < mensagens.length; i++) {
+    var mensagem = mensagens[i];
+    var intencao = detectarIntencaoOperacional(mensagem, dadosNegocio);
+    var resposta = responderIntencaoOperacional(intencao, dadosNegocio, config, false, null);
+    resultados.push({ mensagem: mensagem, intencao: intencao, resposta: resposta });
+  }
+  
+  res.json({ success: true, dados_negocio: !!dadosNegocio.nome, resultados: resultados });
 });
 
 // ─── Iniciar servidor ────────────────────────────
