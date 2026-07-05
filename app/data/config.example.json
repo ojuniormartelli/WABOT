@@ -1,14 +1,14 @@
 {
-  "nome_negocio": "Restaurante Casarão do Gui",
-  "endereco": "R 15 DE NOVEMBRO, 184",
-  "telefone": "1938411778",
+  "nome_negocio": "Meu Negocio",
+  "endereco": "",
+  "telefone": "",
   "site": "",
   "redes_sociais": {
     "instagram": "",
     "facebook": "",
     "ifood": ""
   },
-  "link_pedido_online": "https://casarao.agilizae.com.br",
+  "link_pedido_online": "",
   "observacoes_gerais": "",
   "tipos_atendimento": [
     "retirada",
@@ -35,11 +35,13 @@
       ]
     },
     "quarta": {
-      "fechado": true,
+      "fechado": false,
       "cozinha": [
-        { "abertura": null, "fechamento": null }
+        { "abertura": "11:00", "fechamento": "23:00" }
       ],
-      "agendamento": []
+      "agendamento": [
+        { "abertura": "08:00", "fechamento": "23:00" }
+      ]
     },
     "quinta": {
       "fechado": false,
@@ -78,12 +80,12 @@
       ]
     }
   },
-  "mensagem_saudacao": "Olá! Bem-vindo ao {{nome_negocio}}! Faça seu pedido pelo link: {{link_pedido_online}}. Como podemos ajudar?",
+  "mensagem_saudacao": "Olá! Bem-vindo ao {{nome_negocio}}! Como podemos ajudar?",
   "mensagem_ausencia": "Estamos fechados no momento. Nosso horário é: {{horario_hoje}}. Voltamos em breve!",
   "mensagem_regra_nao_encontrada": "Vou verificar com um atendente humano e já volto com uma resposta.",
   "mensagem_nao_entendi": "Desculpe, não entendi muito bem o que você quis dizer. Você pode reformular sua pergunta ou me enviar de outra maneira?",
   "mensagem_oferecer_atendente": "Se preferir, posso chamar um atendente humano para te ajudar. Quer que eu faça isso?",
-  "mensagem_agradecimento": "Por nada! Ficamos felizes em ajudar. 😊 Se precisar de mais alguma coisa, é só chamar!",
+  "mensagem_agradecimento": "Por nada! Ficamos felizes em ajudar. Se precisar de mais alguma coisa, é só chamar!",
   "registrar_aprendizado_auto": true,
   "timezone": "America/Sao_Paulo",
   "receber_chamadas": false,

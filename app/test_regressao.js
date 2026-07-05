@@ -195,7 +195,46 @@ function montarRespostaHorario(dadosNegocio, config, cozinhaFuncionando, proxApe
   return txt + hojeTxt + politicaTxt + ' Horários: ' + horariosSemanaTexto(config);
 }
 
-function responderIntencaoOperacional(intencao, dadosNegocio, config, cozinhaFuncionando, proxApertura) {
+function detectarDataConsulta(mensagem) {
+  if (!mensagem) return null;
+  var msg = mensagem.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+  var meses = { 1:'janeiro',2:'fevereiro',3:'marco',4:'abril',5:'maio',6:'junho',7:'julho',8:'agosto',9:'setembro',10:'outubro',11:'novembro',12:'dezembro' };
+  var mesesInv = {}; for (var mk in meses) mesesInv[meses[mk]] = parseInt(mk);
+  var anoAtual = new Date().getFullYear();
+  var m1 = msg.match(/(\d{1,2})\/(\d{1,2})(?:\/(\d{4}))?/);
+  if (m1) {
+    var d = parseInt(m1[1]), m = parseInt(m1[2]), a = m1[3] ? parseInt(m1[3]) : anoAtual;
+    if (d >= 1 && d <= 31 && m >= 1 && m <= 12) {
+      return { data: String(d).padStart(2,'0') + '/' + String(m).padStart(2,'0') + '/' + a };
+    }
+  }
+  var m2 = msg.match(/(?:dia\s+)?(\d{1,2})\s+de\s+([a-z]+)(?:\s+de\s+(\d{4}))?/);
+  if (m2) {
+    var d = parseInt(m2[1]), nomeMes = m2[2].replace(/[^a-z]/g,''), aNum = m2[3] ? parseInt(m2[3]) : anoAtual;
+    var mNum = mesesInv[nomeMes];
+    if (d >= 1 && d <= 31 && mNum) {
+      return { data: String(d).padStart(2,'0') + '/' + String(mNum).padStart(2,'0') + '/' + aNum };
+    }
+  }
+  return null;
+}
+
+function responderFeriadoEspecial(dataConsulta, config) {
+  if (!dataConsulta || !config.feriados_especiais) return null;
+  for (var i = 0; i < config.feriados_especiais.length; i++) {
+    if (config.feriados_especiais[i].data === dataConsulta) return config.feriados_especiais[i];
+  }
+  var partes = dataConsulta.split('/');
+  if (partes.length === 3) {
+    var nextYearStr = partes[0] + '/' + partes[1] + '/' + (parseInt(partes[2]) + 1);
+    for (var j = 0; j < config.feriados_especiais.length; j++) {
+      if (config.feriados_especiais[j].data === nextYearStr) return config.feriados_especiais[j];
+    }
+  }
+  return null;
+}
+
+function responderIntencaoOperacional(intencao, dadosNegocio, config, cozinhaFuncionando, proxApertura, mensagem) {
   var respOp = (dadosNegocio.respostas_operacionais || {})[intencao];
   if (respOp && respOp.texto && respOp.texto.trim()) {
     return substituirVariaveis(respOp.texto.trim(), config, { proxAbertura: proxApertura, cozinhaFuncionando: cozinhaFuncionando });
@@ -204,7 +243,26 @@ function responderIntencaoOperacional(intencao, dadosNegocio, config, cozinhaFun
   var politicas = dadosNegocio.politicas || {};
   var link = dadosNegocio.link_pedido_online || config.link_pedido_online || '';
   switch (intencao) {
-    case 'horario': resposta = montarRespostaHorario(dadosNegocio, config, cozinhaFuncionando, proxApertura); break;
+    case 'horario':
+      if (mensagem) {
+        var dataDetectada = detectarDataConsulta(mensagem);
+        if (dataDetectada) {
+          var feriado = responderFeriadoEspecial(dataDetectada.data, config);
+          if (feriado) {
+            if (feriado.mensagem) { resposta = feriado.mensagem; break; }
+            var partes = ['No dia ' + dataDetectada.dataFormatada];
+            if (feriado.status === 'aberto') {
+              partes.push('estaremos abertos');
+              if (feriado.horario) partes.push('das ' + feriado.horario.replace('-', ' às '));
+              if (feriado.agendamento_inicio) partes.push('com agendamentos a partir das ' + feriado.agendamento_inicio);
+            } else { partes.push('estaremos fechados'); }
+            resposta = partes.join(' ') + '.';
+            break;
+          }
+        }
+      }
+      resposta = montarRespostaHorario(dadosNegocio, config, cozinhaFuncionando, proxApertura);
+      break;
     case 'endereco': resposta = dadosNegocio.endereco || config.endereco || ''; break;
     case 'telefone': resposta = formatarTelefone(dadosNegocio.telefone || config.telefone || ''); break;
     case 'pedido':
@@ -407,6 +465,54 @@ assert('atendente: resposta não nula', atendenteResp !== null);
 assert('atendente: menciona "atendente"', atendenteResp && atendenteResp.indexOf('atendente') >= 0);
 
 // ═══════════════════════════════════════════════════
+// TESTE 3B: FERIADOS / DATAS ESPECIAIS
+// ═══════════════════════════════════════════════════
+console.log('');
+console.log('╔══════════════════════════════════════════════════════╗');
+console.log('║   TESTE 3B: FERIADOS / DATAS ESPECIAIS             ║');
+console.log('╚══════════════════════════════════════════════════════╝');
+console.log('');
+
+// detectarDataConsulta
+var d1 = detectarDataConsulta('voces estarao abertos no dia 25/12?');
+assert('detectarDataConsulta: 25/12 extraido', d1 !== null && d1.data === '25/12/2026');
+
+var d2 = detectarDataConsulta('no dia 01/01 voces abrem?');
+assert('detectarDataConsulta: 01/01 extraido', d2 !== null && d2.data === '01/01/2026');
+
+var d3 = detectarDataConsulta('dia 7 de setembro');
+assert('detectarDataConsulta: 7 de setembro extraido', d3 !== null && d3.data === '07/09/2026');
+
+var d4 = detectarDataConsulta('feriado de 25 de dezembro de 2026');
+assert('detectarDataConsulta: 25 de dezembro de 2026 extraido', d4 !== null && d4.data === '25/12/2026');
+
+var d5 = detectarDataConsulta('qual o horario normal?');
+assert('detectarDataConsulta: sem data retorna null', d5 === null);
+
+// responderFeriadoEspecial
+var f1 = responderFeriadoEspecial('25/12/2026', config);
+assert('responderFeriadoEspecial: natal encontrado', f1 !== null && f1.status === 'fechado');
+
+var f2 = responderFeriadoEspecial('01/01/2027', config);
+assert('responderFeriadoEspecial: ano novo encontrado', f2 !== null && f2.status === 'aberto');
+assert('responderFeriadoEspecial: ano novo tem horario', f2 !== null && f2.horario === '18:00-23:00');
+
+var f3 = responderFeriadoEspecial('15/06/2026', config);
+assert('responderFeriadoEspecial: data sem feriado retorna null', f3 === null);
+
+// responderIntencaoOperacional com mensagem de feriado
+var feriadoResp1 = responderIntencaoOperacional('horario', dadosNegocio, config, false, null, 'voces estarao abertos no dia 25/12?');
+assert('feriado: resposta para 25/12 contém mensagem configurada', feriadoResp1 !== null && feriadoResp1.indexOf('25/12') >= 0);
+assert('feriado: resposta para 25/12 menciona fechados', feriadoResp1 !== null && feriadoResp1.indexOf('fechados') >= 0);
+
+var feriadoResp2 = responderIntencaoOperacional('horario', dadosNegocio, config, false, null, 'no dia 01/01 voces abrem?');
+assert('feriado: resposta para 01/01 (next year) contém 18:00-23:00', feriadoResp2 !== null && feriadoResp2.indexOf('18') >= 0);
+
+// Sem mensagem de feriado, cai no padrão
+var feriadoResp3 = responderIntencaoOperacional('horario', dadosNegocio, config, false, 660, 'qual o horario?');
+assert('feriado: sem data usa resposta padrao', feriadoResp3 !== null && feriadoResp3.indexOf('11:00') >= 0);
+
+// ═══════════════════════════════════════════════════
 // TESTE 4: LÓGICA DE SAUDAÇÃO
 // ═══════════════════════════════════════════════════
 console.log('');
@@ -484,6 +590,134 @@ for (var i = 0; i < passos.length; i++) {
 
   jaTeveMsg = true;
 }
+
+// ═══════════════════════════════════════════════════
+// TESTE 6: RESILIÊNCIA DE UPDATE (dados locais preservados)
+// ═══════════════════════════════════════════════════
+console.log('');
+console.log('╔══════════════════════════════════════════════════════╗');
+console.log('║   TESTE 6: RESILIÊNCIA DE UPDATE                    ║');
+console.log('╚══════════════════════════════════════════════════════╝');
+console.log('');
+
+function mergeSchema(template, local) {
+  if (!template || typeof template !== 'object') return local;
+  if (!local || typeof local !== 'object') return template;
+  if (Array.isArray(template) || Array.isArray(local)) return local;
+  for (var k in template) {
+    if (!(k in local)) {
+      local[k] = template[k];
+    } else if (typeof template[k] === 'object' && template[k] !== null && !Array.isArray(template[k])) {
+      local[k] = mergeSchema(template[k], local[k]);
+    }
+  }
+  return local;
+}
+
+// Simular: dados_negocio.json com valores customizados
+var localOriginal = {
+  nome: "Meu Restaurante Teste",
+  endereco: "Rua Exemplo, 123",
+  telefone: "11999999999",
+  link_pedido_online: "https://meu.link/teste",
+  delivery_ativo: true,
+  retirada_ativa: false,
+  palavras_chave: {
+    delivery: { prioridade: 85, frase_exata: [], expressao: [], palavra: ["delivery", "entrega"] }
+  },
+  respostas_operacionais: {
+    delivery: { texto: "Fazemos sim!", curta: "", completa: "" },
+    horario: { texto: "Funcionamos de seg a sex.", curta: "", completa: "" }
+  },
+  politicas: {
+    encomenda_almoco_desde: "09:00"
+  }
+};
+
+// Template novo (simula update que adiciona campo "consumo_local_ativo")
+var templateAtualizado = {
+  nome: "Meu Negocio",
+  endereco: "",
+  telefone: "",
+  link_pedido_online: "",
+  site: "",
+  delivery_ativo: false,
+  retirada_ativa: true,
+  consumo_local_ativo: true,
+  politicas: { reserva_mesas: false, encomenda_almoco_desde: "", encomenda_jantar_desde: "" },
+  palavras_chave: { delivery: { prioridade: 85, frase_exata: [], expressao: [], palavra: ["delivery"] } },
+  respostas_operacionais: {
+    delivery: { texto: "", curta: "", completa: "" },
+    retirada: { texto: "", curta: "", completa: "" }
+  }
+};
+
+var merged = mergeSchema(templateAtualizado, JSON.parse(JSON.stringify(localOriginal)));
+
+// Verificar que valores customizados foram preservados
+assert('nome preservado após merge', merged.nome === 'Meu Restaurante Teste');
+assert('endereco preservado após merge', merged.endereco === 'Rua Exemplo, 123');
+assert('telefone preservado após merge', merged.telefone === '11999999999');
+assert('link_pedido_online preservado', merged.link_pedido_online === 'https://meu.link/teste');
+assert('delivery_ativo preservado', merged.delivery_ativo === true);
+assert('retirada_ativa preservado', merged.retirada_ativa === false);
+
+// Verificar que campo NOVO foi adicionado (schema migration)
+assert('consumo_local_ativo adicionado do template', merged.consumo_local_ativo === true);
+
+// Verificar merge aninhado: politicas.encomenda_almoco_desde preservado
+assert('politicas.encomenda_almoco_desde preservado', merged.politicas.encomenda_almoco_desde === '09:00');
+// Verificar merge aninhado: politicas.encomenda_jantar_desde adicionado do template
+assert('politicas.encomenda_jantar_desde adicionado', merged.politicas.encomenda_jantar_desde === '');
+
+// Verificar merge aninhado: respostas_operacionais.delivery.texto preservado
+assert('respostas_operacionais.delivery.texto preservado', merged.respostas_operacionais.delivery.texto === 'Fazemos sim!');
+// Verificar merge aninhado: respostas_operacionais.retirada adicionado do template
+assert('respostas_operacionais.retirada adicionado', merged.respostas_operacionais.retirada.texto === '');
+
+// Verificar merge aninhado: palavras_chave.delivery.palavra NÃO foi sobrescrita (local tem ['delivery','entrega'], template tem ['delivery'])
+assert('palavras_chave.delivery.palavra preservado', merged.palavras_chave.delivery.palavra.length === 2);
+
+// Simular: config.json com valores customizados
+var configOriginal = {
+  nome_negocio: "Restaurante Teste",
+  endereco: "Av Teste, 456",
+  telefone: "11988888888",
+  link_pedido_online: "https://pedido.teste.com",
+  timezone: "America/Sao_Paulo",
+  horarios: {
+    segunda: { fechado: false, cozinha: [{ abertura: "11:00", fechamento: "23:00" }], agendamento: [{ abertura: "08:00", fechamento: "23:00" }] }
+  },
+  mensagens: {
+    texto_fechado: "FECHADO HOJE",
+    rodape_pedido_link: "📲 Peça aqui: {{link_pedido_online}}"
+  }
+};
+
+var configTemplate = {
+  nome_negocio: "Meu Negocio",
+  endereco: "",
+  telefone: "",
+  link_pedido_online: "",
+  timezone: "America/Sao_Paulo",
+  horarios: {
+    segunda: { fechado: false, cozinha: [{ abertura: "11:00", fechamento: "23:00" }], agendamento: [{ abertura: "08:00", fechamento: "23:00" }] }
+  },
+  mensagens: {
+    chamada_rejeitada: "Não atendemos chamadas.",
+    texto_fechado: "FECHADO"
+  }
+};
+
+var mergedConfig = mergeSchema(configTemplate, JSON.parse(JSON.stringify(configOriginal)));
+
+assert('config.nome_negocio preservado', mergedConfig.nome_negocio === 'Restaurante Teste');
+assert('config.endereco preservado', mergedConfig.endereco === 'Av Teste, 456');
+assert('config.telefone preservado', mergedConfig.telefone === '11988888888');
+assert('config.link_pedido_online preservado', mergedConfig.link_pedido_online === 'https://pedido.teste.com');
+assert('config.mensagens.texto_fechado preservado', mergedConfig.mensagens.texto_fechado === 'FECHADO HOJE');
+assert('config.mensagens.chamada_rejeitada adicionado do template', mergedConfig.mensagens.chamada_rejeitada === 'Não atendemos chamadas.');
+assert('config.mensagens.rodape_pedido_link preservado', mergedConfig.mensagens.rodape_pedido_link === '📲 Peça aqui: {{link_pedido_online}}');
 
 // ═══════════════════════════════════════════════════
 // RESUMO

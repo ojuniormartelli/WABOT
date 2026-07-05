@@ -38,17 +38,29 @@ echo -e "  ${GREEN}OK${RESET}"
 # 3. Criar diretório de dados e arquivos padrão
 echo -e "${CYAN}3${RESET} Criando arquivos de dados..."
 mkdir -p "$WABOT_DIR/app/data"
-for f in config.json regras.json ignorados.json conversas.json; do
+
+# Template de config.json
+if [ ! -f "$WABOT_DIR/app/data/config.json" ]; then
+  if [ -f "$WABOT_DIR/app/data/config.example.json" ]; then
+    cp "$WABOT_DIR/app/data/config.example.json" "$WABOT_DIR/app/data/config.json"
+  else
+    echo '{ "nome_negocio": "Meu Negocio", "endereco": "", "telefone": "", "horarios": {}, "tipos_atendimento": [], "mensagem_saudacao": "Olá!", "mensagem_nao_entendi": "Desculpe, não entendi.", "deteccao": { "saudacao": ["oi","olá","ola","bom dia","boa tarde","boa noite","eae","iae","hello","hi","hey","opa","fala"] } }' > "$WABOT_DIR/app/data/$f"
+  fi
+fi
+
+for f in regras.json ignorados.json conversas.json; do
   if [ ! -f "$WABOT_DIR/app/data/$f" ]; then
-    case "$f" in
-      config.json)
-        echo '{ "nome_negocio": "Meu Negocio", "endereco": "", "telefone": "", "horarios": {}, "tipos_atendimento": [], "mensagem_saudacao": "Olá!", "mensagem_nao_entendi": "Desculpe, não entendi.", "deteccao": { "saudacao": ["oi","olá","ola","bom dia","boa tarde","boa noite","eae","iae","hello","hi","hey","opa","fala"] } }' > "$WABOT_DIR/app/data/$f" ;;
-      regras.json|ignorados.json|conversas.json) echo '[]' > "$WABOT_DIR/app/data/$f" ;;
-    esac
+    echo '[]' > "$WABOT_DIR/app/data/$f"
   fi
 done
+
+# Template de dados_negocio.json
 if [ ! -f "$WABOT_DIR/app/data/dados_negocio.json" ]; then
-  echo '{ "nome": "Meu Negocio", "endereco": "", "telefone": "", "delivery_ativo": false, "retirada_ativa": true, "politicas": {}, "palavras_chave": { "atendente": { "prioridade": 100, "frase_exata": [], "expressao": [], "palavra": ["atendente"] }, "horario": { "prioridade": 90, "frase_exata": [], "expressao": [], "palavra": ["horario","funcionamento"] }, "delivery": { "prioridade": 85, "frase_exata": [], "expressao": [], "palavra": ["delivery","entrega"] }, "retirada": { "prioridade": 70, "frase_exata": [], "expressao": [], "palavra": ["retirada"] }, "pedido": { "prioridade": 75, "frase_exata": [], "expressao": [], "palavra": ["pedido"] }, "reserva": { "prioridade": 50, "frase_exata": [], "expressao": [], "palavra": ["reserva"] }, "endereco": { "prioridade": 40, "frase_exata": [], "expressao": [], "palavra": ["endereco"] }, "telefone": { "prioridade": 30, "frase_exata": [], "expressao": [], "palavra": ["telefone"] } } }' > "$WABOT_DIR/app/data/dados_negocio.json"
+  if [ -f "$WABOT_DIR/app/data/dados_negocio.example.json" ]; then
+    cp "$WABOT_DIR/app/data/dados_negocio.example.json" "$WABOT_DIR/app/data/dados_negocio.json"
+  else
+    echo '{ "nome": "Meu Negocio", "endereco": "", "telefone": "", "delivery_ativo": false, "retirada_ativa": true, "politicas": {}, "palavras_chave": { "atendente": { "prioridade": 100, "frase_exata": [], "expressao": [], "palavra": ["atendente"] }, "horario": { "prioridade": 90, "frase_exata": [], "expressao": [], "palavra": ["horario","funcionamento"] }, "delivery": { "prioridade": 85, "frase_exata": [], "expressao": [], "palavra": ["delivery","entrega"] }, "retirada": { "prioridade": 70, "frase_exata": [], "expressao": [], "palavra": ["retirada"] }, "pedido": { "prioridade": 75, "frase_exata": [], "expressao": [], "palavra": ["pedido"] }, "reserva": { "prioridade": 50, "frase_exata": [], "expressao": [], "palavra": ["reserva"] }, "endereco": { "prioridade": 40, "frase_exata": [], "expressao": [], "palavra": ["endereco"] }, "telefone": { "prioridade": 30, "frase_exata": [], "expressao": [], "palavra": ["telefone"] } } }' > "$WABOT_DIR/app/data/dados_negocio.json"
+  fi
 fi
 cp -n "$WABOT_DIR/app/data/credentials.example.json" "$WABOT_DIR/app/data/credentials.json" 2>/dev/null || true
 echo -e "  ${GREEN}OK${RESET}"

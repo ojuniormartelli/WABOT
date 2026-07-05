@@ -121,6 +121,20 @@ function validarConfigSchema(filename, data) {
     if (!data.horarios || typeof data.horarios !== 'object') {
       throw new Error('config.json: campo obrigatório "horarios" ausente ou inválido');
     }
+    if (data.feriados_especiais !== undefined) {
+      if (!Array.isArray(data.feriados_especiais)) {
+        throw new Error('config.json: "feriados_especiais" deve ser um array');
+      }
+      for (var fe = 0; fe < data.feriados_especiais.length; fe++) {
+        var f = data.feriados_especiais[fe];
+        if (!f || typeof f.data !== 'string' || !/^\d{2}\/\d{2}\/\d{4}$/.test(f.data)) {
+          throw new Error('config.json: feriados_especiais[' + fe + '].data deve ser uma string no formato DD/MM/AAAA');
+        }
+        if (f.status !== 'aberto' && f.status !== 'fechado') {
+          throw new Error('config.json: feriados_especiais[' + fe + '].status deve ser "aberto" ou "fechado"');
+        }
+      }
+    }
   }
   if (filename === 'dados_negocio.json') {
     if (!data || typeof data.nome !== 'string') {
@@ -1113,7 +1127,61 @@ function substituirVariaveis(texto, config, contexto) {
     .replace(/\{\{agendamento_hoje\}\}/g, agendamentoHojeTexto(config))
     .replace(/\{\{dia_atual\}\}/g, diaAtualTexto())
     .replace(/\{\{proxima_abertura\}\}/g, proxTexto)
-    .replace(/\{\{horarios_semana\}\}/g, horariosSemanaTexto(config));
+    .replace(/\{\{horarios_semana\}\}/g, horariosSemanaTexto(config))
+    .replace(/\{\{data_consulta\}\}/g, contexto.dataConsulta || '')
+    .replace(/\{\{feriado_status\}\}/g, contexto.feriadoStatus || '')
+    .replace(/\{\{feriado_horario\}\}/g, contexto.feriadoHorario || '')
+    .replace(/\{\{feriado_agendamento\}\}/g, contexto.feriadoAgendamento || '');
+}
+
+function detectarDataConsulta(mensagem) {
+  if (!mensagem) return null;
+  var msg = mensagem.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+  var meses = { 1:'janeiro',2:'fevereiro',3:'marco',4:'abril',5:'maio',6:'junho',7:'julho',8:'agosto',9:'setembro',10:'outubro',11:'novembro',12:'dezembro' };
+  var mesesInv = {}; for (var mk in meses) mesesInv[meses[mk]] = parseInt(mk);
+  var anoAtual = new Date().getFullYear();
+
+  // Pattern 1: "25/12/2026" or "25/12"
+  var m1 = msg.match(/(\d{1,2})\/(\d{1,2})(?:\/(\d{4}))?/);
+  if (m1) {
+    var d = parseInt(m1[1]), m = parseInt(m1[2]), a = m1[3] ? parseInt(m1[3]) : anoAtual;
+    if (d >= 1 && d <= 31 && m >= 1 && m <= 12) {
+      return { data: String(d).padStart(2,'0') + '/' + String(m).padStart(2,'0') + '/' + a };
+    }
+  }
+
+  // Pattern 2: "dia 25 de dezembro", "7 de setembro"
+  var m2 = msg.match(/(?:dia\s+)?(\d{1,2})\s+de\s+([a-z]+)(?:\s+de\s+(\d{4}))?/);
+  if (m2) {
+    var d = parseInt(m2[1]), nomeMes = m2[2].replace(/[^a-z]/g,''), aNum = m2[3] ? parseInt(m2[3]) : anoAtual;
+    var mNum = mesesInv[nomeMes];
+    if (d >= 1 && d <= 31 && mNum) {
+      return { data: String(d).padStart(2,'0') + '/' + String(mNum).padStart(2,'0') + '/' + aNum };
+    }
+  }
+
+  // Pattern 3: "feriado de setembro" (generic month mention)
+  // Not implemented — too vague without a day
+
+  return null;
+}
+
+function responderFeriadoEspecial(dataConsulta, config) {
+  if (!dataConsulta || !config.feriados_especiais) return null;
+  var feriados = config.feriados_especiais;
+  for (var i = 0; i < feriados.length; i++) {
+    if (feriados[i].data === dataConsulta) return feriados[i];
+  }
+  // Try next year (e.g., user says "01/01" in Dec 2026, meaning 01/01/2027)
+  var partes = dataConsulta.split('/');
+  if (partes.length === 3) {
+    var ano = parseInt(partes[2]);
+    var nextYearStr = partes[0] + '/' + partes[1] + '/' + (ano + 1);
+    for (var j = 0; j < feriados.length; j++) {
+      if (feriados[j].data === nextYearStr) return feriados[j];
+    }
+  }
+  return null;
 }
 
 function responderHorarios(config) {
@@ -1603,7 +1671,7 @@ app.post('/webhook/evolution', async (req, res) => {
       var intencao = detectarIntencaoOperacional(mensagem, dadosNegocio);
       console.log('[webhook_debug] intencao detectada: ' + (intencao || '(null)'));
       if (intencao) {
-        respostaOperacional = responderIntencaoOperacional(intencao, dadosNegocio, config, cozinhaFuncionando, proxAbertura);
+        respostaOperacional = responderIntencaoOperacional(intencao, dadosNegocio, config, cozinhaFuncionando, proxAbertura, mensagem);
         console.log('[webhook_debug] respostaOperacional: "' + (respostaOperacional || '(null)') + '"');
       }
     }
@@ -1736,7 +1804,7 @@ app.post('/webhook/evolution', async (req, res) => {
 
 // ─── Responder intenções operacionais com dados estruturados ──
 
-function responderIntencaoOperacional(intencao, dadosNegocio, config, cozinhaFuncionando, proxApertura) {
+function responderIntencaoOperacional(intencao, dadosNegocio, config, cozinhaFuncionando, proxApertura, mensagem) {
   var respOp = (dadosNegocio.respostas_operacionais || {})[intencao];
   if (respOp && respOp.texto && respOp.texto.trim()) {
     console.log('[resposta_operacional] intencao: ' + intencao + ' -> "[texto configurado]"');
@@ -1749,6 +1817,34 @@ function responderIntencaoOperacional(intencao, dadosNegocio, config, cozinhaFun
   
   switch (intencao) {
     case 'horario':
+      // Tentar detectar data especial/feriado na mensagem
+      if (mensagem) {
+        var dataDetectada = detectarDataConsulta(mensagem);
+        if (dataDetectada) {
+          var feriado = responderFeriadoEspecial(dataDetectada.data, config);
+          if (feriado) {
+            if (feriado.mensagem) {
+              resposta = substituirVariaveis(feriado.mensagem, config, {
+                dataConsulta: dataDetectada.data,
+                feriadoStatus: feriado.status === 'aberto' ? 'abertos' : 'fechados',
+                feriadoHorario: feriado.horario || '',
+                feriadoAgendamento: feriado.agendamento_inicio || '',
+              });
+            } else {
+              var partes = ['No dia ' + dataDetectada.data];
+              if (feriado.status === 'aberto') {
+                partes.push('estaremos abertos');
+                if (feriado.horario) partes.push('das ' + feriado.horario.replace('-', ' às '));
+                if (feriado.agendamento_inicio) partes.push('com agendamentos a partir das ' + feriado.agendamento_inicio);
+              } else {
+                partes.push('estaremos fechados');
+              }
+              resposta = partes.join(' ') + '.';
+            }
+            break;
+          }
+        }
+      }
       resposta = montarRespostaHorario(dadosNegocio, config, cozinhaFuncionando, proxApertura);
       break;
     
@@ -2615,7 +2711,7 @@ app.post('/api/intencao/testar', (req, res) => {
   for (var i = 0; i < mensagens.length; i++) {
     var mensagem = mensagens[i];
     var intencao = detectarIntencaoOperacional(mensagem, dadosNegocio);
-    var resposta = responderIntencaoOperacional(intencao, dadosNegocio, config, false, null);
+    var resposta = responderIntencaoOperacional(intencao, dadosNegocio, config, false, null, mensagem);
     resultados.push({ mensagem: mensagem, intencao: intencao, resposta: resposta });
   }
   
@@ -2673,7 +2769,7 @@ async function init() {
     'start-wabot.bat', 'stop-wabot.bat', 'iniciar.bat', 'atualizar.bat',
     'app/server.js',
     'app/renderer/app.js', 'app/renderer/api.js', 'app/renderer/index.html', 'app/renderer/style.css',
-    'app/data/config.json', 'app/data/dados_negocio.json', 'app/data/credentials.example.json',
+    'app/data/config.example.json', 'app/data/dados_negocio.example.json', 'app/data/credentials.example.json',
     'scripts/install.sh', 'scripts/update.sh', 'scripts/rollback.sh',
     'app/test_regressao.js',
   ];
@@ -2701,6 +2797,20 @@ async function init() {
       res.json({ success: false, error: e.message });
     }
   });
+
+  function mergeNovosCampos(template, local) {
+    if (!template || typeof template !== 'object') return local;
+    if (!local || typeof local !== 'object') return template;
+    if (Array.isArray(template) || Array.isArray(local)) return local;
+    for (var k in template) {
+      if (!(k in local)) {
+        local[k] = template[k];
+      } else if (typeof template[k] === 'object' && template[k] !== null && !Array.isArray(template[k])) {
+        local[k] = mergeNovosCampos(template[k], local[k]);
+      }
+    }
+    return local;
+  }
 
   app.post('/api/update/apply', async function(req, res) {
     try {
@@ -2748,6 +2858,27 @@ async function init() {
       }
       if (jsonValidationErrors.length > 0) {
         console.error('[update] ERRO: arquivos com JSON inválido no repositório:', jsonValidationErrors.join(', '));
+      }
+
+      // Mesclar campos novos dos templates nos arquivos locais
+      var mergePairs = [
+        { templ: 'app/data/config.example.json', local: 'app/data/config.json' },
+        { templ: 'app/data/dados_negocio.example.json', local: 'app/data/dados_negocio.json' },
+      ];
+      for (var mi = 0; mi < mergePairs.length; mi++) {
+        var templPath = path.join(REPO_DIR, mergePairs[mi].templ);
+        var localPath = path.join(REPO_DIR, mergePairs[mi].local);
+        if (fs.existsSync(templPath) && fs.existsSync(localPath)) {
+          try {
+            var templObj = JSON.parse(fs.readFileSync(templPath, 'utf8'));
+            var localObj = JSON.parse(fs.readFileSync(localPath, 'utf8'));
+            var merged = mergeNovosCampos(templObj, localObj);
+            fs.writeFileSync(localPath, JSON.stringify(merged, null, 2), 'utf8');
+            results.push(mergePairs[mi].local + ': campos novos mesclados');
+          } catch (me) {
+            results.push(mergePairs[mi].local + ': erro na mesclagem (' + me.message + ')');
+          }
+        }
       }
 
       // Salvar versão local

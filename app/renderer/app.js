@@ -1239,6 +1239,15 @@ function renderConfiguracoes() {
     '</div>' +
 
     '<div class="bg-white rounded-xl border border-gray-200 p-6 mb-6">' +
+      '<h2 class="text-lg font-semibold text-gray-700 mb-4">Datas especiais / Feriados</h2>' +
+      '<div class="text-sm text-gray-500 mb-3">Configure exceções de horário para datas específicas (feriados, pontos facultativos, etc.)</div>' +
+      '<div id="feriados-list" class="space-y-3">' +
+        renderFeriadosList() +
+      '</div>' +
+      '<button onclick="addFeriado()" class="mt-3 flex items-center gap-1 text-sm text-emerald-600 hover:text-emerald-700">' + I.plus(14, '') + ' Adicionar data especial</button>' +
+    '</div>' +
+
+    '<div class="bg-white rounded-xl border border-gray-200 p-6 mb-6">' +
       '<h2 class="text-lg font-semibold text-gray-700 mb-4">Configurações Avançadas</h2>' +
       '<div class="space-y-4">' +
         '<div>' +
@@ -1328,6 +1337,66 @@ window.saveConfiguracoes = async function() {
   state.configuracoes.saving = false;
   render();
 };
+
+function renderFeriadosList() {
+  var feriados = state.configuracoes.config.feriados_especiais || [];
+  if (feriados.length === 0) {
+    return '<div class="text-sm text-gray-400 italic">Nenhuma data especial configurada.</div>';
+  }
+  var html = '';
+  for (var i = 0; i < feriados.length; i++) {
+    var f = feriados[i];
+    html += '<div class="flex flex-wrap items-start gap-2 p-3 bg-gray-50 rounded-lg border border-gray-100">' +
+      '<input type="text" value="' + esc(f.data || '') + '" onchange="updateFeriado(' + i + ',\'data\',this.value)" placeholder="DD/MM/AAAA" class="px-2 py-1.5 border border-gray-300 rounded-lg text-sm w-32" title="Data (dd/mm/aaaa)" />' +
+      '<select onchange="updateFeriado(' + i + ',\'status\',this.value)" class="px-2 py-1.5 border border-gray-300 rounded-lg text-sm">' +
+        '<option value="fechado"' + (f.status === 'fechado' ? ' selected' : '') + '>Fechado</option>' +
+        '<option value="aberto"' + (f.status === 'aberto' ? ' selected' : '') + '>Aberto</option>' +
+      '</select>' +
+      (f.status === 'aberto' ?
+        '<input type="text" value="' + esc(f.horario || '') + '" onchange="updateFeriado(' + i + ',\'horario\',this.value)" placeholder="Horário (ex: 18:00-23:00)" class="px-2 py-1.5 border border-gray-300 rounded-lg text-sm w-44" />' +
+        '<input type="time" value="' + esc(f.agendamento_inicio || '') + '" onchange="updateFeriado(' + i + ',\'agendamento_inicio\',this.value)" class="px-2 py-1.5 border border-gray-300 rounded-lg text-sm w-32" title="Início agendamento" />'
+      : '') +
+      '<input type="text" value="' + esc(f.mensagem || '') + '" onchange="updateFeriado(' + i + ',\'mensagem\',this.value)" placeholder="Mensagem (opcional)" class="flex-1 min-w-[200px] px-2 py-1.5 border border-gray-300 rounded-lg text-sm" />' +
+      '<button onclick="removeFeriado(' + i + ')" class="text-red-400 hover:text-red-600 p-1 mt-1">' + I.x(16, '') + '</button>' +
+    '</div>';
+  }
+  return html;
+}
+
+window.addFeriado = function() {
+  if (!state.configuracoes.config.feriados_especiais) {
+    state.configuracoes.config.feriados_especiais = [];
+  }
+  state.configuracoes.config.feriados_especiais.push({
+    data: '',
+    status: 'fechado',
+    horario: '',
+    agendamento_inicio: '',
+    mensagem: '',
+  });
+  render();
+  bindConfiguracoes();
+};
+
+window.removeFeriado = function(idx) {
+  var feriados = state.configuracoes.config.feriados_especiais;
+  if (feriados) {
+    feriados.splice(idx, 1);
+    render();
+    bindConfiguracoes();
+  }
+};
+
+window.updateFeriado = function(idx, campo, valor) {
+  var feriados = state.configuracoes.config.feriados_especiais;
+  if (feriados && feriados[idx]) {
+    feriados[idx][campo] = valor;
+    // Re-render when status changes to show/hide fields
+    if (campo === 'status') { render(); bindConfiguracoes(); }
+  }
+};
+
+function esc(s) { return String(s || '').replace(/"/g, '&quot;').replace(/</g, '&lt;').replace(/>/g, '&gt;'); }
 
 function tocarAlertaIntervencao() {
   try {

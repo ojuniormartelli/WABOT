@@ -17,7 +17,7 @@ var FILES = [
   'app/server.js',
   'app/renderer/app.js', 'app/renderer/api.js', 'app/renderer/index.html', 'app/renderer/style.css',
   'app/test_regressao.js',
-  'app/data/config.json', 'app/data/dados_negocio.json', 'app/data/credentials.example.json',
+  'app/data/config.example.json', 'app/data/dados_negocio.example.json', 'app/data/credentials.example.json',
   'scripts/install.sh', 'scripts/update.sh', 'scripts/rollback.sh',
 ];
 
@@ -31,6 +31,20 @@ var DATA_FILES = [
   'app/data/ignorados.json',
   'app/data/nao_sei.json',
 ];
+
+function mergeNovosCampos(template, local) {
+  if (!template || typeof template !== 'object') return local;
+  if (!local || typeof local !== 'object') return template;
+  if (Array.isArray(template) || Array.isArray(local)) return local;
+  for (var k in template) {
+    if (!(k in local)) {
+      local[k] = template[k];
+    } else if (typeof template[k] === 'object' && template[k] !== null && !Array.isArray(template[k])) {
+      local[k] = mergeNovosCampos(template[k], local[k]);
+    }
+  }
+  return local;
+}
 
 function httpsGet(url) {
   return new Promise(function(resolve, reject) {
@@ -107,12 +121,33 @@ async function main() {
     }
   }
 
+  // 4. Mesclar campos novos dos templates nos arquivos locais
+  var mergePairs = [
+    { templ: 'app/data/config.example.json', local: 'app/data/config.json' },
+    { templ: 'app/data/dados_negocio.example.json', local: 'app/data/dados_negocio.json' },
+  ];
+  for (var mi = 0; mi < mergePairs.length; mi++) {
+    var templPath = path.join(REPO_DIR, mergePairs[mi].templ);
+    var localPath = path.join(REPO_DIR, mergePairs[mi].local);
+    if (fs.existsSync(templPath) && fs.existsSync(localPath)) {
+      try {
+        var templObj = JSON.parse(fs.readFileSync(templPath, 'utf8'));
+        var localObj = JSON.parse(fs.readFileSync(localPath, 'utf8'));
+        var merged = mergeNovosCampos(templObj, localObj);
+        fs.writeFileSync(localPath, JSON.stringify(merged, null, 2), 'utf8');
+        console.log('  \u2713 ' + mergePairs[mi].local + ' (campos novos mesclados)');
+      } catch (me) {
+        console.log('  \u2717 ' + mergePairs[mi].local + ' (erro na mesclagem: ' + me.message + ')');
+      }
+    }
+  }
+
   if (jsonErrors.length > 0) {
     console.log('');
     console.log('  AVISO: JSON inválido no repositório para: ' + jsonErrors.join(', '));
   }
 
-  // 4. Salvar versão local
+  // 5. Salvar versão local
   if (shaData) {
     try {
       var commit = JSON.parse(shaData);
@@ -123,7 +158,7 @@ async function main() {
   console.log('');
   console.log('  Baixados: ' + ok + ' OK, ' + fail + ' falha(s)');
 
-  // 5. npm install
+  // 6. npm install
   console.log('');
   console.log('  Instalando dependências (npm install)...');
   try {
@@ -133,7 +168,7 @@ async function main() {
     console.log('  Aviso: ' + e.message);
   }
 
-  // 6. Validar arquivos JSON de dados
+  // 7. Validar arquivos JSON de dados
   console.log('');
   console.log('  Validando arquivos de dados...');
   var validacaoOk = true;
@@ -157,7 +192,7 @@ async function main() {
     process.exit(1);
   }
 
-  // 7. Rodar testes de regressão
+  // 8. Rodar testes de regressão
   console.log('');
   console.log('  Rodando testes de regressão...');
   var testOk = true;
@@ -185,14 +220,14 @@ async function main() {
     process.exit(1);
   }
 
-  // 8. Limpar lixo de restarts anteriores
+  // 9. Limpar lixo de restarts anteriores
   try { fs.unlinkSync(path.join(REPO_DIR, '_restart.js')); } catch(e) {}
   try { fs.unlinkSync(path.join(REPO_DIR, '_restart.log')); } catch(e) {}
 
   console.log('');
   console.log('  \u2713 Atualização concluída!');
 
-  // 9. Iniciar servidor (mata processo antigo primeiro)
+  // 10. Iniciar servidor (mata processo antigo primeiro)
   var isWin = process.platform === 'win32';
 
   if (isWin) {

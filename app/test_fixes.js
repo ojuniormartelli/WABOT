@@ -133,7 +133,50 @@ function substituirVariaveis(texto, config, contexto) {
     .replace(/\{\{agendamento_hoje\}\}/g, agendamentoHojeTexto(config))
     .replace(/\{\{dia_atual\}\}/g, diaAtualTexto())
     .replace(/\{\{proxima_abertura\}\}/g, proxTexto)
-    .replace(/\{\{horarios_semana\}\}/g, horariosSemanaTexto(config));
+    .replace(/\{\{horarios_semana\}\}/g, horariosSemanaTexto(config))
+    .replace(/\{\{data_consulta\}\}/g, contexto.dataConsulta || '')
+    .replace(/\{\{feriado_status\}\}/g, contexto.feriadoStatus || '')
+    .replace(/\{\{feriado_horario\}\}/g, contexto.feriadoHorario || '')
+    .replace(/\{\{feriado_agendamento\}\}/g, contexto.feriadoAgendamento || '');
+}
+
+function detectarDataConsulta(mensagem) {
+  if (!mensagem) return null;
+  var msg = mensagem.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+  var meses = { 1:'janeiro',2:'fevereiro',3:'marco',4:'abril',5:'maio',6:'junho',7:'julho',8:'agosto',9:'setembro',10:'outubro',11:'novembro',12:'dezembro' };
+  var mesesInv = {}; for (var mk in meses) mesesInv[meses[mk]] = parseInt(mk);
+  var anoAtual = new Date().getFullYear();
+  var m1 = msg.match(/(\d{1,2})\/(\d{1,2})(?:\/(\d{4}))?/);
+  if (m1) {
+    var d = parseInt(m1[1]), m = parseInt(m1[2]), a = m1[3] ? parseInt(m1[3]) : anoAtual;
+    if (d >= 1 && d <= 31 && m >= 1 && m <= 12) {
+      return { data: String(d).padStart(2,'0') + '/' + String(m).padStart(2,'0') + '/' + a };
+    }
+  }
+  var m2 = msg.match(/(?:dia\s+)?(\d{1,2})\s+de\s+([a-z]+)(?:\s+de\s+(\d{4}))?/);
+  if (m2) {
+    var d = parseInt(m2[1]), nomeMes = m2[2].replace(/[^a-z]/g,''), aNum = m2[3] ? parseInt(m2[3]) : anoAtual;
+    var mNum = mesesInv[nomeMes];
+    if (d >= 1 && d <= 31 && mNum) {
+      return { data: String(d).padStart(2,'0') + '/' + String(mNum).padStart(2,'0') + '/' + aNum };
+    }
+  }
+  return null;
+}
+
+function responderFeriadoEspecial(dataConsulta, config) {
+  if (!dataConsulta || !config.feriados_especiais) return null;
+  for (var i = 0; i < config.feriados_especiais.length; i++) {
+    if (config.feriados_especiais[i].data === dataConsulta) return config.feriados_especiais[i];
+  }
+  var partes = dataConsulta.split('/');
+  if (partes.length === 3) {
+    var nextYearStr = partes[0] + '/' + partes[1] + '/' + (parseInt(partes[2]) + 1);
+    for (var j = 0; j < config.feriados_especiais.length; j++) {
+      if (config.feriados_especiais[j].data === nextYearStr) return config.feriados_especiais[j];
+    }
+  }
+  return null;
 }
 
 function formatarTelefone(tel) {
@@ -189,7 +232,7 @@ function montarRespostaHorario(dadosNegocio, config, cozinhaFuncionando, proxApe
   return txt + hojeTxt + politicaTxt + ' Horários: ' + horariosSemanaTexto(config);
 }
 
-function responderIntencaoOperacional(intencao, dadosNegocio, config, cozinhaFuncionando, proxApertura) {
+function responderIntencaoOperacional(intencao, dadosNegocio, config, cozinhaFuncionando, proxApertura, mensagem) {
   var respOp = (dadosNegocio.respostas_operacionais || {})[intencao];
   if (respOp && respOp.texto && respOp.texto.trim()) {
     return substituirVariaveis(respOp.texto.trim(), config, { proxAbertura: proxApertura, cozinhaFuncionando: cozinhaFuncionando });
@@ -198,7 +241,26 @@ function responderIntencaoOperacional(intencao, dadosNegocio, config, cozinhaFun
   var politicas = dadosNegocio.politicas || {};
   var link = dadosNegocio.link_pedido_online || config.link_pedido_online || '';
   switch (intencao) {
-    case 'horario': resposta = montarRespostaHorario(dadosNegocio, config, cozinhaFuncionando, proxApertura); break;
+    case 'horario':
+      if (mensagem) {
+        var dataDetectada = detectarDataConsulta(mensagem);
+        if (dataDetectada) {
+          var feriado = responderFeriadoEspecial(dataDetectada.data, config);
+          if (feriado) {
+            if (feriado.mensagem) { resposta = feriado.mensagem; break; }
+            var partes = ['No dia ' + dataDetectada.dataFormatada];
+            if (feriado.status === 'aberto') {
+              partes.push('estaremos abertos');
+              if (feriado.horario) partes.push('das ' + feriado.horario.replace('-', ' às '));
+              if (feriado.agendamento_inicio) partes.push('com agendamentos a partir das ' + feriado.agendamento_inicio);
+            } else { partes.push('estaremos fechados'); }
+            resposta = partes.join(' ') + '.';
+            break;
+          }
+        }
+      }
+      resposta = montarRespostaHorario(dadosNegocio, config, cozinhaFuncionando, proxApertura);
+      break;
     case 'endereco': resposta = dadosNegocio.endereco || config.endereco || ''; break;
     case 'telefone': resposta = dadosNegocio.telefone || config.telefone || ''; break;
     case 'pedido':

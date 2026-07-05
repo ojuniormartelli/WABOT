@@ -40,8 +40,16 @@ cp "$WABOT_DIR/app/data/ignorados.json" "$BACKUP_DIR/" 2>/dev/null || true
 cp "$WABOT_DIR/app/data/nao_sei.json" "$BACKUP_DIR/" 2>/dev/null || true
 echo -e "  ${GREEN}OK${RESET} Backup em: backups/$TIMESTAMP/"
 
-# ─── 3. Atualizar código ───────────────────────
-echo -e "${CYAN}3${RESET} Atualizando código do repositório..."
+# ─── 3. Preservar dados locais antes do pull ─────
+echo -e "${CYAN}3${RESET} Preservando configurações locais..."
+TMP_CONFIG=$(mktemp)
+TMP_DADOS=$(mktemp)
+cp "$WABOT_DIR/app/data/config.json" "$TMP_CONFIG" 2>/dev/null || true
+cp "$WABOT_DIR/app/data/dados_negocio.json" "$TMP_DADOS" 2>/dev/null || true
+echo -e "  ${GREEN}OK${RESET}"
+
+# ─── 4. Atualizar código ───────────────────────
+echo -e "${CYAN}4${RESET} Atualizando código do repositório..."
 cd "$WABOT_DIR"
 git fetch origin main 2>&1 | tail -1
 LOCAL=$(git rev-parse HEAD)
@@ -50,20 +58,46 @@ if [ "$LOCAL" = "$REMOTE" ]; then
   echo -e "  ${YELLOW}Já está na versão mais recente.${RESET}"
   echo "  Para forçar: git pull origin main"
   echo "  Depois reinicie: pkill -f 'node app/server.js' && nohup node app/server.js > wabot.log 2>&1 &"
+  rm -f "$TMP_CONFIG" "$TMP_DADOS"
   exit 0
 fi
 git pull origin main 2>&1 | tail -5
 NEW_SHA=$(git rev-parse HEAD)
 echo -e "  ${GREEN}OK${RESET} Atualizado: $(echo "$CURRENT_SHA" | cut -c1-7) → $(echo "$NEW_SHA" | cut -c1-7)"
 
-# ─── 4. npm install se package.json mudou ──────
-echo -e "${CYAN}4${RESET} Verificando dependências..."
+# ─── 5. Restaurar dados locais após pull ───────
+echo -e "${CYAN}5${RESET} Restaurando configurações locais..."
+cp "$TMP_CONFIG" "$WABOT_DIR/app/data/config.json" 2>/dev/null || true
+cp "$TMP_DADOS" "$WABOT_DIR/app/data/dados_negocio.json" 2>/dev/null || true
+rm -f "$TMP_CONFIG" "$TMP_DADOS"
+
+# Mesclar campos novos dos templates nos arquivos locais
+if [ -f "$WABOT_DIR/app/data/config.example.json" ] && [ -f "$WABOT_DIR/app/data/config.json" ]; then
+  node -e "
+    var templ = JSON.parse(require('fs').readFileSync('$WABOT_DIR/app/data/config.example.json','utf8'));
+    var local = JSON.parse(require('fs').readFileSync('$WABOT_DIR/app/data/config.json','utf8'));
+    function merge(t,l){if(!t||typeof t!='object'||!l||typeof l!='object'||Array.isArray(t)||Array.isArray(l))return l;for(var k in t){if(!(k in l))l[k]=t[k];else if(typeof t[k]=='object'&&t[k]!==null&&!Array.isArray(t[k]))l[k]=merge(t[k],l[k])}return l}
+    require('fs').writeFileSync('$WABOT_DIR/app/data/config.json', JSON.stringify(merge(templ, local), null, 2));
+  " 2>/dev/null && echo -e "  ${GREEN}config.json: campos novos mesclados${RESET}" || true
+fi
+if [ -f "$WABOT_DIR/app/data/dados_negocio.example.json" ] && [ -f "$WABOT_DIR/app/data/dados_negocio.json" ]; then
+  node -e "
+    var templ = JSON.parse(require('fs').readFileSync('$WABOT_DIR/app/data/dados_negocio.example.json','utf8'));
+    var local = JSON.parse(require('fs').readFileSync('$WABOT_DIR/app/data/dados_negocio.json','utf8'));
+    function merge(t,l){if(!t||typeof t!='object'||!l||typeof l!='object'||Array.isArray(t)||Array.isArray(l))return l;for(var k in t){if(!(k in l))l[k]=t[k];else if(typeof t[k]=='object'&&t[k]!==null&&!Array.isArray(t[k]))l[k]=merge(t[k],l[k])}return l}
+    require('fs').writeFileSync('$WABOT_DIR/app/data/dados_negocio.json', JSON.stringify(merge(templ, local), null, 2));
+  " 2>/dev/null && echo -e "  ${GREEN}dados_negocio.json: campos novos mesclados${RESET}" || true
+fi
+echo -e "  ${GREEN}OK${RESET}"
+
+# ─── 6. npm install se package.json mudou ──────
+echo -e "${CYAN}6${RESET} Verificando dependências..."
 cd "$WABOT_DIR"
 npm install 2>&1 | tail -3
 echo -e "  ${GREEN}OK${RESET}"
 
-# ─── 5. Validar JSON dos dados ──────────────────
-echo -e "${CYAN}5${RESET} Validando arquivos de dados..."
+# ─── 7. Validar JSON dos dados ──────────────────
+echo -e "${CYAN}7${RESET} Validando arquivos de dados..."
 HAS_ERROR=0
 for f in "$WABOT_DIR/app/data/"*.json; do
   node -e "JSON.parse(require('fs').readFileSync('$f','utf8'))" 2>/dev/null || {
@@ -80,8 +114,8 @@ if [ "$HAS_ERROR" -eq 1 ]; then
 fi
 echo -e "  ${GREEN}OK${RESET}"
 
-# ─── 6. Rodar testes de regressão ──────────────
-echo -e "${CYAN}6${RESET} Rodando testes de regressão..."
+# ─── 8. Rodar testes de regressão ──────────────
+echo -e "${CYAN}8${RESET} Rodando testes de regressão..."
 cd "$WABOT_DIR"
 if node app/test_regressao.js; then
   echo -e "  ${GREEN}OK${RESET} Testes passaram"
@@ -95,16 +129,16 @@ else
   exit 1
 fi
 
-# ─── 7. Reiniciar servidor ─────────────────────
-echo -e "${CYAN}7${RESET} Reiniciando servidor..."
+# ─── 9. Reiniciar servidor ─────────────────────
+echo -e "${CYAN}9${RESET} Reiniciando servidor..."
 pkill -f "node app/server.js" 2>/dev/null || true
 sleep 1
 cd "$WABOT_DIR"
 nohup node app/server.js > wabot.log 2>&1 &
 echo -e "  ${GREEN}OK${RESET} Servidor reiniciado (PID: $!)"
 
-# ─── 8. Verificar se subiu ─────────────────────
-echo -e "${CYAN}8${RESET} Aguardando servidor ficar online..."
+# ─── 10. Verificar se subiu ─────────────────────
+echo -e "${CYAN}10${RESET} Aguardando servidor ficar online..."
 for i in $(seq 1 10); do
   if curl -sf http://localhost:3001/ >/dev/null 2>&1; then
     echo -e "  ${GREEN}OK${RESET} WaBot online em http://localhost:3001"
