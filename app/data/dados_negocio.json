@@ -108,12 +108,14 @@
         "qual horario",
         "quando abre",
         "quando fecha",
-        "quando fecha",
         "ate que horas",
         "que horas funcionamento",
         "estao abertos",
         "estao funcionando",
-        "voces estao abertos"
+        "voces estao abertos",
+        "vai abrir no feriado",
+        "vai funcionar no feriado",
+        "vai trabalhar no feriado"
       ],
       "expressao": [
         "horario",
@@ -126,6 +128,7 @@
         "funcionamento",
         "abrir",
         "fecha",
+        "feriado",
         "delivery funcionando"
       ],
       "palavra": [
@@ -136,7 +139,8 @@
         "aberta",
         "aberto",
         "fechada",
-        "fechado"
+        "fechado",
+        "feriado"
       ]
     },
     "pedido": {

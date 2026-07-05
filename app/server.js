@@ -1190,6 +1190,48 @@ function responderFeriadoEspecial(dataConsulta, config) {
   return null;
 }
 
+function proximoFeriado(config) {
+  if (!config.feriados_especiais || !Array.isArray(config.feriados_especiais) || config.feriados_especiais.length === 0) return null;
+  var agora = new Date();
+  var hojeStr = String(agora.getDate()).padStart(2,'0') + '/' + String(agora.getMonth()+1).padStart(2,'0') + '/' + agora.getFullYear();
+  // Parse DD/MM/AAAA to sortable number for comparison
+  function toNum(d) { var p = d.split('/'); return parseInt(p[2])*10000 + parseInt(p[1])*100 + parseInt(p[0]); }
+  var hojeNum = toNum(hojeStr);
+  var maisProx = null, maisProxNum = Infinity;
+  for (var i = 0; i < config.feriados_especiais.length; i++) {
+    var f = config.feriados_especiais[i];
+    if (!f.data) continue;
+    var fNum = toNum(f.data);
+    if (fNum >= hojeNum && fNum < maisProxNum) {
+      maisProx = f;
+      maisProxNum = fNum;
+    }
+  }
+  return maisProx;
+}
+
+function montarRespostaProximoFeriado(feriado, config) {
+  if (!feriado) return null;
+  if (feriado.mensagem) {
+    return substituirVariaveis(feriado.mensagem, config, {
+      dataConsulta: feriado.data,
+      feriadoStatus: feriado.status === 'aberto' ? 'abertos' : 'fechados',
+      feriadoHorario: feriado.horario || '',
+      feriadoAgendamento: feriado.agendamento_inicio || '',
+    });
+  }
+  var partes = ['No feriado do dia ' + feriado.data];
+  if (feriado.status === 'aberto') {
+    partes.push('estaremos abertos');
+    if (feriado.horario) partes.push('das ' + feriado.horario.replace('-', ' às '));
+    if (feriado.agendamento_inicio) partes.push('com agendamentos a partir das ' + feriado.agendamento_inicio);
+    if (config.link_pedido_online) partes.push('Link: ' + config.link_pedido_online);
+  } else {
+    partes.push('estaremos fechados');
+  }
+  return partes.join(' ') + '.';
+}
+
 function responderHorarios(config) {
   if (!config || !config.horarios) return null;
   var dias = ['domingo', 'segunda', 'terca', 'quarta', 'quinta', 'sexta', 'sabado'];
@@ -1847,6 +1889,14 @@ function responderIntencaoOperacional(intencao, dadosNegocio, config, cozinhaFun
               }
               resposta = partes.join(' ') + '.';
             }
+            break;
+          }
+        }
+        // Mensagem menciona "feriado" sem data explícita: buscar próximo feriado configurado
+        if (!dataDetectada && normalizarTexto(mensagem).indexOf('feriado') >= 0) {
+          var proxFeriado = proximoFeriado(config);
+          if (proxFeriado) {
+            resposta = montarRespostaProximoFeriado(proxFeriado, config);
             break;
           }
         }
