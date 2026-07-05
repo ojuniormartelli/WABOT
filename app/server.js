@@ -833,14 +833,34 @@ app.post('/api/conversa/:telefone/iniciar', async (req, res) => {
 app.post('/api/restart', async (req, res) => {
   console.log('[restart] Reinicializando servidor...');
   res.json({ success: true, message: 'Servidor reinicializado' });
+
   setTimeout(function() {
-    var child = spawn(process.argv[0], process.argv.slice(1), {
+    var restartFile = path.join(__dirname, '_restart_tmp.js');
+    var serverEntry = path.join(__dirname, 'server.js');
+    var isWin = process.platform === 'win32';
+    var startCmd;
+    if (isWin) {
+      startCmd = 'powershell -Command "Start-Process -WindowStyle Hidden -FilePath node -ArgumentList \'' + serverEntry.replace(/\\/g, '\\\\') + '\'"';
+    } else {
+      startCmd = 'node ' + serverEntry;
+    }
+    fs.writeFileSync(restartFile,
+      'var exec=require("child_process").exec;\n' +
+      'setTimeout(function(){\n' +
+      '  exec(' + JSON.stringify(startCmd) + ');\n' +
+      '},2000);\n'
+    );
+
+    var child = spawn(process.argv[0], [restartFile], {
       cwd: process.cwd(),
       detached: true,
-      stdio: 'inherit',
+      stdio: 'ignore',
     });
     child.unref();
-    process.exit(0);
+
+    setTimeout(function() {
+      process.exit(0);
+    }, 1000);
   }, 500);
 });
 
@@ -1559,7 +1579,21 @@ app.post('/webhook/evolution', async (req, res) => {
         sseBroadcast('conversation_update', { telefone: telefone, ultima_msg: '📞 Chamada de voz', horario: horarioCall, ultimo_timestamp: Date.now() });
         const callCfg = readJson('config.json') || {};
         if (!callCfg.receber_chamadas) {
-          await sendEvolutionMessage(telefone, configGet(callCfg, 'mensagens.chamada_rejeitada', 'Infelizmente não conseguimos atender chamadas de voz pelo WhatsApp. Por favor, envie uma mensagem de texto.'));
+          var callIgnorados = readJson('ignorados.json') || [];
+          var callIsIgnorado = false;
+          if (Array.isArray(callIgnorados)) {
+            for (var cig = 0; cig < callIgnorados.length; cig++) {
+              if (callIgnorados[cig] && callIgnorados[cig].telefone === telefone) {
+                if (!callIgnorados[cig].expira_em || new Date(callIgnorados[cig].expira_em) > new Date()) {
+                  callIsIgnorado = true;
+                }
+                break;
+              }
+            }
+          }
+          if (!callIsIgnorado) {
+            await sendEvolutionMessage(telefone, configGet(callCfg, 'mensagens.chamada_rejeitada', 'Infelizmente não conseguimos atender chamadas de voz pelo WhatsApp. Por favor, envie uma mensagem de texto.'));
+          }
         }
       }
       return res.json({ success: true, call: true });
@@ -1602,12 +1636,6 @@ app.post('/webhook/evolution', async (req, res) => {
     }
     writeJson('conversas.json', conversas);
 
-    // ─── Auto-resposta para áudio (antes do check de ignorados) ─
-    if (messageData?.message?.audioMessage) {
-      await sendEvolutionMessage(telefone, configGet(config, 'mensagens.audio_rejeitado', 'Infelizmente não consigo ouvir mensagens de áudio. Por favor, digite sua mensagem.'));
-      return res.json({ success: true, audio: true });
-    }
-
     // Verificar ignorados (expira_em no passado = reativa automaticamente)
     var ignorados = readJson('ignorados.json') || [];
     var now = new Date();
@@ -1635,6 +1663,13 @@ app.post('/webhook/evolution', async (req, res) => {
 
     if (isIgnorado) {
       return res.json({ success: true, ignored: true });
+    }
+
+    // ─── Auto-resposta para áudio (só para não-ignorados) ─
+    if (messageData?.message?.audioMessage) {
+      var audioConfig = readJson('config.json') || {};
+      await sendEvolutionMessage(telefone, configGet(audioConfig, 'mensagens.audio_rejeitado', 'Infelizmente não consigo ouvir mensagens de áudio. Por favor, digite sua mensagem.'));
+      return res.json({ success: true, audio: true });
     }
 
     // Marcar mensagem como lida (só para não-ignorados)

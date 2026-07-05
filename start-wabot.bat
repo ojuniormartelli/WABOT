@@ -23,10 +23,8 @@ if errorlevel 1 (
   exit /b 1
 )
 
-REM Iniciar Node.js em processo separado (minimizado)
-REM O /b nao e usado propositalmente: sem /b o node roda em janela propria
-REM e nao depende desta janela do CMD. Ao final, exit fecha esta janela.
-start "" /min node app/server.js > wabot.log 2>&1
+REM Iniciar Node.js sem janela visivel (via PowerShell)
+powershell -Command "Start-Process -WindowStyle Hidden -FilePath node -ArgumentList 'app\server.js' -RedirectStandardOutput '%WABOT_DIR%wabot.log' -RedirectStandardError '%WABOT_DIR%wabot.log'"
 
 echo.
 echo WaBot iniciado em segundo plano!

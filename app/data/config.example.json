@@ -90,8 +90,8 @@
   "timezone": "America/Sao_Paulo",
   "receber_chamadas": false,
   "mensagens": {
-    "chamada_rejeitada": "Infelizmente não conseguimos atender chamadas de voz pelo WhatsApp. Por favor, envie uma mensagem de texto.",
-    "audio_rejeitado": "Infelizmente não consigo ouvir mensagens de áudio. Por favor, digite sua mensagem.",
+    "chamada_rejeitada": "Não atendemos chamadas de voz pelo WhatsApp. Para falar conosco, ligue para nosso telefone fixo ou envie uma mensagem de texto.",
+    "audio_rejeitado": "Não consigo ouvir mensagens de áudio. Por favor, digite sua mensagem por texto.",
     "agradecimento_variacoes": [
       "Por nada! Fico à disposição.",
       "Disponha! Quando precisar, é só chamar.",
