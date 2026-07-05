@@ -6,7 +6,10 @@
   "scripts": {
     "start": "node app/server.js",
     "dev": "nodemon app/server.js",
-    "update": "git pull origin main && npm install && npm run dev"
+    "test": "node app/test_regressao.js",
+    "update": "bash scripts/update.sh",
+    "rollback": "bash scripts/rollback.sh",
+    "install": "bash scripts/install.sh"
   },
   "dependencies": {
     "express": "^4.18.2"

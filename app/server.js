@@ -107,7 +107,34 @@ function readJson(file) {
 }
 
 function writeJson(file, data) {
-  fs.writeFileSync(path.join(DATA_DIR, file), JSON.stringify(data, null, 2), 'utf-8');
+  var filePath = path.join(DATA_DIR, file);
+  var tmpPath = filePath + '.tmp';
+  fs.writeFileSync(tmpPath, JSON.stringify(data, null, 2), 'utf-8');
+  fs.renameSync(tmpPath, filePath);
+}
+
+function validarConfigSchema(filename, data) {
+  if (filename === 'config.json') {
+    if (!data || typeof data.nome_negocio !== 'string') {
+      throw new Error('config.json: campo obrigatório "nome_negocio" ausente ou inválido');
+    }
+    if (!data.horarios || typeof data.horarios !== 'object') {
+      throw new Error('config.json: campo obrigatório "horarios" ausente ou inválido');
+    }
+  }
+  if (filename === 'dados_negocio.json') {
+    if (!data || typeof data.nome !== 'string') {
+      throw new Error('dados_negocio.json: campo obrigatório "nome" ausente ou inválido');
+    }
+    if (!data.palavras_chave || typeof data.palavras_chave !== 'object') {
+      throw new Error('dados_negocio.json: campo obrigatório "palavras_chave" ausente ou inválido');
+    }
+  }
+  if (filename === 'credentials.json') {
+    if (!data || !data.evolution || !data.evolution.api_key) {
+      throw new Error('credentials.json: campo obrigatório "evolution.api_key" ausente');
+    }
+  }
 }
 
 function salvarMensagemLocal(telefone, texto, deBot, origem) {
@@ -445,9 +472,11 @@ app.post('/api/config/:filename', (req, res) => {
     return res.json({ success: false, error: 'Invalid path' });
   }
   try {
+    validarConfigSchema(req.params.filename, req.body);
     writeJson(req.params.filename, req.body);
     res.json({ success: true });
   } catch (error) {
+    console.error('[config] ERRO ao salvar ' + req.params.filename + ': ' + error.message);
     res.json({ success: false, error: error.message });
   }
 });
@@ -2492,6 +2521,9 @@ async function init() {
     'start-wabot.bat', 'stop-wabot.bat', 'iniciar.bat', 'atualizar.bat',
     'app/server.js',
     'app/renderer/app.js', 'app/renderer/api.js', 'app/renderer/index.html', 'app/renderer/style.css',
+    'app/data/config.json', 'app/data/dados_negocio.json', 'app/data/credentials.example.json',
+    'scripts/install.sh', 'scripts/update.sh', 'scripts/rollback.sh',
+    'app/test_regressao.js',
   ];
   var GITHUB_RAW_BASE = 'https://raw.githubusercontent.com/ojuniormartelli/WABOT/main';
 
@@ -2525,19 +2557,45 @@ async function init() {
       var commit = JSON.parse(data);
       var latestSha = commit.sha;
 
+      // Backup dados existentes antes de sobrescrever
+      var backupDir = path.join(REPO_DIR, 'backups', new Date().toISOString().replace(/[:.]/g, '-'));
+      fs.mkdirSync(backupDir, { recursive: true });
+      var dataFiles = ['app/data/config.json', 'app/data/dados_negocio.json', 'app/data/credentials.json',
+        'app/data/conversas.json', 'app/data/aprendizados.json', 'app/data/regras.json',
+        'app/data/ignorados.json', 'app/data/nao_sei.json'];
+      for (var bf = 0; bf < dataFiles.length; bf++) {
+        var srcPath = path.join(REPO_DIR, dataFiles[bf]);
+        if (fs.existsSync(srcPath)) {
+          fs.copyFileSync(srcPath, path.join(backupDir, path.basename(dataFiles[bf])));
+        }
+      }
+      console.log('[update] Backup criado em ' + backupDir);
+
       // Baixar cada arquivo do raw.githubusercontent.com e salvar localmente
       var results = [];
+      var jsonValidationErrors = [];
       for (var fi = 0; fi < FILES_TO_UPDATE.length; fi++) {
         var file = FILES_TO_UPDATE[fi];
         try {
           var content = await httpsGet(GITHUB_RAW_BASE + '/' + file);
           var dest = path.join(REPO_DIR, file);
           fs.mkdirSync(path.dirname(dest), { recursive: true });
+          // Para arquivos de dados: validar JSON antes de sobrescrever
+          if (file.indexOf('app/data/') === 0 && file !== 'app/data/credentials.example.json' && file.indexOf('.json') > 0) {
+            try { JSON.parse(content); } catch (je) {
+              jsonValidationErrors.push(file + ': JSON inválido no repositório');
+              results.push(file + ': ERRO - JSON inválido');
+              continue;
+            }
+          }
           fs.writeFileSync(dest, content, 'utf8');
           results.push(file + ': OK');
         } catch (e) {
           results.push(file + ': ' + e.message);
         }
+      }
+      if (jsonValidationErrors.length > 0) {
+        console.error('[update] ERRO: arquivos com JSON inválido no repositório:', jsonValidationErrors.join(', '));
       }
 
       // Salvar versão local
@@ -2547,7 +2605,27 @@ async function init() {
       var npmOut = '';
       try { npmOut = require('child_process').execSync('npm install 2>&1', { cwd: REPO_DIR, timeout: 60000 }).toString(); } catch(e) { npmOut = e.message; }
 
-      res.json({ success: true, files: results, npm: npmOut });
+      // Rodar testes de regressão antes de reiniciar
+      var testOut = '';
+      var testPassed = false;
+      try {
+        testOut = require('child_process').execSync('node app/test_regressao.js 2>&1', { cwd: REPO_DIR, timeout: 30000 }).toString();
+        testPassed = testOut.indexOf('FALHA') === -1 && testOut.indexOf('FALHOU') === -1;
+        if (!testPassed) { console.error('[update] Testes de regressão FALHARAM:\n' + testOut); }
+        else { console.log('[update] Testes de regressão OK'); }
+      } catch(e) {
+        testOut = e.message || 'Erro ao executar testes';
+        testPassed = false;
+        console.error('[update] Testes de regressão FALHARAM:', testOut);
+      }
+
+      res.json({ success: true, files: results, npm: npmOut, tests: { passed: testPassed, output: testOut } });
+
+      // Só reinicia se os testes passarem
+      if (!testPassed) {
+        console.error('[update] Testes falharam — servidor NÃO será reiniciado. Execute "node app/test_regressao.js" para diagnóstico.');
+        return;
+      }
 
       // Agendar restart
       var restartFile = path.join(REPO_DIR, '_restart.js');

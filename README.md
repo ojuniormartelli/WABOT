@@ -167,6 +167,173 @@ Certifique-se de que:
 - "Add to PATH" foi marcado na instalação
 - Ou execute o `setup-wabot.bat` como Administrador
 
+## Deploy & Manutenção
+
+### Arquitetura de diretórios
+
+```
+WaBot/
+├── app/
+│   ├── server.js              # Código do servidor (runtime)
+│   ├── test_regressao.js      # Testes de regressão
+│   ├── data/                  # ⚠️ Dados do negócio (NÃO versionados)
+│   │   ├── config.json        # Configurações, horários, templates
+│   │   ├── dados_negocio.json # Palavras-chave e políticas de intenção
+│   │   ├── credentials.json   # Chaves de API (gitignored)
+│   │   └── ...                # Conversas, regras, aprendizados
+│   └── renderer/              # Frontend (admin panel)
+├── scripts/
+│   ├── install.sh             # Instalação limpa do zero
+│   ├── update.sh              # Atualização segura (backup + testes + restart)
+│   └── rollback.sh            # Rollback rápido para versão anterior
+├── backups/                   # Backups automáticos (gitignored)
+├── atualizar.js               # Atualizador autônomo v2 (sem git)
+├── start.sh / stop.sh         # Iniciar/parar o servidor
+└── package.json
+```
+
+Três camadas bem separadas:
+- **Código do servidor**: `app/server.js` + `app/renderer/`
+- **Configuração e dados**: `app/data/*.json`
+- **Scripts de instalação/atualização**: `scripts/`, `atualizar.js`, `*.sh`
+
+### Instalação do zero (máquina nova)
+
+```bash
+# 1. Clonar o repositório
+git clone https://github.com/ojuniormartelli/WABOT.git
+cd WABOT
+
+# 2. Instalar (cria dados padrão, npm install, valida JSON, testes)
+bash scripts/install.sh
+
+# 3. Configurar credenciais
+#    Edite app/data/credentials.json com suas chaves de API
+#    Ou acesse http://localhost:3001 após iniciar
+
+# 4. Iniciar
+bash start.sh
+```
+
+### Atualização segura (backup + testes + restart)
+
+```bash
+# Via script bash (recomendado — faz backup, valida, testa e só reinicia se OK)
+bash scripts/update.sh
+
+# Via npm (atalho para o mesmo script)
+npm run update
+
+# Via atualizador autônomo (sem git)
+node atualizar.js
+```
+
+O que o `scripts/update.sh` faz:
+1. Verifica o repositório git e salva o commit atual
+2. **Faz backup** de todos os arquivos `app/data/*.json` em `backups/YYYY-MM-DD_HH-MM-SS/`
+3. Executa `git pull origin main`
+4. Roda `npm install` se necessário
+5. **Valida** se todos os JSON de dados ainda são parseáveis
+6. **Roda os testes de regressão** (`node app/test_regressao.js`)
+7. **Só reinicia o servidor** se testes passarem
+8. Aguarda o servidor ficar online
+
+Se os testes falharem:
+- O script **não reinicia** o servidor
+- Restaura automaticamente os dados do backup
+- Exibe instruções de diagnóstico
+
+### Rollback rápido
+
+```bash
+# Listar commits disponíveis
+bash scripts/rollback.sh
+
+# Voltar para um commit específico
+bash scripts/rollback.sh <sha-do-commit>
+
+# Voltar 1 commit
+bash scripts/rollback.sh HEAD~1
+```
+
+O rollback:
+1. Faz backup de segurança dos dados atuais
+2. Volta `app/server.js` e `app/test_regressao.js` para o commit alvo
+3. Restaura os dados do backup mais recente
+4. Valida JSON e roda testes
+5. Só reinicia se tudo OK
+
+### Segurança dos arquivos de dados
+
+- **`writeJson`** agora escreve em arquivo `.tmp` e depois renomeia (escrita atômica) — evita corrupção se o processo morrer no meio
+- **`POST /api/config/:filename`** valida o schema antes de salvar:
+  - `config.json`: exige `nome_negocio` (string) e `horarios` (objeto)
+  - `dados_negocio.json`: exige `nome` (string) e `palavras_chave` (objeto)
+  - `credentials.json`: exige `evolution.api_key`
+- **`readJson`** agora loga o erro com nome do arquivo e mensagem — nunca mais silencioso
+- **`FILES_TO_UPDATE`** (server.js e atualizar.js) agora inclui `app/data/config.json`, `app/data/dados_negocio.json` e `app/data/credentials.example.json`
+
+### Restaurar arquivo de dados corrompido
+
+```bash
+# Se um JSON de dados corromper (parse error):
+# 1. Via git (restaura a versão do repositório)
+git checkout -- app/data/config.json
+git checkout -- app/data/dados_negocio.json
+
+# 2. Via backup
+cp backups/2026-07-05_12-00-00/config.json app/data/
+cp backups/2026-07-05_12-00-00/dados_negocio.json app/data/
+
+# 3. Depois de restaurar, valide e reinicie
+node app/test_regressao.js
+pkill -f "node app/server.js" && nohup node app/server.js > wabot.log 2>&1 &
+```
+
+### Observabilidade (logs)
+
+O bot loga no arquivo `wabot.log` (mesmo diretório, criado pelo `nohup`):
+
+```bash
+# Ver último erro
+tail -f wabot.log | grep -E "readJson|ERRO|erro|FALHA"
+
+# Ver logs de debug do webhook
+cat wabot.log | grep -E "readJson|webhook_debug"
+
+# Ver todas as intenções detectadas
+grep "intencao\]" wabot.log
+
+# Ver erros de JSON
+grep "readJson" wabot.log
+```
+
+Tags de log padronizadas:
+- `[readJson]` — erro ao ler/parsear JSON
+- `[webhook_debug]` — debug do fluxo de intenção operacional
+- `[intencao]` — intenção detectada pelo matcher
+- `[config]` — erro ao salvar config via admin panel
+- `[update]` — eventos do update automático
+
+### Testes de regressão
+
+```bash
+# Rodar manualmente
+node app/test_regressao.js
+
+# Via npm
+npm test
+
+# O que testa:
+#   - Validação de todos os JSON de dados
+#   - Detecção de todas as 8 intenções operacionais
+#   - Prioridade delivery > pedido
+#   - Respostas operacionais não nulas
+#   - Lógica de saudação (isApenasSaudacao, detectarSaudacao)
+#   - Detecção de agradecimento
+#   - Simulação de conversa (5 passos)
+```
+
 ## Changelog
 
 ### 2026-06-30 (final)

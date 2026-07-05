@@ -1,6 +1,9 @@
 node_modules/
 .DS_Store
 *.log
+backups/
+_version.json
+_restart.js
 app/data/credentials.json
 app/data/conversas.json
 app/data/aprendizados.json
