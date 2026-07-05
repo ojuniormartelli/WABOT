@@ -71,10 +71,10 @@ var HELP = {
     ['Visualização Avançada', 'No final da página, um painel colapsável mostra o JSON completo. Você pode editar manualmente e aplicar desde que o JSON seja válido.'],
   ],
   configuracoes: [
-    'Configure os dados do seu negócio para o bot personalizar as respostas.',
-    ['Dados Básicos', 'Nome, endereço, telefone e links que o bot usará para informar clientes.'],
+    'Horários de funcionamento e configurações avançadas do sistema.',
     ['Horários', 'Defina os dias e horários da cozinha e do agendamento de pedidos. A cozinha controla se o restaurante está aberto; o agendamento controla se pode aceitar pedidos.'],
-    ['Mensagens Padrão', 'Personalize as mensagens automáticas: saudação, ausência, quando não sabe responder e agradecimento.'],
+    ['Observações Gerais', 'Informações extras sobre o negócio que o bot pode considerar ao responder.'],
+    ['Dados Básicos', 'Nome, endereço, telefone, palavras-chave e mensagens agora estão em Dados do Negócio.'],
   ],
 };
 
@@ -1152,22 +1152,7 @@ window.disconnectEvolution = async function() {
 // ─── CONFIGURAÇÕES ─────────────────────────────────
 function renderConfiguracoes() {
   var c = state.configuracoes.config;
-  var tipos = c.tipos_atendimento || [];
   var horarios = c.horarios || {};
-  var redes = c.redes_sociais || {};
-
-  var tiposHtml = '';
-  var TIPOS = [
-    { id: 'retirada', label: 'Retirada no Local' },
-    { id: 'consumo_local', label: 'Consumo no Local' },
-    { id: 'delivery', label: 'Delivery' },
-  ];
-  for (var i = 0; i < TIPOS.length; i++) {
-    var t = TIPOS[i];
-    tiposHtml += '<label class="flex items-center gap-2 cursor-pointer">' +
-      '<input type="checkbox" ' + (tipos.indexOf(t.id) >= 0 ? 'checked' : '') + ' onchange="toggleTipo(\'' + t.id + '\')" class="w-4 h-4 text-emerald-600 rounded border-gray-300 focus:ring-emerald-500" />' +
-      '<span class="text-sm text-gray-700">' + t.label + '</span></label>';
-  }
 
   var DIAS = ['segunda','terca','quarta','quinta','sexta','sabado','domingo'];
   var LABELS = { 'segunda':'Segunda','terca':'Terça','quarta':'Quarta','quinta':'Quinta','sexta':'Sexta','sabado':'Sábado','domingo':'Domingo' };
@@ -1227,48 +1212,13 @@ function renderConfiguracoes() {
   var btnLabel = state.configuracoes.saving ? 'Salvando...' : 'Salvar Configurações';
 
   return '<div class="p-8 max-w-4xl mx-auto">' +
-    '<div class="flex items-center gap-3 mb-8">' +
-      '<h1 class="text-2xl font-bold text-gray-800">Configurações do Negócio</h1>' +
+    '<div class="flex items-center gap-3 mb-4">' +
+      '<h1 class="text-2xl font-bold text-gray-800">Configurações</h1>' +
       '<button onclick="toggleHelp()" class="w-8 h-8 rounded-lg bg-gray-100 hover:bg-gray-200 flex items-center justify-center text-gray-500 hover:text-gray-700 transition-colors" title="Ajuda">' + I.info(18, '') + '</button>' +
     '</div>' +
-    '<div class="bg-white rounded-xl border border-gray-200 p-6 mb-6">' +
-      '<h2 class="text-lg font-semibold text-gray-700 mb-5">Dados Básicos</h2>' +
-      '<div class="grid grid-cols-2 gap-4">' +
-        '<div class="col-span-2">' +
-          campo('Nome do Negócio', 'configNome', c.nome_negocio, 'Ex: Casarão do Gui', 'updateConfig(\'nome_negocio\',this.value)') +
-        '</div>' +
-        '<div class="col-span-2">' +
-          campo('Endereço', 'configEnd', c.endereco, 'Ex: Rua 15 de Novembro, 184', 'updateConfig(\'endereco\',this.value)') +
-        '</div>' +
-        '<div>' +
-          '<div><label class="block text-sm font-medium text-gray-700 mb-1.5">Telefone</label>' +
-  '<input type="text" id="configTel" value="' + esc(c.telefone) + '" placeholder="(19) 3843-1778" oninput="updatePhone(this.value)" class="w-full px-3 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 text-sm" /></div>' +
-        '</div>' +
-        '<div>' +
-          campo('Site', 'configSite', c.site, 'https://meusite.com.br', 'updateConfig(\'site\',this.value)') +
-        '</div>' +
-        '<div>' +
-          campo('Link Pedido Online', 'configLink', c.link_pedido_online, 'https://...', 'updateConfig(\'link_pedido_online\',this.value)') +
-        '</div>' +
-        '<div>' +
-          campo('Instagram', 'configInsta', redes.instagram, '@seuinstagram', 'updateRedes(\'instagram\',this.value)') +
-        '</div>' +
-        '<div>' +
-          campo('Facebook', 'configFace', redes.facebook, 'facebook.com/seupagina', 'updateRedes(\'facebook\',this.value)') +
-        '</div>' +
-        '<div>' +
-          campo('iFood', 'configIfood', redes.ifood, 'ifood.com.br/...', 'updateRedes(\'ifood\',this.value)') +
-        '</div>' +
-        '<div class="col-span-2">' +
-          '<label class="block text-sm font-medium text-gray-700 mb-1.5">Observações Gerais</label>' +
-          '<textarea rows="3" oninput="updateConfig(\'observacoes_gerais\',this.value)" class="w-full px-3 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 text-sm">' + esc(c.observacoes_gerais) + '</textarea>' +
-        '</div>' +
-      '</div>' +
-    '</div>' +
-
-    '<div class="bg-white rounded-xl border border-gray-200 p-6 mb-6">' +
-      '<h2 class="text-lg font-semibold text-gray-700 mb-4">Tipos de Atendimento</h2>' +
-      '<div class="flex gap-6">' + tiposHtml + '</div>' +
+    renderHelp('configuracoes') +
+    '<div class="bg-emerald-50 border border-emerald-200 rounded-xl p-4 mb-6 text-sm text-emerald-800">' +
+      '<p><strong>Dados básicos, palavras-chave e mensagens</strong> agora são gerenciados em <button onclick="navegar(\'dadosnegocio\')" class="text-emerald-700 underline font-medium hover:text-emerald-900">Dados do Negócio</button>.</p>' +
     '</div>' +
 
     '<div class="bg-white rounded-xl border border-gray-200 p-6 mb-6">' +
@@ -1279,6 +1229,10 @@ function renderConfiguracoes() {
     '<div class="bg-white rounded-xl border border-gray-200 p-6 mb-6">' +
       '<h2 class="text-lg font-semibold text-gray-700 mb-4">Configurações Avançadas</h2>' +
       '<div class="space-y-4">' +
+        '<div>' +
+          '<label class="block text-sm font-medium text-gray-700 mb-1.5">Observações Gerais</label>' +
+          '<textarea rows="3" oninput="updateConfig(\'observacoes_gerais\',this.value)" class="w-full px-3 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 text-sm">' + esc(c.observacoes_gerais) + '</textarea>' +
+        '</div>' +
         '<label class="flex items-center gap-3 cursor-pointer">' +
           '<input type="checkbox" ' + (c.receber_chamadas ? 'checked' : '') + ' onchange="updateConfig(\'receber_chamadas\',this.checked)" class="w-4 h-4 text-emerald-600 rounded border-gray-300 focus:ring-emerald-500" />' +
           '<div><span class="text-sm font-medium text-gray-700">Receber chamadas de voz</span>' +
@@ -1287,59 +1241,13 @@ function renderConfiguracoes() {
       '</div>' +
     '</div>' +
 
-    '<div class="bg-white rounded-xl border border-gray-200 p-6 mb-8">' +
-      '<h2 class="text-lg font-semibold text-gray-700 mb-4">Mensagens Padrão</h2>' +
-      '<div class="space-y-4">' +
-        msgField('Mensagem de Saudação', 'mensagem_saudacao', c.mensagem_saudacao) +
-        msgField('Mensagem de Ausência (fora do horário)', 'mensagem_ausencia', c.mensagem_ausencia) +
-        msgField('Mensagem quando não encontrar resposta', 'mensagem_regra_nao_encontrada', c.mensagem_regra_nao_encontrada) +
-        msgField('Mensagem de Agradecimento', 'mensagem_agradecimento', c.mensagem_agradecimento) +
-      '</div>' +
-    '</div>' +
-
     '<button onclick="saveConfiguracoes()" ' + (state.configuracoes.saving ? 'disabled' : '') + ' class="flex items-center gap-2 px-6 py-3 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 transition-colors font-medium text-sm disabled:opacity-50">' +
       I.save(18, '') + ' ' + btnLabel +
     '</button></div>';
 }
 
-function maskPhone(v) {
-  v = v.replace(/\D/g, '').slice(0, 11);
-  if (v.length <= 2) return '(' + v;
-  if (v.length <= 7) return '(' + v.slice(0, 2) + ') ' + v.slice(2);
-  return '(' + v.slice(0, 2) + ') ' + v.slice(2, 7) + '-' + v.slice(7);
-}
-
-window.updatePhone = function(v) {
-  var masked = maskPhone(v);
-  state.configuracoes.config.telefone = masked;
-  var el = document.getElementById('configTel');
-  if (el) el.value = masked;
-};
-
-function campo(label, id, value, placeholder, onchange) {
-  return '<div><label class="block text-sm font-medium text-gray-700 mb-1.5">' + label + '</label>' +
-    '<input type="text" id="' + id + '" value="' + esc(value) + '" placeholder="' + esc(placeholder || '') + '" oninput="' + onchange + '" class="w-full px-3 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 text-sm" /></div>';
-}
-
-function msgField(label, field, value) {
-  return '<div><label class="block text-sm font-medium text-gray-700 mb-1.5">' + label + '</label>' +
-    '<textarea rows="2" oninput="updateConfig(\'' + field + '\',this.value)" class="w-full px-3 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 text-sm">' + esc(value) + '</textarea></div>';
-}
-
 window.updateConfig = function(field, value) {
   state.configuracoes.config[field] = value;
-};
-
-window.updateRedes = function(rede, value) {
-  if (!state.configuracoes.config.redes_sociais) state.configuracoes.config.redes_sociais = {};
-  state.configuracoes.config.redes_sociais[rede] = value;
-};
-
-window.toggleTipo = function(tipo) {
-  var tipos = state.configuracoes.config.tipos_atendimento;
-  var idx = tipos.indexOf(tipo);
-  if (idx >= 0) tipos.splice(idx, 1);
-  else tipos.push(tipo);
 };
 
 window.updateHorario = function(dia, campo, valor) {
