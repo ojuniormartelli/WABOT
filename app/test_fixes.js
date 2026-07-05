@@ -54,14 +54,86 @@ function detectarIntencaoOperacional(mensagem, dadosNegocio) {
   return maxScore > 0 ? maxTipo : null;
 }
 
-function substituirVariaveis(texto, config) {
+function configGet(config, path, fallback) {
+  var parts = path.split('.');
+  var cur = config;
+  for (var i = 0; i < parts.length; i++) {
+    if (cur == null || typeof cur !== 'object') return fallback;
+    cur = cur[parts[i]];
+  }
+  return cur !== undefined ? cur : fallback;
+}
+
+function horarioHojeTexto(config) {
+  if (!config || !config.horarios) return '';
+  var dias = ['domingo', 'segunda', 'terca', 'quarta', 'quinta', 'sexta', 'sabado'];
+  var hoje = dias[new Date().getDay()];
+  var info = config.horarios[hoje];
+  if (!info) return '';
+  if (info.fechado) return configGet(config, 'mensagens.texto_fechado', 'FECHADO');
+  var periodos = info.periodos || info.cozinha || [];
+  if (periodos.length === 0) return '';
+  return periodos.map(function(p) { return p.abertura + ' às ' + p.fechamento; }).join(', ');
+}
+
+function diaAtualTexto() {
+  var nomes = { domingo: 'Domingo', segunda: 'Segunda', terca: 'Terça', quarta: 'Quarta', quinta: 'Quinta', sexta: 'Sexta', sabado: 'Sábado' };
+  var dias = ['domingo', 'segunda', 'terca', 'quarta', 'quinta', 'sexta', 'sabado'];
+  return nomes[dias[new Date().getDay()]];
+}
+
+function agendamentoHojeTexto(config) {
+  if (!config || !config.horarios) return '';
+  var dias = ['domingo', 'segunda', 'terca', 'quarta', 'quinta', 'sexta', 'sabado'];
+  var hoje = dias[new Date().getDay()];
+  var info = config.horarios[hoje];
+  if (!info || info.fechado) return '';
+  var periodos = info.agendamento || [];
+  if (periodos.length === 0) return '';
+  return periodos.filter(function(p) { return p.abertura; }).map(function(p) { return p.abertura + ' às ' + p.fechamento; }).join(', ');
+}
+
+function horariosSemanaTexto(config) {
+  if (!config || !config.horarios) return '';
+  var nomes = { domingo: 'Domingo', segunda: 'Segunda', terca: 'Terça', quarta: 'Quarta', quinta: 'Quinta', sexta: 'Sexta', sabado: 'Sábado' };
+  var dias = ['segunda', 'terca', 'quarta', 'quinta', 'sexta', 'sabado', 'domingo'];
+  var textoFechado = configGet(config, 'mensagens.texto_fechado', 'Fechado');
+  var linhas = [];
+  for (var i = 0; i < dias.length; i++) {
+    var dia = dias[i];
+    var info = config.horarios[dia];
+    var nomeCurto = nomes[dia].substring(0, 3);
+    if (!info || info.fechado) {
+      linhas.push(nomeCurto + ': ' + textoFechado);
+    } else {
+      var periodos = info.cozinha || info.periodos || [];
+      if (periodos.length > 0 && periodos[0].abertura) {
+        linhas.push(nomeCurto + ': ' + periodos[0].abertura + '-' + periodos[0].fechamento);
+      } else {
+        linhas.push(nomeCurto + ': ' + textoFechado);
+      }
+    }
+  }
+  return linhas.join(', ');
+}
+
+function substituirVariaveis(texto, config, contexto) {
   if (!texto || !config) return texto;
+  contexto = contexto || {};
+  var proxTexto = '';
+  if (contexto.proxAbertura !== null && contexto.proxAbertura !== undefined) {
+    proxTexto = String(Math.floor(contexto.proxAbertura / 60)).padStart(2, '0') + ':' + String(contexto.proxAbertura % 60).padStart(2, '0');
+  }
   return texto
     .replace(/\{\{link_pedido_online\}\}/g, config.link_pedido_online || '')
     .replace(/\{\{endereco\}\}/g, config.endereco || '')
     .replace(/\{\{telefone\}\}/g, config.telefone || '')
     .replace(/\{\{nome_negocio\}\}/g, config.nome_negocio || '')
-    .replace(/\{\{horario_hoje\}\}/g, '');
+    .replace(/\{\{horario_hoje\}\}/g, horarioHojeTexto(config))
+    .replace(/\{\{agendamento_hoje\}\}/g, agendamentoHojeTexto(config))
+    .replace(/\{\{dia_atual\}\}/g, diaAtualTexto())
+    .replace(/\{\{proxima_abertura\}\}/g, proxTexto)
+    .replace(/\{\{horarios_semana\}\}/g, horariosSemanaTexto(config));
 }
 
 function formatarTelefone(tel) {
@@ -74,12 +146,59 @@ function formatarTelefone(tel) {
   return tel;
 }
 
+function montarRespostaHorario(dadosNegocio, config, cozinhaFuncionando, proxApertura) {
+  var horarios = config.horarios || dadosNegocio.horarios || {};
+  var politicas = dadosNegocio.politicas || {};
+  var nomesDias = { domingo: 'Domingo', segunda: 'Segunda', terca: 'Terça', quarta: 'Quarta', quinta: 'Quinta', sexta: 'Sexta', sabado: 'Sábado' };
+  var dias = ['domingo','segunda','terca','quarta','quinta','sexta','sabado'];
+  var textoFechado = configGet(config, 'mensagens.texto_fechado', 'Fechado');
+  var hoje = new Date();
+  var hojeNome = dias[hoje.getDay()];
+  var hojeInfo = horarios[hojeNome];
+  var txt = '';
+  if (cozinhaFuncionando) {
+    txt = 'Estamos ABERTOS agora! ';
+  } else if (proxApertura !== null) {
+    var proxHoras = Math.floor(proxApertura / 60) + ':' + String(proxApertura % 60).padStart(2, '0');
+    txt = 'Estamos fechados. Próxima abertura: ' + proxHoras + '. ';
+  }
+  var hojeTxt = '';
+  if (hojeInfo) {
+    if (hojeInfo.fechado) {
+      hojeTxt = ' Hoje (' + nomesDias[hojeNome] + '): ' + textoFechado + '.';
+    } else {
+      var periodos = hojeInfo.cozinha || hojeInfo.periodos || [];
+      if (periodos.length > 0 && periodos[0].abertura) {
+        var partes = [];
+        for (var p = 0; p < periodos.length; p++) {
+          partes.push(periodos[p].abertura + ' às ' + periodos[p].fechamento);
+        }
+        hojeTxt = ' Hoje (' + nomesDias[hojeNome] + '): ' + partes.join(' e ') + '.';
+      } else if (hojeInfo.abertura) {
+        hojeTxt = ' Hoje (' + nomesDias[hojeNome] + '): ' + hojeInfo.abertura + ' às ' + hojeInfo.fechamento + '.';
+      }
+    }
+  }
+  var politicaTxt = '';
+  if (politicas.encomenda_almoco_desde) {
+    politicaTxt += ' Pedidos antecipados (almoço) a partir das ' + politicas.encomenda_almoco_desde + '.';
+  }
+  if (politicas.encomenda_jantar_desde) {
+    politicaTxt += ' Pedidos antecipados (jantar) a partir das ' + politicas.encomenda_jantar_desde + '.';
+  }
+  return txt + hojeTxt + politicaTxt + ' Horários: ' + horariosSemanaTexto(config);
+}
+
 function responderIntencaoOperacional(intencao, dadosNegocio, config, cozinhaFuncionando, proxApertura) {
+  var respOp = (dadosNegocio.respostas_operacionais || {})[intencao];
+  if (respOp && respOp.texto && respOp.texto.trim()) {
+    return substituirVariaveis(respOp.texto.trim(), config, { proxAbertura: proxApertura, cozinhaFuncionando: cozinhaFuncionando });
+  }
   var resposta = null;
   var politicas = dadosNegocio.politicas || {};
   var link = dadosNegocio.link_pedido_online || config.link_pedido_online || '';
   switch (intencao) {
-    case 'horario': resposta = '[horarios]'; break;
+    case 'horario': resposta = montarRespostaHorario(dadosNegocio, config, cozinhaFuncionando, proxApertura); break;
     case 'endereco': resposta = dadosNegocio.endereco || config.endereco || ''; break;
     case 'telefone': resposta = dadosNegocio.telefone || config.telefone || ''; break;
     case 'pedido':
