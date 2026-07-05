@@ -23,8 +23,11 @@ if errorlevel 1 (
   exit /b 1
 )
 
-REM Iniciar Node.js em segundo plano (start /b = sem janela nova)
-start /b node app/server.js > wabot.log 2>&1
+REM Iniciar Node.js completamente oculto (sem janela alguma)
+REM WScript.Shell.Run com 0 = oculto, False = assincrono
+echo CreateObject("WScript.Shell").Run "node app\server.js", 0, False > "%TEMP%\wabot_run.vbs"
+cscript //nologo "%TEMP%\wabot_run.vbs"
+del "%TEMP%\wabot_run.vbs" 2>nul
 
 echo.
 echo WaBot iniciado em segundo plano!
