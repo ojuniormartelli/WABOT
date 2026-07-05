@@ -132,6 +132,17 @@ window.wabot.checkUpdate = () =>
 window.wabot.applyUpdate = () =>
   fetch('/api/update/apply', { method: 'POST' }).then(r => r.json());
 
+// ─── Dados do Negócio ─────────────────────────────
+window.wabot.dadosNegocioRead = () =>
+  fetch('/api/dados-negocio').then(r => r.json());
+
+window.wabot.dadosNegocioWrite = (data) =>
+  fetch('/api/dados-negocio', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(data),
+  }).then(r => r.json());
+
 // ─── Reiniciar ─────────────────────────────────────
 window.wabot.restartBot = () =>
   fetch('/api/restart', { method: 'POST' }).then(r => r.json());

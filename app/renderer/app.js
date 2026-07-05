@@ -64,6 +64,12 @@ var HELP = {
     ['Aprendidas', 'Todas as perguntas e respostas que o bot já aprendeu. Pode editar ou excluir.'],
     ['Novo Conhecimento', 'Adicione manualmente perguntas e respostas que o bot deve saber, com palavras-chave para ajudar na busca.'],
   ],
+  dadosnegocio: [
+    'Painel completo de dados do negócio. Tudo aqui é salvo em dados_negocio.json.',
+    ['Campos', 'Nome, endereço, telefone, links e flags operacionais que o bot usa para responder.'],
+    ['Palavras-chave', 'Cada intenção (delivery, horário, pedido...) tem frases exatas, expressões e palavras que o bot reconhece. Prioridade define qual intenção vence em caso de empate.'],
+    ['Visualização Avançada', 'No final da página, um painel colapsável mostra o JSON completo. Você pode editar manualmente e aplicar desde que o JSON seja válido.'],
+  ],
   configuracoes: [
     'Configure os dados do seu negócio para o bot personalizar as respostas.',
     ['Dados Básicos', 'Nome, endereço, telefone e links que o bot usará para informar clientes.'],
@@ -126,6 +132,14 @@ var state = {
     editandoPalavras: '',
   },
   dashboard: { checklist: [] },
+  dadosNegocio: {
+    data: null,
+    saving: false,
+    saved: false,
+    rawJson: '',
+    rawOpen: false,
+    rawEditando: false,
+  },
 };
 
 // ─── Helpers ───────────────────────────────────────
@@ -250,6 +264,7 @@ function renderPage() {
     case 'regras': return renderRegras();
     case 'ignorados': return renderIgnorados();
     case 'aprendizado': return renderAprendizado();
+    case 'dadosnegocio': return renderDadosNegocio();
     default: return '';
   }
 }
@@ -263,6 +278,7 @@ function bindCurrentPage() {
     case 'regras': bindRegras(); break;
     case 'ignorados': bindIgnorados(); break;
     case 'aprendizado': bindAprendizado(); break;
+    case 'dadosnegocio': bindDadosNegocio(); break;
   }
 }
 
@@ -280,6 +296,7 @@ function renderSidebar() {
   var items = [
     { id: 'dashboard', label: 'Dashboard', icon: I.layoutDashboard(20, '') },
     { id: 'conversas', label: 'Conversas', icon: I.messageSquare(20, '') },
+    { id: 'dadosnegocio', label: 'Dados do Negócio', icon: I.book(20, '') },
     { id: 'configuracoes', label: 'Configurações', icon: I.settings(20, '') },
     { id: 'regras', label: 'Regras', icon: I.fileText(20, '') },
     { id: 'ignorados', label: 'Ignorados', icon: I.shieldBan(20, '') },
@@ -370,6 +387,282 @@ window.toggleSidebar = function() {
     labels[i].style.display = collapsed ? 'none' : '';
   }
 };
+
+// ─── DADOS DO NEGÓCIO ─────────────────────────────
+
+var INTENCOES = [
+  { id: 'atendente', label: 'Atendente' },
+  { id: 'horario', label: 'Horário' },
+  { id: 'pedido', label: 'Pedido' },
+  { id: 'retirada', label: 'Retirada' },
+  { id: 'delivery', label: 'Delivery' },
+  { id: 'reserva', label: 'Reserva' },
+  { id: 'endereco', label: 'Endereço' },
+  { id: 'telefone', label: 'Telefone' },
+];
+
+function renderDadosNegocio() {
+  var dn = state.dadosNegocio;
+  var data = dn.data;
+  if (!data) {
+    return '<div class="p-8 max-w-5xl mx-auto"><div class="h-64 flex items-center justify-center"><div class="text-center"><div class="w-10 h-10 border-4 border-emerald-200 border-t-emerald-600 rounded-full animate-spin mx-auto mb-3"></div><p class="text-gray-500 text-sm">Carregando dados do negócio...</p></div></div></div>';
+  }
+
+  var redes = data.redes_sociais || {};
+  var politicas = data.politicas || {};
+  var msgs = data.mensagens_padrao || {};
+  var pkw = data.palavras_chave || {};
+  var salvoMsg = dn.saved ? '<div class="flex items-center gap-2 text-emerald-600 bg-emerald-50 border border-emerald-200 rounded-lg px-4 py-2 text-sm font-medium"><span>' + I.checkCircle2(16, '') + '</span> Salvo com sucesso!</div>' : '';
+
+  var btnLabel = dn.saving ? 'Salvando...' : 'Salvar Alterações';
+
+  var pkHtml = '';
+  for (var i = 0; i < INTENCOES.length; i++) {
+    var tipo = INTENCOES[i];
+    var kw = pkw[tipo.id] || { prioridade: 50, frase_exata: [], expressao: [], palavra: [] };
+    var feHtml = ''; for (var f = 0; f < (kw.frase_exata || []).length; f++) { feHtml += '<span class="inline-flex items-center gap-1 px-2 py-1 bg-blue-100 text-blue-700 rounded text-xs">' + esc(kw.frase_exata[f]) + '<button onclick="removerKW(\'' + tipo.id + '\',\'frase_exata\',' + f + ')" class="text-blue-400 hover:text-blue-600">' + I.x(10, '') + '</button></span>'; }
+    var exHtml = ''; for (var e = 0; e < (kw.expressao || []).length; e++) { exHtml += '<span class="inline-flex items-center gap-1 px-2 py-1 bg-purple-100 text-purple-700 rounded text-xs">' + esc(kw.expressao[e]) + '<button onclick="removerKW(\'' + tipo.id + '\',\'expressao\',' + e + ')" class="text-purple-400 hover:text-purple-600">' + I.x(10, '') + '</button></span>'; }
+    var paHtml = ''; for (var p = 0; p < (kw.palavra || []).length; p++) { paHtml += '<span class="inline-flex items-center gap-1 px-2 py-1 bg-amber-100 text-amber-700 rounded text-xs">' + esc(kw.palavra[p]) + '<button onclick="removerKW(\'' + tipo.id + '\',\'palavra\',' + p + ')" class="text-amber-400 hover:text-amber-600">' + I.x(10, '') + '</button></span>'; }
+
+    pkHtml += '<div class="bg-white rounded-xl border border-gray-200 p-5">' +
+      '<div class="flex items-center justify-between mb-3">' +
+        '<h3 class="text-sm font-semibold text-gray-700">' + esc(tipo.label) + '</h3>' +
+        '<div class="flex items-center gap-2"><label class="text-xs text-gray-500">Prioridade</label>' +
+        '<input type="number" value="' + kw.prioridade + '" onchange="atualizarPK(\'' + tipo.id + '\',\'prioridade\',Number(this.value))" class="w-16 px-2 py-1 border border-gray-300 rounded text-sm text-center" /></div>' +
+      '</div>' +
+      '<div class="space-y-2">' +
+        '<div><div class="flex items-center justify-between mb-1"><span class="text-xs font-medium text-gray-500">Frases Exatas</span><button onclick="adicionarKW(\'' + tipo.id + '\',\'frase_exata\')" class="text-xs text-emerald-600 hover:text-emerald-700 flex items-center gap-0.5">' + I.plus(12, '') + ' Add</button></div><div class="flex flex-wrap gap-1.5">' + (feHtml || '<span class="text-xs text-gray-300">Nenhuma</span>') + '</div></div>' +
+        '<div><div class="flex items-center justify-between mb-1"><span class="text-xs font-medium text-gray-500">Expressões</span><button onclick="adicionarKW(\'' + tipo.id + '\',\'expressao\')" class="text-xs text-emerald-600 hover:text-emerald-700 flex items-center gap-0.5">' + I.plus(12, '') + ' Add</button></div><div class="flex flex-wrap gap-1.5">' + (exHtml || '<span class="text-xs text-gray-300">Nenhuma</span>') + '</div></div>' +
+        '<div><div class="flex items-center justify-between mb-1"><span class="text-xs font-medium text-gray-500">Palavras</span><button onclick="adicionarKW(\'' + tipo.id + '\',\'palavra\')" class="text-xs text-emerald-600 hover:text-emerald-700 flex items-center gap-0.5">' + I.plus(12, '') + ' Add</button></div><div class="flex flex-wrap gap-1.5">' + (paHtml || '<span class="text-xs text-gray-300">Nenhuma</span>') + '</div></div>' +
+      '</div></div>';
+  }
+
+  var rawIcon = dn.rawOpen ? I.eye(16, '') : I.fileText(16, '');
+
+  return '<div class="p-8 max-w-5xl mx-auto">' +
+    '<div class="flex items-center justify-between mb-2">' +
+      '<div class="flex items-center gap-3">' +
+        '<h1 class="text-2xl font-bold text-gray-800">Dados do Negócio</h1>' +
+        '<button onclick="toggleHelp()" class="w-8 h-8 rounded-lg bg-gray-100 hover:bg-gray-200 flex items-center justify-center text-gray-500 hover:text-gray-700 transition-colors" title="Ajuda">' + I.info(18, '') + '</button>' +
+      '</div>' +
+      salvoMsg +
+    '</div>' +
+    '<p class="text-gray-500 mb-8">Gerencie os dados que o bot usa para atender seus clientes.</p>' +
+    renderHelp('dadosnegocio') +
+
+    // Dados Básicos
+    '<div class="bg-white rounded-xl border border-gray-200 p-6 mb-6">' +
+      '<h2 class="text-lg font-semibold text-gray-700 mb-5">Dados Básicos</h2>' +
+      '<div class="grid grid-cols-2 gap-4">' +
+        '<div class="col-span-2">' +
+          '<label class="block text-sm font-medium text-gray-700 mb-1.5">Nome do Negócio</label>' +
+          '<input type="text" value="' + esc(data.nome || '') + '" oninput="atualizarDN(\'nome\',this.value)" class="w-full px-3 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 text-sm" placeholder="Ex: Restaurante Casarão do Gui" />' +
+        '</div>' +
+        '<div class="col-span-2">' +
+          '<label class="block text-sm font-medium text-gray-700 mb-1.5">Endereço</label>' +
+          '<input type="text" value="' + esc(data.endereco || '') + '" oninput="atualizarDN(\'endereco\',this.value)" class="w-full px-3 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 text-sm" placeholder="Ex: Rua 15 de Novembro, 184" />' +
+        '</div>' +
+        '<div>' +
+          '<label class="block text-sm font-medium text-gray-700 mb-1.5">Telefone</label>' +
+          '<input type="text" value="' + esc(data.telefone || '') + '" oninput="atualizarDN(\'telefone\',this.value)" class="w-full px-3 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 text-sm" placeholder="(19) 3843-1778" />' +
+        '</div>' +
+        '<div>' +
+          '<label class="block text-sm font-medium text-gray-700 mb-1.5">Site</label>' +
+          '<input type="text" value="' + esc(data.site || '') + '" oninput="atualizarDN(\'site\',this.value)" class="w-full px-3 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 text-sm" placeholder="https://..." />' +
+        '</div>' +
+        '<div>' +
+          '<label class="block text-sm font-medium text-gray-700 mb-1.5">Link Pedido Online</label>' +
+          '<input type="text" value="' + esc(data.link_pedido_online || '') + '" oninput="atualizarDN(\'link_pedido_online\',this.value)" class="w-full px-3 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 text-sm" placeholder="https://..." />' +
+        '</div>' +
+        '<div>' +
+          '<label class="block text-sm font-medium text-gray-700 mb-1.5">Instagram</label>' +
+          '<input type="text" value="' + esc(redes.instagram || '') + '" oninput="atualizarRede(\'instagram\',this.value)" class="w-full px-3 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 text-sm" placeholder="@seuinsta" />' +
+        '</div>' +
+        '<div>' +
+          '<label class="block text-sm font-medium text-gray-700 mb-1.5">Facebook</label>' +
+          '<input type="text" value="' + esc(redes.facebook || '') + '" oninput="atualizarRede(\'facebook\',this.value)" class="w-full px-3 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 text-sm" placeholder="facebook.com/..." />' +
+        '</div>' +
+        '<div>' +
+          '<label class="block text-sm font-medium text-gray-700 mb-1.5">iFood</label>' +
+          '<input type="text" value="' + esc(redes.ifood || '') + '" oninput="atualizarRede(\'ifood\',this.value)" class="w-full px-3 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 text-sm" placeholder="ifood.com.br/..." />' +
+        '</div>' +
+      '</div>' +
+    '</div>' +
+
+    // Flags Operacionais
+    '<div class="bg-white rounded-xl border border-gray-200 p-6 mb-6">' +
+      '<h2 class="text-lg font-semibold text-gray-700 mb-4">Flags Operacionais</h2>' +
+      '<div class="flex gap-6">' +
+        '<label class="flex items-center gap-2 cursor-pointer"><input type="checkbox" ' + (data.delivery_ativo ? 'checked' : '') + ' onchange="atualizarDN(\'delivery_ativo\',this.checked)" class="w-4 h-4 text-emerald-600 rounded border-gray-300 focus:ring-emerald-500" /><span class="text-sm text-gray-700">Delivery Ativo</span></label>' +
+        '<label class="flex items-center gap-2 cursor-pointer"><input type="checkbox" ' + (data.retirada_ativa ? 'checked' : '') + ' onchange="atualizarDN(\'retirada_ativa\',this.checked)" class="w-4 h-4 text-emerald-600 rounded border-gray-300 focus:ring-emerald-500" /><span class="text-sm text-gray-700">Retirada Ativa</span></label>' +
+        '<label class="flex items-center gap-2 cursor-pointer"><input type="checkbox" ' + (data.consumo_local_ativo ? 'checked' : '') + ' onchange="atualizarDN(\'consumo_local_ativo\',this.checked)" class="w-4 h-4 text-emerald-600 rounded border-gray-300 focus:ring-emerald-500" /><span class="text-sm text-gray-700">Consumo Local</span></label>' +
+      '</div>' +
+      '<div class="mt-3">' +
+        '<label class="flex items-center gap-2 cursor-pointer"><input type="checkbox" ' + (politicas.reserva_mesas ? 'checked' : '') + ' onchange="atualizarPolitica(\'reserva_mesas\',this.checked)" class="w-4 h-4 text-emerald-600 rounded border-gray-300 focus:ring-emerald-500" /><span class="text-sm text-gray-700">Reserva de Mesas</span></label>' +
+      '</div>' +
+    '</div>' +
+
+    // Mensagens Padrão
+    '<div class="bg-white rounded-xl border border-gray-200 p-6 mb-6">' +
+      '<h2 class="text-lg font-semibold text-gray-700 mb-4">Mensagens Padrão</h2>' +
+      '<div class="space-y-3">' +
+        '<div><label class="block text-sm font-medium text-gray-700 mb-1.5">Saudação</label><textarea rows="2" oninput="atualizarMsg(\'saudacao\',this.value)" class="w-full px-3 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 text-sm">' + esc(msgs.saudacao || '') + '</textarea></div>' +
+        '<div><label class="block text-sm font-medium text-gray-700 mb-1.5">Não Entendi</label><textarea rows="2" oninput="atualizarMsg(\'nao_entendi\',this.value)" class="w-full px-3 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 text-sm">' + esc(msgs.nao_entendi || '') + '</textarea></div>' +
+        '<div><label class="block text-sm font-medium text-gray-700 mb-1.5">Oferecer Atendente</label><textarea rows="2" oninput="atualizarMsg(\'oferecer_atendente\',this.value)" class="w-full px-3 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 text-sm">' + esc(msgs.oferecer_atendente || '') + '</textarea></div>' +
+        '<div><label class="block text-sm font-medium text-gray-700 mb-1.5">Agradecimento</label><textarea rows="2" oninput="atualizarMsg(\'agradecimento\',this.value)" class="w-full px-3 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 text-sm">' + esc(msgs.agradecimento || '') + '</textarea></div>' +
+        '<div><label class="block text-sm font-medium text-gray-700 mb-1.5">Ausência (fora do horário)</label><textarea rows="2" oninput="atualizarMsg(\'ausencia\',this.value)" class="w-full px-3 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 text-sm">' + esc(msgs.ausencia || '') + '</textarea></div>' +
+      '</div>' +
+    '</div>' +
+
+    // Palavras‑chave por Intenção
+    '<div class="bg-white rounded-xl border border-gray-200 p-6 mb-6">' +
+      '<h2 class="text-lg font-semibold text-gray-700 mb-4">Palavras‑chave por Intenção</h2>' +
+      '<p class="text-xs text-gray-400 mb-4">Cada intenção tem frases exatas (match 100%), expressões (match parcial) e palavras (match baixo). Prioridade maior vence em caso de empate.</p>' +
+      '<div class="grid grid-cols-2 gap-4">' + pkHtml + '</div>' +
+    '</div>' +
+
+    // Botão Salvar
+    '<div class="flex items-center gap-3 mb-8">' +
+      '<button onclick="salvarDadosNegocio()" ' + (dn.saving ? 'disabled' : '') + ' class="flex items-center gap-2 px-6 py-3 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 transition-colors font-medium text-sm disabled:opacity-50 shadow-lg shadow-emerald-200">' +
+        I.save(18, '') + ' ' + btnLabel +
+      '</button>' +
+    '</div>' +
+
+    // JSON Avançado
+    '<div class="bg-white rounded-xl border border-gray-200 overflow-hidden mb-8">' +
+      '<button onclick="toggleRawJson()" class="w-full flex items-center justify-between px-6 py-4 text-left hover:bg-gray-50 transition-colors">' +
+        '<div class="flex items-center gap-2"><span class="text-sm font-semibold text-gray-700">Visualização Avançada</span><span class="text-xs text-gray-400 font-normal">(JSON completo)</span></div>' +
+        '<span class="text-gray-400">' + rawIcon + '</span>' +
+      '</button>' +
+      (dn.rawOpen ? '<div class="border-t border-gray-200 p-4">' +
+        (dn.rawEditando
+          ? '<textarea id="raw-json-textarea" rows="20" class="w-full px-3 py-2.5 border border-gray-300 rounded-lg font-mono text-xs focus:ring-2 focus:ring-emerald-500 mb-3">' + esc(dn.rawJson) + '</textarea>' +
+            '<div class="flex gap-2">' +
+              '<button onclick="aplicarRawJson()" class="flex items-center gap-1.5 px-4 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 text-sm font-medium">' + I.checkCircle2(14, '') + ' Aplicar</button>' +
+              '<button onclick="state.dadosNegocio.rawEditando=false;render()" class="px-4 py-2 text-gray-500 border border-gray-300 rounded-lg hover:bg-gray-50 text-sm">Cancelar</button>' +
+            '</div>'
+          : '<div class="flex justify-end mb-2"><button onclick="entrarEdicaoRaw()" class="flex items-center gap-1 px-3 py-1.5 text-xs text-gray-500 border border-gray-300 rounded-lg hover:bg-gray-50">' + I.fileText(12, '') + ' Editar manualmente</button></div>' +
+            '<pre class="bg-gray-50 rounded-lg p-4 font-mono text-xs text-gray-700 overflow-x-auto max-h-96 overflow-y-auto">' + esc(dn.rawJson) + '</pre>'
+        ) +
+      '</div>' : '') +
+    '</div>';
+}
+
+function atualizarDN(campo, valor) {
+  if (state.dadosNegocio.data) state.dadosNegocio.data[campo] = valor;
+}
+
+function atualizarRede(rede, valor) {
+  if (!state.dadosNegocio.data) return;
+  if (!state.dadosNegocio.data.redes_sociais) state.dadosNegocio.data.redes_sociais = {};
+  state.dadosNegocio.data.redes_sociais[rede] = valor;
+}
+
+function atualizarPolitica(campo, valor) {
+  if (!state.dadosNegocio.data) return;
+  if (!state.dadosNegocio.data.politicas) state.dadosNegocio.data.politicas = {};
+  state.dadosNegocio.data.politicas[campo] = valor;
+}
+
+function atualizarMsg(campo, valor) {
+  if (!state.dadosNegocio.data) return;
+  if (!state.dadosNegocio.data.mensagens_padrao) state.dadosNegocio.data.mensagens_padrao = {};
+  state.dadosNegocio.data.mensagens_padrao[campo] = valor;
+}
+
+function atualizarPK(tipo, campo, valor) {
+  if (!state.dadosNegocio.data) return;
+  if (!state.dadosNegocio.data.palavras_chave) state.dadosNegocio.data.palavras_chave = {};
+  if (!state.dadosNegocio.data.palavras_chave[tipo]) state.dadosNegocio.data.palavras_chave[tipo] = { prioridade: 50, frase_exata: [], expressao: [], palavra: [] };
+  state.dadosNegocio.data.palavras_chave[tipo][campo] = valor;
+}
+
+window.adicionarKW = function(tipo, campo) {
+  var valor = prompt('Adicionar termo para ' + campo.replace('_', ' ') + ' em ' + tipo + ':');
+  if (!valor || !valor.trim()) return;
+  if (!state.dadosNegocio.data) return;
+  if (!state.dadosNegocio.data.palavras_chave) state.dadosNegocio.data.palavras_chave = {};
+  if (!state.dadosNegocio.data.palavras_chave[tipo]) state.dadosNegocio.data.palavras_chave[tipo] = { prioridade: 50, frase_exata: [], expressao: [], palavra: [] };
+  state.dadosNegocio.data.palavras_chave[tipo][campo].push(valor.trim());
+  render();
+  bindDadosNegocio();
+};
+
+window.removerKW = function(tipo, campo, idx) {
+  if (!state.dadosNegocio.data) return;
+  state.dadosNegocio.data.palavras_chave[tipo][campo].splice(idx, 1);
+  render();
+  bindDadosNegocio();
+};
+
+window.toggleRawJson = function() {
+  state.dadosNegocio.rawOpen = !state.dadosNegocio.rawOpen;
+  state.dadosNegocio.rawEditando = false;
+  if (state.dadosNegocio.rawOpen && state.dadosNegocio.data) {
+    state.dadosNegocio.rawJson = JSON.stringify(state.dadosNegocio.data, null, 2);
+  }
+  render();
+  bindDadosNegocio();
+};
+
+window.entrarEdicaoRaw = function() {
+  state.dadosNegocio.rawEditando = true;
+  render();
+  bindDadosNegocio();
+  var ta = document.getElementById('raw-json-textarea');
+  if (ta) ta.focus();
+};
+
+window.aplicarRawJson = function() {
+  var ta = document.getElementById('raw-json-textarea');
+  if (!ta) return;
+  try {
+    var parsed = JSON.parse(ta.value);
+    if (!parsed || typeof parsed !== 'object') throw new Error('JSON deve ser um objeto');
+    state.dadosNegocio.data = parsed;
+    state.dadosNegocio.rawJson = ta.value;
+    state.dadosNegocio.rawEditando = false;
+    render();
+    bindDadosNegocio();
+  } catch(e) {
+    alert('JSON inválido: ' + e.message);
+  }
+};
+
+window.salvarDadosNegocio = async function() {
+  var dn = state.dadosNegocio;
+  if (!dn.data) return;
+  dn.saving = true;
+  render();
+  try {
+    var result = await wabot.dadosNegocioWrite(dn.data);
+    if (result.success) {
+      dn.saved = true;
+      dn.rawJson = JSON.stringify(dn.data, null, 2);
+    } else {
+      alert('Erro ao salvar: ' + (result.error || 'desconhecido'));
+    }
+  } catch(e) {
+    alert('Erro de rede: ' + e.message);
+  }
+  dn.saving = false;
+  render();
+  bindDadosNegocio();
+  if (dn.saved) setTimeout(function() { dn.saved = false; render(); }, 3000);
+};
+
+function bindDadosNegocio() {
+  if (state.dadosNegocio.data === null) {
+    wabot.dadosNegocioRead().then(function(r) {
+      if (r.success && r.data) {
+        state.dadosNegocio.data = r.data;
+        state.dadosNegocio.rawJson = JSON.stringify(r.data, null, 2);
+        render();
+        bindDadosNegocio();
+      }
+    });
+  }
+}
 
 // ─── DASHBOARD ─────────────────────────────────────
 function renderDashboard() {

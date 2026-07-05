@@ -129,6 +129,13 @@ function validarConfigSchema(filename, data) {
     if (!data.palavras_chave || typeof data.palavras_chave !== 'object') {
       throw new Error('dados_negocio.json: campo obrigatório "palavras_chave" ausente ou inválido');
     }
+    var TIPOS = ['atendente','horario','pedido','retirada','delivery','reserva','endereco','telefone'];
+    for (var t = 0; t < TIPOS.length; t++) {
+      var tipo = data.palavras_chave[TIPOS[t]];
+      if (!tipo || typeof tipo.prioridade !== 'number' || !Array.isArray(tipo.frase_exata) || !Array.isArray(tipo.expressao) || !Array.isArray(tipo.palavra)) {
+        throw new Error('dados_negocio.json: tipo "' + TIPOS[t] + '" em palavras_chave inválido — deve conter prioridade (number), frase_exata, expressao e palavra (arrays)');
+      }
+    }
   }
   if (filename === 'credentials.json') {
     if (!data || !data.evolution || !data.evolution.api_key) {
@@ -477,6 +484,50 @@ app.post('/api/config/:filename', (req, res) => {
     res.json({ success: true });
   } catch (error) {
     console.error('[config] ERRO ao salvar ' + req.params.filename + ': ' + error.message);
+    res.json({ success: false, error: error.message });
+  }
+});
+
+// ─── Dados do Negócio ─────────────────────────────
+
+app.get('/api/dados-negocio', (req, res) => {
+  var dados = readJson('dados_negocio.json');
+  if (!dados) {
+    dados = {
+      nome: '',
+      endereco: '',
+      telefone: '',
+      link_pedido_online: '',
+      site: '',
+      redes_sociais: { instagram: '', facebook: '', ifood: '' },
+      delivery_ativo: false,
+      retirada_ativa: true,
+      consumo_local_ativo: true,
+      politicas: { reserva_mesas: false, encomenda_almoco_desde: '08:00', encomenda_jantar_desde: '17:00' },
+      horarios: {},
+      mensagens_padrao: { saudacao: '', nao_entendi: '', oferecer_atendente: '', agradecimento: '', ausencia: '' },
+      palavras_chave: {
+        atendente: { prioridade: 100, frase_exata: [], expressao: [], palavra: [] },
+        horario: { prioridade: 90, frase_exata: [], expressao: [], palavra: [] },
+        pedido: { prioridade: 75, frase_exata: [], expressao: [], palavra: [] },
+        retirada: { prioridade: 70, frase_exata: [], expressao: [], palavra: [] },
+        delivery: { prioridade: 85, frase_exata: [], expressao: [], palavra: [] },
+        reserva: { prioridade: 50, frase_exata: [], expressao: [], palavra: [] },
+        endereco: { prioridade: 40, frase_exata: [], expressao: [], palavra: [] },
+        telefone: { prioridade: 30, frase_exata: [], expressao: [], palavra: [] }
+      }
+    };
+  }
+  res.json({ success: true, data: dados });
+});
+
+app.post('/api/dados-negocio', (req, res) => {
+  try {
+    validarConfigSchema('dados_negocio.json', req.body);
+    writeJson('dados_negocio.json', req.body);
+    res.json({ success: true });
+  } catch (error) {
+    console.error('[config] ERRO ao salvar dados_negocio.json: ' + error.message);
     res.json({ success: false, error: error.message });
   }
 });
