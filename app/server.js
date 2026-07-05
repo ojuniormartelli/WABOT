@@ -835,28 +835,22 @@ app.post('/api/restart', async (req, res) => {
   res.json({ success: true, message: 'Servidor reinicializado' });
 
   setTimeout(function() {
-    var restartFile = path.join(__dirname, '_restart_tmp.js');
     var serverEntry = path.join(__dirname, 'server.js');
     var isWin = process.platform === 'win32';
-    var startCmd;
-    if (isWin) {
-      startCmd = 'powershell -Command "Start-Process -WindowStyle Hidden -FilePath node -ArgumentList \'' + serverEntry.replace(/\\/g, '\\\\') + '\'"';
-    } else {
-      startCmd = 'node ' + serverEntry;
-    }
-    fs.writeFileSync(restartFile,
-      'var exec=require("child_process").exec;\n' +
-      'setTimeout(function(){\n' +
-      '  exec(' + JSON.stringify(startCmd) + ');\n' +
-      '},2000);\n'
-    );
 
-    var child = spawn(process.argv[0], [restartFile], {
-      cwd: process.cwd(),
-      detached: true,
-      stdio: 'ignore',
-    });
-    child.unref();
+    if (isWin) {
+      var psArgs = '-Command Start-Process -WindowStyle Hidden -FilePath node -ArgumentList \'' + serverEntry.replace(/\\/g, '\\\\') + '\'';
+      spawn('powershell', ['-Command', psArgs], {
+        detached: true,
+        stdio: 'ignore',
+      }).unref();
+    } else {
+      spawn(process.argv[0], [serverEntry], {
+        cwd: process.cwd(),
+        detached: true,
+        stdio: 'ignore',
+      }).unref();
+    }
 
     setTimeout(function() {
       process.exit(0);
