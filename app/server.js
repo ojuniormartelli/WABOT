@@ -98,8 +98,12 @@ if (!fs.existsSync(MSG_DIR)) fs.mkdirSync(MSG_DIR, { recursive: true });
 
 function readJson(file) {
   try {
-    return JSON.parse(fs.readFileSync(path.join(DATA_DIR, file), 'utf-8'));
-  } catch (e) { return null; }
+    var content = fs.readFileSync(path.join(DATA_DIR, file), 'utf-8');
+    return JSON.parse(content);
+  } catch (e) {
+    console.error('[readJson] ERRO ao ler ' + file + ': ' + e.message);
+    return null;
+  }
 }
 
 function writeJson(file, data) {
@@ -1455,9 +1459,12 @@ app.post('/webhook/evolution', async (req, res) => {
     var respostaOperacional = null;
     if (!respostaIA) {
       var dadosNegocio = readJson('dados_negocio.json') || {};
+      console.log('[webhook_debug] dadosNegocio carregado: nome=' + (dadosNegocio.nome||'—') + ', keys=' + Object.keys(dadosNegocio).join(','));
       var intencao = detectarIntencaoOperacional(mensagem, dadosNegocio);
+      console.log('[webhook_debug] intencao detectada: ' + (intencao || '(null)'));
       if (intencao) {
         respostaOperacional = responderIntencaoOperacional(intencao, dadosNegocio, config, cozinhaFuncionando, proxAbertura);
+        console.log('[webhook_debug] respostaOperacional: "' + (respostaOperacional || '(null)') + '"');
       }
     }
     // Se encontrou intenção operacional, usa como resposta
