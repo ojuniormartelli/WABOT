@@ -1,6 +1,6 @@
 {
   "nome_negocio": "Restaurante Casarão do Gui",
-  "endereco": "R 15 DE NOVEMBRO, 184",
+  "endereco": "Rua 15 de Novembro, 184 - Itapira/SP",
   "telefone": "1938411778",
   "site": "",
   "redes_sociais": {
@@ -19,62 +19,101 @@
     "segunda": {
       "fechado": false,
       "cozinha": [
-        { "abertura": "11:00", "fechamento": "23:00" }
+        {
+          "abertura": "11:00",
+          "fechamento": "23:00"
+        }
       ],
       "agendamento": [
-        { "abertura": "08:00", "fechamento": "23:00" }
+        {
+          "abertura": "08:00",
+          "fechamento": "23:00"
+        }
       ]
     },
     "terca": {
       "fechado": false,
       "cozinha": [
-        { "abertura": "11:00", "fechamento": "23:00" }
+        {
+          "abertura": "11:00",
+          "fechamento": "23:00"
+        }
       ],
       "agendamento": [
-        { "abertura": "08:00", "fechamento": "23:00" }
+        {
+          "abertura": "08:00",
+          "fechamento": "23:00"
+        }
       ]
     },
     "quarta": {
       "fechado": true,
       "cozinha": [
-        { "abertura": null, "fechamento": null }
+        {
+          "abertura": null,
+          "fechamento": null
+        }
       ],
       "agendamento": []
     },
     "quinta": {
       "fechado": false,
       "cozinha": [
-        { "abertura": "11:00", "fechamento": "23:00" }
+        {
+          "abertura": "11:00",
+          "fechamento": "23:00"
+        }
       ],
       "agendamento": [
-        { "abertura": "08:00", "fechamento": "23:00" }
+        {
+          "abertura": "08:00",
+          "fechamento": "23:00"
+        }
       ]
     },
     "sexta": {
       "fechado": false,
       "cozinha": [
-        { "abertura": "11:00", "fechamento": "23:00" }
+        {
+          "abertura": "11:00",
+          "fechamento": "23:00"
+        }
       ],
       "agendamento": [
-        { "abertura": "08:00", "fechamento": "23:00" }
+        {
+          "abertura": "08:00",
+          "fechamento": "23:00"
+        }
       ]
     },
     "sabado": {
       "fechado": false,
       "cozinha": [
-        { "abertura": "11:00", "fechamento": "23:00" }
+        {
+          "abertura": "11:00",
+          "fechamento": "23:00"
+        }
       ],
       "agendamento": [
-        { "abertura": "08:00", "fechamento": "23:00" }
+        {
+          "abertura": "08:00",
+          "fechamento": "23:00"
+        }
       ]
     },
     "domingo": {
       "fechado": false,
       "cozinha": [
-        { "abertura": "11:00", "fechamento": "22:00" }
+        {
+          "abertura": "11:00",
+          "fechamento": "22:00"
+        }
       ],
       "agendamento": [
-        { "abertura": "08:00", "fechamento": "22:00" }
+        {
+          "abertura": "08:00",
+          "fechamento": "22:00"
+        }
       ]
     }
   },
@@ -101,14 +140,130 @@
     "rodape_pedido_link": "📲 Faça seu pedido pelo link: {{link_pedido_online}}"
   },
   "deteccao": {
-    "saudacao": ["oi", "olá", "ola", "bom dia", "boa tarde", "boa noite", "eae", "iae", "hello", "hi", "hey", "fala", "salve", "e aí", "e ai"],
-    "agradecimento": ["obrigado", "obrigada", "valeu", "brigado", "brigada", "agradeço", "agradeco", "thanks", "thank", "tks", "mt obg", "muito obrigado", "muito obrigada", "obg", "agradecido", "agradecida"],
-    "funcionamento": ["funcionamento", "aberto", "fechado", "abrir", "fecha", "atende", "abre", "até que horas", "que horas"],
-    "pratos": ["prato", "pratos", "almoço", "almoco", "jantar", "encomenda", "encomendas", "pedido"],
-    "pedido": ["quero pedir", "fazer um pedido", "queria pedir", "gostaria de pedir", "quero fazer", "quero comprar", "pedido", "encomenda", "encomendar", "pedir agora", "pode anotar", "vou querer", "eu quero"],
-    "incerteza": ["não sei", "nao sei", "não tenho essa informaç", "nao tenho essa informaç", "não tenho certeza", "nao tenho certeza", "vou verificar com um atendente", "vou verificar com o atendente", "não encontrei", "nao encontrei", "infelizmente não", "infelizmente nao", "não consigo informar", "nao consigo informar", "atendente humano", "vou passar para", "não posso informar", "nao posso informar"],
-    "atendente_humano": ["quero falar com atendente", "quero falar com humano", "falar com atendente", "falar com humano", "falar com uma pessoa", "falar com pessoa", "me chama alguém", "me chama alguem", "chama atendente", "chama humano", "suporte humano", "atendente por favor", "quero atendente", "preciso de atendente", "preciso falar com alguém", "preciso falar com alguem", "falar com responsavel", "falar com responsável", "atendimento humano"],
-    "prefixos_saudacao_para_remover": ["olá", "olá,", "oi,", "oi ", "bom dia,", "bom dia!", "boa tarde,", "boa tarde!", "boa noite,", "boa noite!"]
+    "saudacao": [
+      "oi",
+      "olá",
+      "ola",
+      "bom dia",
+      "boa tarde",
+      "boa noite",
+      "eae",
+      "iae",
+      "hello",
+      "hi",
+      "hey",
+      "fala",
+      "salve",
+      "e aí",
+      "e ai"
+    ],
+    "agradecimento": [
+      "obrigado",
+      "obrigada",
+      "valeu",
+      "brigado",
+      "brigada",
+      "agradeço",
+      "agradeco",
+      "thanks",
+      "thank",
+      "tks",
+      "mt obg",
+      "muito obrigado",
+      "muito obrigada",
+      "obg",
+      "agradecido",
+      "agradecida"
+    ],
+    "funcionamento": [
+      "funcionamento",
+      "aberto",
+      "fechado",
+      "abrir",
+      "fecha",
+      "atende",
+      "abre",
+      "até que horas",
+      "que horas"
+    ],
+    "pratos": [
+      "prato",
+      "pratos",
+      "almoço",
+      "almoco",
+      "jantar",
+      "encomenda",
+      "encomendas",
+      "pedido"
+    ],
+    "pedido": [
+      "quero pedir",
+      "fazer um pedido",
+      "queria pedir",
+      "gostaria de pedir",
+      "quero fazer",
+      "quero comprar",
+      "pedido",
+      "encomenda",
+      "encomendar",
+      "pedir agora",
+      "pode anotar",
+      "vou querer",
+      "eu quero"
+    ],
+    "incerteza": [
+      "não sei",
+      "nao sei",
+      "não tenho essa informaç",
+      "nao tenho essa informaç",
+      "não tenho certeza",
+      "nao tenho certeza",
+      "vou verificar com um atendente",
+      "vou verificar com o atendente",
+      "não encontrei",
+      "nao encontrei",
+      "infelizmente não",
+      "infelizmente nao",
+      "não consigo informar",
+      "nao consigo informar",
+      "atendente humano",
+      "vou passar para",
+      "não posso informar",
+      "nao posso informar"
+    ],
+    "atendente_humano": [
+      "quero falar com atendente",
+      "quero falar com humano",
+      "falar com atendente",
+      "falar com humano",
+      "falar com uma pessoa",
+      "falar com pessoa",
+      "me chama alguém",
+      "me chama alguem",
+      "chama atendente",
+      "chama humano",
+      "suporte humano",
+      "atendente por favor",
+      "quero atendente",
+      "preciso de atendente",
+      "preciso falar com alguém",
+      "preciso falar com alguem",
+      "falar com responsavel",
+      "falar com responsável",
+      "atendimento humano"
+    ],
+    "prefixos_saudacao_para_remover": [
+      "olá",
+      "olá,",
+      "oi,",
+      "oi ",
+      "bom dia,",
+      "bom dia!",
+      "boa tarde,",
+      "boa tarde!",
+      "boa noite,",
+      "boa noite!"
+    ]
   },
   "feriados_especiais": [
     {

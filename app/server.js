@@ -549,6 +549,12 @@ app.post('/api/dados-negocio', (req, res) => {
   try {
     validarConfigSchema('dados_negocio.json', req.body);
     writeJson('dados_negocio.json', req.body);
+    // Sync endereco to config.json so it stays the canonical source
+    if (req.body.endereco) {
+      var config = readJson('config.json') || {};
+      config.endereco = req.body.endereco;
+      writeJson('config.json', config);
+    }
     res.json({ success: true });
   } catch (error) {
     console.error('[config] ERRO ao salvar dados_negocio.json: ' + error.message);
@@ -1849,7 +1855,7 @@ function responderIntencaoOperacional(intencao, dadosNegocio, config, cozinhaFun
       break;
     
     case 'endereco':
-      var end = dadosNegocio.endereco || config.endereco || '';
+      var end = config.endereco || dadosNegocio.endereco || '';
       resposta = end ? end : null;
       break;
     

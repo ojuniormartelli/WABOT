@@ -261,7 +261,7 @@ function responderIntencaoOperacional(intencao, dadosNegocio, config, cozinhaFun
       }
       resposta = montarRespostaHorario(dadosNegocio, config, cozinhaFuncionando, proxApertura);
       break;
-    case 'endereco': resposta = dadosNegocio.endereco || config.endereco || ''; break;
+    case 'endereco': resposta = config.endereco || dadosNegocio.endereco || ''; break;
     case 'telefone': resposta = dadosNegocio.telefone || config.telefone || ''; break;
     case 'pedido':
       if (dadosNegocio.retirada_ativa || dadosNegocio.delivery_ativo) {

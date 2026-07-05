@@ -263,7 +263,7 @@ function responderIntencaoOperacional(intencao, dadosNegocio, config, cozinhaFun
       }
       resposta = montarRespostaHorario(dadosNegocio, config, cozinhaFuncionando, proxApertura);
       break;
-    case 'endereco': resposta = dadosNegocio.endereco || config.endereco || ''; break;
+    case 'endereco': resposta = config.endereco || dadosNegocio.endereco || ''; break;
     case 'telefone': resposta = formatarTelefone(dadosNegocio.telefone || config.telefone || ''); break;
     case 'pedido':
       if (dadosNegocio.retirada_ativa || dadosNegocio.delivery_ativo) { resposta = link; }
@@ -356,6 +356,8 @@ var testesIntencao = [
   { frase: 'atendente humano', esperado: 'atendente' },
 
   { frase: 'qual o horário de funcionamento?', esperado: 'horario' },
+  { frase: 'qual é o horário de funcionamento?', esperado: 'horario' },
+  { frase: 'horário de funcionamento', esperado: 'horario' },
   { frase: 'que horas vocês abrem?', esperado: 'horario' },
   { frase: 'estão funcionando hoje?', esperado: 'horario' },
   { frase: 'vocês estão abertos agora?', esperado: 'horario' },
@@ -456,6 +458,8 @@ assert('retirada: menciona "Retirada" na resposta', retiradaResp && retiradaResp
 
 var enderecoResp = responderIntencaoOperacional('endereco', dadosNegocio, config, false, null);
 assert('endereco: resposta não nula', enderecoResp !== null && enderecoResp !== '');
+assert('endereco: contém endereço completo', enderecoResp && enderecoResp.indexOf('Rua 15 de Novembro') >= 0);
+assert('endereco: contém cidade/estado', enderecoResp && enderecoResp.indexOf('Itapira/SP') >= 0);
 
 var telefoneResp = responderIntencaoOperacional('telefone', dadosNegocio, config, false, null);
 assert('telefone: resposta não nula', telefoneResp !== null && telefoneResp !== '');
