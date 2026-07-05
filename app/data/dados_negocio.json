@@ -18,13 +18,45 @@
     "encomenda_jantar_desde": "17:00"
   },
   "horarios": {
-    "segunda": { "abertura": "11:00", "fechamento": "23:00", "agendamento_abertura": "08:00", "agendamento_fechamento": "23:00" },
-    "terca": { "abertura": "11:00", "fechamento": "23:00", "agendamento_abertura": "08:00", "agendamento_fechamento": "23:00" },
-    "quarta": { "fechado": true },
-    "quinta": { "abertura": "11:00", "fechamento": "23:00", "agendamento_abertura": "08:00", "agendamento_fechamento": "23:00" },
-    "sexta": { "abertura": "11:00", "fechamento": "23:00", "agendamento_abertura": "08:00", "agendamento_fechamento": "23:00" },
-    "sabado": { "abertura": "11:00", "fechamento": "23:00", "agendamento_abertura": "08:00", "agendamento_fechamento": "23:00" },
-    "domingo": { "abertura": "11:00", "fechamento": "22:00", "agendamento_abertura": "08:00", "agendamento_fechamento": "22:00" }
+    "segunda": {
+      "abertura": "11:00",
+      "fechamento": "23:00",
+      "agendamento_abertura": "08:00",
+      "agendamento_fechamento": "23:00"
+    },
+    "terca": {
+      "abertura": "11:00",
+      "fechamento": "23:00",
+      "agendamento_abertura": "08:00",
+      "agendamento_fechamento": "23:00"
+    },
+    "quarta": {
+      "fechado": true
+    },
+    "quinta": {
+      "abertura": "11:00",
+      "fechamento": "23:00",
+      "agendamento_abertura": "08:00",
+      "agendamento_fechamento": "23:00"
+    },
+    "sexta": {
+      "abertura": "11:00",
+      "fechamento": "23:00",
+      "agendamento_abertura": "08:00",
+      "agendamento_fechamento": "23:00"
+    },
+    "sabado": {
+      "abertura": "11:00",
+      "fechamento": "23:00",
+      "agendamento_abertura": "08:00",
+      "agendamento_fechamento": "23:00"
+    },
+    "domingo": {
+      "abertura": "11:00",
+      "fechamento": "22:00",
+      "agendamento_abertura": "08:00",
+      "agendamento_fechamento": "22:00"
+    }
   },
   "mensagens_padrao": {
     "saudacao": "Olá! Bem-vindo ao {{nome}}! Faça seu pedido pelo link: {{link_pedido_online}}. Como podemos ajudar?",
@@ -36,51 +68,288 @@
   "palavras_chave": {
     "atendente": {
       "prioridade": 100,
-      "frase_exata": ["quero falar com atendente", "quero falar com humano", "falar com atendente", "falar com humano", "falar com uma pessoa", "falar com pessoa", "preciso de atendente", "preciso falar com alguem", "preciso falar com alguem", "falar com responsavel", "falar com responsavel", "atendimento humano", "atendente por favor", "suporte humano", "chamar atendente"],
-      "expressao": ["atendente humano", "pessoa", "alguem", "responsavel", "suporte humano"],
-      "palavra": ["atendente", "humano", "atendimento", "ajuda", "suporte"]
+      "frase_exata": [
+        "quero falar com atendente",
+        "quero falar com humano",
+        "falar com atendente",
+        "falar com humano",
+        "falar com uma pessoa",
+        "falar com pessoa",
+        "preciso de atendente",
+        "preciso falar com alguem",
+        "preciso falar com alguem",
+        "falar com responsavel",
+        "falar com responsavel",
+        "atendimento humano",
+        "atendente por favor",
+        "suporte humano",
+        "chamar atendente"
+      ],
+      "expressao": [
+        "atendente humano",
+        "pessoa",
+        "alguem",
+        "responsavel",
+        "suporte humano"
+      ],
+      "palavra": [
+        "atendente",
+        "humano",
+        "atendimento",
+        "ajuda",
+        "suporte"
+      ]
     },
     "horario": {
       "prioridade": 90,
-      "frase_exata": ["que horas abre", "que horas fecha", "qual horario", "quando abre", "quando fecha", "quando fecha", "ate que horas", "que horas funcionamento", "estao abertos", "estao funcionando", "voces estao abertos"],
-      "expressao": ["horario", "horas", "aberto", "aberta", "fechado", "fechada", "funciona", "funcionamento", "abrir", "fecha", "delivery funcionando"],
-      "palavra": ["horas", "hora", "abre", "fecha", "aberta", "aberto", "fechada", "fechado"]
+      "frase_exata": [
+        "que horas abre",
+        "que horas fecha",
+        "qual horario",
+        "quando abre",
+        "quando fecha",
+        "quando fecha",
+        "ate que horas",
+        "que horas funcionamento",
+        "estao abertos",
+        "estao funcionando",
+        "voces estao abertos"
+      ],
+      "expressao": [
+        "horario",
+        "horas",
+        "aberto",
+        "aberta",
+        "fechado",
+        "fechada",
+        "funciona",
+        "funcionamento",
+        "abrir",
+        "fecha",
+        "delivery funcionando"
+      ],
+      "palavra": [
+        "horas",
+        "hora",
+        "abre",
+        "fecha",
+        "aberta",
+        "aberto",
+        "fechada",
+        "fechado"
+      ]
     },
     "pedido": {
       "prioridade": 75,
-      "frase_exata": ["quero pedir", "queria pedir", "gostaria de pedir", "fazer um pedido", "quero fazer pedido", "quero encomendar", "quero encomenda"],
-      "expressao": ["pedido", "encomenda", "encomendar", "fazer pedido", "comprar", "comida", "lanche", "cardapio", "pratos", "quero lanche"],
-      "palavra": ["pedir", "encomenda", "comida", "pratos"]
+      "frase_exata": [
+        "quero pedir",
+        "queria pedir",
+        "gostaria de pedir",
+        "fazer um pedido",
+        "quero fazer pedido",
+        "quero encomendar",
+        "quero encomenda"
+      ],
+      "expressao": [
+        "pedido",
+        "encomenda",
+        "encomendar",
+        "fazer pedido",
+        "comprar",
+        "comida",
+        "lanche",
+        "cardapio",
+        "pratos",
+        "quero lanche"
+      ],
+      "palavra": [
+        "pedir",
+        "encomenda",
+        "comida",
+        "pratos"
+      ]
     },
     "retirada": {
       "prioridade": 70,
-      "frase_exata": ["tem retirada", "faz retirada", "posso retirar", "retirada no local", "retirada disponivel", "retirada disponivel"],
-      "expressao": ["retirada", "retirar", "buscar", "busca", "levar", "pegar no local", "pegar la", "retirada disponivel"],
-      "palavra": ["retirada", "buscar", "levar"]
+      "frase_exata": [
+        "tem retirada",
+        "faz retirada",
+        "posso retirar",
+        "retirada no local",
+        "retirada disponivel",
+        "retirada disponivel"
+      ],
+      "expressao": [
+        "retirada",
+        "retirar",
+        "buscar",
+        "busca",
+        "levar",
+        "pegar no local",
+        "pegar la",
+        "retirada disponivel"
+      ],
+      "palavra": [
+        "retirada",
+        "buscar",
+        "levar"
+      ]
     },
     "delivery": {
       "prioridade": 85,
-      "frase_exata": ["tem delivery", "faz delivery", "voces entregam", "da para entregar", "entrega em casa", "delivery disponivel", "pedir em casa", "da para pedir em casa", "voces entregam em casa", "receber em casa", "tem entrega em domicilio", "entrega em domicilio", "pedir para casa", "tem entrega", "faz entrega", "leva em casa", "entrega em domicilio"],
-      "expressao": ["delivery", "entrega", "domicilio", "tele entrega", "ifood"],
-      "palavra": ["entrega", "domicilio", "ifood", "leva"]
+      "frase_exata": [
+        "tem delivery",
+        "faz delivery",
+        "voces entregam",
+        "da para entregar",
+        "entrega em casa",
+        "delivery disponivel",
+        "pedir em casa",
+        "da para pedir em casa",
+        "voces entregam em casa",
+        "receber em casa",
+        "tem entrega em domicilio",
+        "entrega em domicilio",
+        "pedir para casa",
+        "tem entrega",
+        "faz entrega",
+        "leva em casa",
+        "entrega em domicilio"
+      ],
+      "expressao": [
+        "delivery",
+        "entrega",
+        "domicilio",
+        "tele entrega",
+        "ifood"
+      ],
+      "palavra": [
+        "entrega",
+        "domicilio",
+        "ifood",
+        "leva"
+      ]
     },
     "reserva": {
       "prioridade": 50,
-      "frase_exata": ["fazer reserva", "quero reservar", "reservar mesa", "reserva de mesa", "marcar mesa", "marcar horario", "preciso de reserva", "gostaria de reservar", "pode reservar", "reservar mesa para hoje"],
-      "expressao": ["reserva", "reservar", "agendar mesa", "booking", "reserve", "marcar mesa"],
-      "palavra": ["reserva", "reservar"]
+      "frase_exata": [
+        "fazer reserva",
+        "quero reservar",
+        "reservar mesa",
+        "reserva de mesa",
+        "marcar mesa",
+        "marcar horario",
+        "preciso de reserva",
+        "gostaria de reservar",
+        "pode reservar",
+        "reservar mesa para hoje"
+      ],
+      "expressao": [
+        "reserva",
+        "reservar",
+        "agendar mesa",
+        "booking",
+        "reserve",
+        "marcar mesa"
+      ],
+      "palavra": [
+        "reserva",
+        "reservar"
+      ]
     },
     "endereco": {
       "prioridade": 40,
-      "frase_exata": ["onde fica", "qual o endereco", "qual e o endereco", "qual endereco", "aonde fica", "como chegar", "endereco do local", "local"],
-      "expressao": ["endereco", "onde fica", "localizacao", "como chegar", "aonde fica", "local", "onde voces ficam", "qual endereco"],
-      "palavra": ["endereco", "onde", "chegar", "local"]
+      "frase_exata": [
+        "onde fica",
+        "qual o endereco",
+        "qual e o endereco",
+        "qual endereco",
+        "aonde fica",
+        "como chegar",
+        "endereco do local",
+        "local"
+      ],
+      "expressao": [
+        "endereco",
+        "onde fica",
+        "localizacao",
+        "como chegar",
+        "aonde fica",
+        "local",
+        "onde voces ficam",
+        "qual endereco"
+      ],
+      "palavra": [
+        "endereco",
+        "onde",
+        "chegar",
+        "local"
+      ]
     },
-"telefone": {
+    "telefone": {
       "prioridade": 30,
-      "frase_exata": ["qual o telefone", "qual telefone", "me passa o telefone", "passa o contato", "numero para pedir"],
-      "expressao": ["telefone", "contato", "numero", "ligar", "whatsapp", "telefone para"],
-      "palavra": ["telefone", "contato", "ligar"]
+      "frase_exata": [
+        "qual o telefone",
+        "qual telefone",
+        "me passa o telefone",
+        "passa o contato",
+        "numero para pedir"
+      ],
+      "expressao": [
+        "telefone",
+        "contato",
+        "numero",
+        "ligar",
+        "whatsapp",
+        "telefone para"
+      ],
+      "palavra": [
+        "telefone",
+        "contato",
+        "ligar"
+      ]
+    }
+  },
+  "respostas_operacionais": {
+    "delivery": {
+      "texto": "",
+      "curta": "",
+      "completa": ""
+    },
+    "retirada": {
+      "texto": "",
+      "curta": "",
+      "completa": ""
+    },
+    "pedido": {
+      "texto": "",
+      "curta": "",
+      "completa": ""
+    },
+    "horario": {
+      "texto": "",
+      "curta": "",
+      "completa": ""
+    },
+    "endereco": {
+      "texto": "",
+      "curta": "",
+      "completa": ""
+    },
+    "telefone": {
+      "texto": "",
+      "curta": "",
+      "completa": ""
+    },
+    "reserva": {
+      "texto": "",
+      "curta": "",
+      "completa": ""
+    },
+    "atendente": {
+      "texto": "",
+      "curta": "",
+      "completa": ""
     }
   }
 }

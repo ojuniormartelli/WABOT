@@ -420,6 +420,7 @@ function renderDadosNegocio() {
   for (var i = 0; i < INTENCOES.length; i++) {
     var tipo = INTENCOES[i];
     var kw = pkw[tipo.id] || { prioridade: 50, frase_exata: [], expressao: [], palavra: [] };
+    var respOp = (data.respostas_operacionais || {})[tipo.id] || {};
     var feHtml = ''; for (var f = 0; f < (kw.frase_exata || []).length; f++) { feHtml += '<span class="inline-flex items-center gap-1 px-2 py-1 bg-blue-100 text-blue-700 rounded text-xs">' + esc(kw.frase_exata[f]) + '<button onclick="removerKW(\'' + tipo.id + '\',\'frase_exata\',' + f + ')" class="text-blue-400 hover:text-blue-600">' + I.x(10, '') + '</button></span>'; }
     var exHtml = ''; for (var e = 0; e < (kw.expressao || []).length; e++) { exHtml += '<span class="inline-flex items-center gap-1 px-2 py-1 bg-purple-100 text-purple-700 rounded text-xs">' + esc(kw.expressao[e]) + '<button onclick="removerKW(\'' + tipo.id + '\',\'expressao\',' + e + ')" class="text-purple-400 hover:text-purple-600">' + I.x(10, '') + '</button></span>'; }
     var paHtml = ''; for (var p = 0; p < (kw.palavra || []).length; p++) { paHtml += '<span class="inline-flex items-center gap-1 px-2 py-1 bg-amber-100 text-amber-700 rounded text-xs">' + esc(kw.palavra[p]) + '<button onclick="removerKW(\'' + tipo.id + '\',\'palavra\',' + p + ')" class="text-amber-400 hover:text-amber-600">' + I.x(10, '') + '</button></span>'; }
@@ -434,6 +435,10 @@ function renderDadosNegocio() {
         '<div><div class="flex items-center justify-between mb-1"><span class="text-xs font-medium text-gray-500">Frases Exatas</span><button onclick="adicionarKW(\'' + tipo.id + '\',\'frase_exata\')" class="text-xs text-emerald-600 hover:text-emerald-700 flex items-center gap-0.5">' + I.plus(12, '') + ' Add</button></div><div class="flex flex-wrap gap-1.5">' + (feHtml || '<span class="text-xs text-gray-300">Nenhuma</span>') + '</div></div>' +
         '<div><div class="flex items-center justify-between mb-1"><span class="text-xs font-medium text-gray-500">Expressões</span><button onclick="adicionarKW(\'' + tipo.id + '\',\'expressao\')" class="text-xs text-emerald-600 hover:text-emerald-700 flex items-center gap-0.5">' + I.plus(12, '') + ' Add</button></div><div class="flex flex-wrap gap-1.5">' + (exHtml || '<span class="text-xs text-gray-300">Nenhuma</span>') + '</div></div>' +
         '<div><div class="flex items-center justify-between mb-1"><span class="text-xs font-medium text-gray-500">Palavras</span><button onclick="adicionarKW(\'' + tipo.id + '\',\'palavra\')" class="text-xs text-emerald-600 hover:text-emerald-700 flex items-center gap-0.5">' + I.plus(12, '') + ' Add</button></div><div class="flex flex-wrap gap-1.5">' + (paHtml || '<span class="text-xs text-gray-300">Nenhuma</span>') + '</div></div>' +
+        '<div class="mt-3 pt-3 border-t border-gray-100">' +
+          '<label class="block text-xs font-medium text-gray-500 mb-1">Resposta do bot <span class="text-gray-300 font-normal">(deixe vazio para usar a padrão)</span></label>' +
+          '<textarea rows="2" oninput="atualizarRespostaOp(\'' + tipo.id + '\',this.value)" class="w-full px-2 py-1.5 border border-gray-300 rounded text-xs focus:ring-2 focus:ring-emerald-500" placeholder="(usar resposta padrão do sistema)">' + esc(respOp.texto || '') + '</textarea>' +
+        '</div>' +
       '</div></div>';
   }
 
@@ -575,6 +580,13 @@ function atualizarPK(tipo, campo, valor) {
   if (!state.dadosNegocio.data.palavras_chave) state.dadosNegocio.data.palavras_chave = {};
   if (!state.dadosNegocio.data.palavras_chave[tipo]) state.dadosNegocio.data.palavras_chave[tipo] = { prioridade: 50, frase_exata: [], expressao: [], palavra: [] };
   state.dadosNegocio.data.palavras_chave[tipo][campo] = valor;
+}
+
+function atualizarRespostaOp(intencao, valor) {
+  if (!state.dadosNegocio.data) return;
+  if (!state.dadosNegocio.data.respostas_operacionais) state.dadosNegocio.data.respostas_operacionais = {};
+  if (!state.dadosNegocio.data.respostas_operacionais[intencao]) state.dadosNegocio.data.respostas_operacionais[intencao] = { texto: '', curta: '', completa: '' };
+  state.dadosNegocio.data.respostas_operacionais[intencao].texto = valor;
 }
 
 window.adicionarKW = function(tipo, campo) {

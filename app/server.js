@@ -515,6 +515,16 @@ app.get('/api/dados-negocio', (req, res) => {
         reserva: { prioridade: 50, frase_exata: [], expressao: [], palavra: [] },
         endereco: { prioridade: 40, frase_exata: [], expressao: [], palavra: [] },
         telefone: { prioridade: 30, frase_exata: [], expressao: [], palavra: [] }
+      },
+      respostas_operacionais: {
+        delivery: { texto: '', curta: '', completa: '' },
+        retirada: { texto: '', curta: '', completa: '' },
+        pedido: { texto: '', curta: '', completa: '' },
+        horario: { texto: '', curta: '', completa: '' },
+        endereco: { texto: '', curta: '', completa: '' },
+        telefone: { texto: '', curta: '', completa: '' },
+        reserva: { texto: '', curta: '', completa: '' },
+        atendente: { texto: '', curta: '', completa: '' }
       }
     };
   }
@@ -1677,6 +1687,12 @@ app.post('/webhook/evolution', async (req, res) => {
 // ─── Responder intenções operacionais com dados estruturados ──
 
 function responderIntencaoOperacional(intencao, dadosNegocio, config, cozinhaFuncionando, proxApertura) {
+  var respOp = (dadosNegocio.respostas_operacionais || {})[intencao];
+  if (respOp && respOp.texto && respOp.texto.trim()) {
+    console.log('[resposta_operacional] intencao: ' + intencao + ' -> "[texto configurado]"');
+    return respOp.texto.trim();
+  }
+
   var resposta = null;
   var politicas = dadosNegocio.politicas || {};
   var link = dadosNegocio.link_pedido_online || config.link_pedido_online || '';
