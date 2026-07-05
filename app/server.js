@@ -3,7 +3,7 @@ const path = require('path');
 const fs = require('fs');
 const http = require('http');
 const https = require('https');
-const { execSync } = require('child_process');
+const { execSync, spawn } = require('child_process');
 const { DockerManager } = require('./docker/manager');
 
 const PORT = process.env.PORT || 3001;
@@ -831,8 +831,17 @@ app.post('/api/conversa/:telefone/iniciar', async (req, res) => {
 // ─── Reiniciar servidor ─────────────────────────
 
 app.post('/api/restart', async (req, res) => {
-  console.log('[restart] Reinicializando servidor (soft restart)');
+  console.log('[restart] Reinicializando servidor...');
   res.json({ success: true, message: 'Servidor reinicializado' });
+  setTimeout(function() {
+    var child = spawn(process.argv[0], process.argv.slice(1), {
+      cwd: process.cwd(),
+      detached: true,
+      stdio: 'inherit',
+    });
+    child.unref();
+    process.exit(0);
+  }, 500);
 });
 
 // ─── Evolution: Listar conversas ───────────────────
@@ -1853,6 +1862,38 @@ app.post('/webhook/evolution', async (req, res) => {
 // ─── Responder intenções operacionais com dados estruturados ──
 
 function responderIntencaoOperacional(intencao, dadosNegocio, config, cozinhaFuncionando, proxApertura, mensagem) {
+  // Feriado: verificar antes do texto configurado, para mensagens sobre feriado
+  if (intencao === 'horario' && mensagem && normalizarTexto(mensagem).indexOf('feriado') >= 0) {
+    var dataDetectada = detectarDataConsulta(mensagem);
+    if (dataDetectada) {
+      var feriadoExato = responderFeriadoEspecial(dataDetectada.data, config);
+      if (feriadoExato) {
+        console.log('[resposta_operacional] intencao: horario -> feriado exato');
+        if (feriadoExato.mensagem) {
+          return substituirVariaveis(feriadoExato.mensagem, config, {
+            dataConsulta: dataDetectada.data,
+            feriadoStatus: feriadoExato.status === 'aberto' ? 'abertos' : 'fechados',
+            feriadoHorario: feriadoExato.horario || '',
+            feriadoAgendamento: feriadoExato.agendamento_inicio || '',
+          });
+        }
+        var partes = ['No dia ' + dataDetectada.data];
+        if (feriadoExato.status === 'aberto') {
+          partes.push('estaremos abertos');
+          if (feriadoExato.horario) partes.push('das ' + feriadoExato.horario.replace('-', ' às '));
+          if (feriadoExato.agendamento_inicio) partes.push('com agendamentos a partir das ' + feriadoExato.agendamento_inicio);
+        } else { partes.push('estaremos fechados'); }
+        return partes.join(' ') + '.';
+      }
+    }
+    // Sem data explícita: buscar próximo feriado configurado
+    var proxFeriado = proximoFeriado(config);
+    if (proxFeriado) {
+      console.log('[resposta_operacional] intencao: horario -> proximo feriado: ' + proxFeriado.data);
+      return montarRespostaProximoFeriado(proxFeriado, config);
+    }
+  }
+
   var respOp = (dadosNegocio.respostas_operacionais || {})[intencao];
   if (respOp && respOp.texto && respOp.texto.trim()) {
     console.log('[resposta_operacional] intencao: ' + intencao + ' -> "[texto configurado]"');
@@ -1865,7 +1906,7 @@ function responderIntencaoOperacional(intencao, dadosNegocio, config, cozinhaFun
   
   switch (intencao) {
     case 'horario':
-      // Tentar detectar data especial/feriado na mensagem
+      // Tentar detectar data especial/feriado na mensagem (também sem a palavra "feriado")
       if (mensagem) {
         var dataDetectada = detectarDataConsulta(mensagem);
         if (dataDetectada) {
@@ -1884,19 +1925,9 @@ function responderIntencaoOperacional(intencao, dadosNegocio, config, cozinhaFun
                 partes.push('estaremos abertos');
                 if (feriado.horario) partes.push('das ' + feriado.horario.replace('-', ' às '));
                 if (feriado.agendamento_inicio) partes.push('com agendamentos a partir das ' + feriado.agendamento_inicio);
-              } else {
-                partes.push('estaremos fechados');
-              }
+              } else { partes.push('estaremos fechados'); }
               resposta = partes.join(' ') + '.';
             }
-            break;
-          }
-        }
-        // Mensagem menciona "feriado" sem data explícita: buscar próximo feriado configurado
-        if (!dataDetectada && normalizarTexto(mensagem).indexOf('feriado') >= 0) {
-          var proxFeriado = proximoFeriado(config);
-          if (proxFeriado) {
-            resposta = montarRespostaProximoFeriado(proxFeriado, config);
             break;
           }
         }

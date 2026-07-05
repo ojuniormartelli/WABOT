@@ -77,9 +77,46 @@
     },
     "horario": {
       "prioridade": 90,
-      "frase_exata": [],
-      "expressao": [],
-      "palavra": ["horario","funcionamento"]
+      "frase_exata": [
+        "que horas abre",
+        "que horas fecha",
+        "qual horario",
+        "quando abre",
+        "quando fecha",
+        "ate que horas",
+        "que horas funcionamento",
+        "estao abertos",
+        "estao funcionando",
+        "voces estao abertos",
+        "vai abrir no feriado",
+        "vai funcionar no feriado",
+        "vai trabalhar no feriado"
+      ],
+      "expressao": [
+        "horario",
+        "horas",
+        "aberto",
+        "aberta",
+        "fechado",
+        "fechada",
+        "funciona",
+        "funcionamento",
+        "abrir",
+        "fecha",
+        "feriado",
+        "delivery funcionando"
+      ],
+      "palavra": [
+        "horas",
+        "hora",
+        "abre",
+        "fecha",
+        "aberta",
+        "aberto",
+        "fechada",
+        "fechado",
+        "feriado"
+      ]
     },
     "pedido": {
       "prioridade": 75,

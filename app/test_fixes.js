@@ -271,6 +271,26 @@ function montarRespostaHorario(dadosNegocio, config, cozinhaFuncionando, proxApe
 }
 
 function responderIntencaoOperacional(intencao, dadosNegocio, config, cozinhaFuncionando, proxApertura, mensagem) {
+  // Feriado: verificar antes do texto configurado
+  if (intencao === 'horario' && mensagem && normalizarTexto(mensagem).indexOf('feriado') >= 0) {
+    var dataDetectada = detectarDataConsulta(mensagem);
+    if (dataDetectada) {
+      var feriadoExato = responderFeriadoEspecial(dataDetectada.data, config);
+      if (feriadoExato) {
+        if (feriadoExato.mensagem) { return feriadoExato.mensagem; }
+        var partes = ['No dia ' + dataDetectada.data];
+        if (feriadoExato.status === 'aberto') {
+          partes.push('estaremos abertos');
+          if (feriadoExato.horario) partes.push('das ' + feriadoExato.horario.replace('-', ' às '));
+          if (feriadoExato.agendamento_inicio) partes.push('com agendamentos a partir das ' + feriadoExato.agendamento_inicio);
+        } else { partes.push('estaremos fechados'); }
+        return partes.join(' ') + '.';
+      }
+    }
+    var proxFeriado = proximoFeriado(config);
+    if (proxFeriado) { return montarRespostaProximoFeriado(proxFeriado, config); }
+  }
+
   var respOp = (dadosNegocio.respostas_operacionais || {})[intencao];
   if (respOp && respOp.texto && respOp.texto.trim()) {
     return substituirVariaveis(respOp.texto.trim(), config, { proxAbertura: proxApertura, cozinhaFuncionando: cozinhaFuncionando });
@@ -293,13 +313,6 @@ function responderIntencaoOperacional(intencao, dadosNegocio, config, cozinhaFun
               if (feriado.agendamento_inicio) partes.push('com agendamentos a partir das ' + feriado.agendamento_inicio);
             } else { partes.push('estaremos fechados'); }
             resposta = partes.join(' ') + '.';
-            break;
-          }
-        }
-        if (!dataDetectada && normalizarTexto(mensagem).indexOf('feriado') >= 0) {
-          var proxFeriado = proximoFeriado(config);
-          if (proxFeriado) {
-            resposta = montarRespostaProximoFeriado(proxFeriado, config);
             break;
           }
         }
