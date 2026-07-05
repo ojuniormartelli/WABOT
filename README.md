@@ -79,7 +79,7 @@ O script vai:
 
 ### Uso diário
 
-- `start-wabot.bat` → Inicia tudo e abre o navegador
+- `start-wabot.bat` → Inicia tudo e abre o navegador. A janela do CMD **se fecha automaticamente** após o início. O bot continua rodando em segundo plano.
 - `stop-wabot.bat` → Para serviços Docker e Node.js
 
 ### Rodar automaticamente ao ligar o PC
@@ -89,7 +89,7 @@ O script vai:
 3. Nome: `WaBot`, acionador: "Ao iniciar o computador"
 4. Ação: "Iniciar um programa", programa: `start-wabot.bat`
 5. Marque "Executar com privilégios mais altos"
-6. Pronto — toda vez que ligar o PC, o WaBot sobe sozinho
+6. Pronto — toda vez que ligar o PC, o WaBot sobe sozinho. A janela do CMD abre brevemente e **fecha automaticamente** — o bot fica rodando em segundo plano sem nenhuma janela visível.
 
 ### Manual (qualquer OS)
 

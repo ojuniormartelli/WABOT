@@ -11,7 +11,7 @@ if errorlevel 1 (
   exit /b 1
 )
 
-echo Iniciando WaBot (Node.js oculto)...
+echo Iniciando WaBot (Node.js em segundo plano)...
 taskkill /f /im node.exe >nul 2>&1
 cd /d "%WABOT_DIR%"
 
@@ -23,8 +23,10 @@ if errorlevel 1 (
   exit /b 1
 )
 
-REM Iniciar Node.js oculto
-start /b /min "" node app/server.js
+REM Iniciar Node.js em processo separado (minimizado)
+REM O /b nao e usado propositalmente: sem /b o node roda em janela propria
+REM e nao depende desta janela do CMD. Ao final, exit fecha esta janela.
+start "" /min node app/server.js > wabot.log 2>&1
 
 echo.
 echo WaBot iniciado em segundo plano!
@@ -32,7 +34,8 @@ echo.
 echo   Pagina: http://localhost:3001
 echo   Parar:  execute stop-wabot.bat
 echo.
-echo Fechando esta janela nao afeta o funcionamento do bot.
+echo Esta janela sera fechada automaticamente.
+echo O bot continua rodando em segundo plano.
 echo.
 start "" "http://localhost:3001"
-timeout /t 3 >nul
+exit

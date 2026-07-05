@@ -6,9 +6,10 @@ echo ========================================
 echo         WaBot - WhatsApp Bot
 echo ========================================
 echo.
-:loop
-echo [%date% %time%] Servidor iniciando...
-node app/server.js
-echo [%date% %time%] Servidor reiniciando...
-timeout /t 2 /nobreak >nul
-goto loop
+echo Iniciando servidor em segundo plano...
+start "" /min node app/server.js > wabot.log 2>&1
+echo.
+echo Servidor iniciado! Pagina: http://localhost:3001
+echo Esta janela sera fechada automaticamente.
+timeout /t 3 /nobreak >nul
+exit
