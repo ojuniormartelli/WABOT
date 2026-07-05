@@ -56,7 +56,12 @@ echo -e "  ${GREEN}OK${RESET}"
 # 4. Instalar dependências
 echo -e "${CYAN}4${RESET} Instalando dependências..."
 cd "$WABOT_DIR"
-npm install 2>&1 | tail -3
+# Pula se já estamos rodando dentro do npm install (CI/Vercel/lifecycle)
+if [ -z "$npm_execpath" ]; then
+  npm install 2>&1 | tail -3
+else
+  echo "  (ignorado — já estamos dentro do npm install)"
+fi
 echo -e "  ${GREEN}OK${RESET}"
 
 # 5. Validar arquivos JSON

@@ -91,6 +91,10 @@ function formatarTelefone(tel) {
 }
 
 function responderIntencaoOperacional(intencao, dadosNegocio, config, cozinhaFuncionando, proxApertura) {
+  var respOp = (dadosNegocio.respostas_operacionais || {})[intencao];
+  if (respOp && respOp.texto && respOp.texto.trim()) {
+    return respOp.texto.trim();
+  }
   var resposta = null;
   var politicas = dadosNegocio.politicas || {};
   var link = dadosNegocio.link_pedido_online || config.link_pedido_online || '';
