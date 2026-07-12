@@ -1174,7 +1174,7 @@ function renderConfiguracoes() {
     var d = DIAS[i];
     var h = horarios[d] || {};
     if (!h.periodos) {
-      h.periodos = (h.cozinha && h.cozinha.length) ? h.cozinha : [{ abertura: '11:00', fechamento: '23:00' }];
+      h.periodos = (h.cozinha && h.cozinha.length) ? JSON.parse(JSON.stringify(h.cozinha)) : [{ abertura: '11:00', fechamento: '23:00' }];
     }
     var fechado = h.fechado;
     var periodos = h.periodos || [];
@@ -1223,10 +1223,15 @@ function renderConfiguracoes() {
 
   var btnLabel = state.configuracoes.saving ? 'Salvando...' : 'Salvar Configurações';
 
+  var salvoMsg = state.configuracoes.saved ? '<div class="flex items-center gap-2 text-emerald-600 bg-emerald-50 border border-emerald-200 rounded-lg px-4 py-2 text-sm font-medium"><span>' + I.checkCircle2(16, '') + '</span> Salvo com sucesso!</div>' : '';
+
   return '<div class="p-8 max-w-4xl mx-auto">' +
-    '<div class="flex items-center gap-3 mb-4">' +
-      '<h1 class="text-2xl font-bold text-gray-800">Configurações</h1>' +
-      '<button onclick="toggleHelp()" class="w-8 h-8 rounded-lg bg-gray-100 hover:bg-gray-200 flex items-center justify-center text-gray-500 hover:text-gray-700 transition-colors" title="Ajuda">' + I.info(18, '') + '</button>' +
+    '<div class="flex items-center justify-between mb-4">' +
+      '<div class="flex items-center gap-3">' +
+        '<h1 class="text-2xl font-bold text-gray-800">Configurações</h1>' +
+        '<button onclick="toggleHelp()" class="w-8 h-8 rounded-lg bg-gray-100 hover:bg-gray-200 flex items-center justify-center text-gray-500 hover:text-gray-700 transition-colors" title="Ajuda">' + I.info(18, '') + '</button>' +
+      '</div>' +
+      salvoMsg +
     '</div>' +
     renderHelp('configuracoes') +
     '<div class="bg-emerald-50 border border-emerald-200 rounded-xl p-4 mb-6 text-sm text-emerald-800">' +
@@ -1280,7 +1285,8 @@ window.updateHorario = function(dia, campo, valor) {
 
 window.updatePeriodo = function(dia, idx, campo, valor) {
   var h = state.configuracoes.config.horarios[dia];
-  if (h && h.periodos && h.periodos[idx]) h.periodos[idx][campo] = valor;
+  var arr = h && (h.periodos || h.cozinha);
+  if (arr && arr[idx]) arr[idx][campo] = valor;
 };
 
 window.addPeriodo = function(dia) {
@@ -1288,17 +1294,21 @@ window.addPeriodo = function(dia) {
     state.configuracoes.config.horarios[dia] = { fechado: false, periodos: [] };
   }
   var h = state.configuracoes.config.horarios[dia];
-  if (!h.periodos) h.periodos = [];
-  h.periodos.push({ abertura: '18:00', fechamento: '23:00' });
+  var arr = h.periodos || h.cozinha;
+  if (!arr) arr = [];
+  arr.push({ abertura: '18:00', fechamento: '23:00' });
+  if (!h.periodos) h.periodos = arr;
   render();
   bindConfiguracoes();
 };
 
 window.removePeriodo = function(dia, idx) {
   var h = state.configuracoes.config.horarios[dia];
-  if (h && h.periodos) {
-    h.periodos.splice(idx, 1);
-    if (h.periodos.length === 0) h.periodos.push({ abertura: '11:00', fechamento: '23:00' });
+  var arr = h && (h.periodos || h.cozinha);
+  if (arr) {
+    arr.splice(idx, 1);
+    if (arr.length === 0) arr.push({ abertura: '11:00', fechamento: '23:00' });
+    if (!h.periodos) h.periodos = arr;
     render();
     bindConfiguracoes();
   }
@@ -1333,9 +1343,19 @@ window.removeAgendamentoPeriodo = function(dia, idx) {
 window.saveConfiguracoes = async function() {
   state.configuracoes.saving = true;
   render();
-  await wabot.configWrite('config.json', state.configuracoes.config);
+  try {
+    var result = await wabot.configWrite('config.json', state.configuracoes.config);
+    if (result.success) {
+      state.configuracoes.saved = true;
+    } else {
+      alert('Erro ao salvar: ' + (result.error || 'desconhecido'));
+    }
+  } catch(e) {
+    alert('Erro de rede: ' + e.message);
+  }
   state.configuracoes.saving = false;
   render();
+  if (state.configuracoes.saved) setTimeout(function() { state.configuracoes.saved = false; render(); }, 3000);
 };
 
 function renderFeriadosList() {

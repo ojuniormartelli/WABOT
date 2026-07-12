@@ -504,43 +504,66 @@ app.post('/api/config/:filename', (req, res) => {
 
 // ─── Dados do Negócio ─────────────────────────────
 
+function deepMergeDefaults(obj, defaults) {
+  if (!obj || typeof obj !== 'object') return JSON.parse(JSON.stringify(defaults));
+  var result = JSON.parse(JSON.stringify(obj));
+  for (var key in defaults) {
+    if (defaults.hasOwnProperty(key)) {
+      if (!(key in result)) {
+        result[key] = JSON.parse(JSON.stringify(defaults[key]));
+      } else if (typeof defaults[key] === 'object' && defaults[key] !== null && !Array.isArray(defaults[key])) {
+        if (typeof result[key] !== 'object' || result[key] === null) {
+          result[key] = JSON.parse(JSON.stringify(defaults[key]));
+        } else {
+          result[key] = deepMergeDefaults(result[key], defaults[key]);
+        }
+      }
+    }
+  }
+  return result;
+}
+
+var DADOS_NEGOCIO_DEFAULTS = {
+  nome: '',
+  endereco: '',
+  telefone: '',
+  link_pedido_online: '',
+  site: '',
+  redes_sociais: { instagram: '', facebook: '', ifood: '' },
+  delivery_ativo: false,
+  retirada_ativa: true,
+  consumo_local_ativo: true,
+  politicas: { reserva_mesas: false, encomenda_almoco_desde: '08:00', encomenda_jantar_desde: '17:00' },
+  horarios: {},
+  mensagens_padrao: { saudacao: '', nao_entendi: '', oferecer_atendente: '', agradecimento: '', ausencia: '' },
+  palavras_chave: {
+    atendente: { prioridade: 100, frase_exata: [], expressao: [], palavra: [] },
+    horario: { prioridade: 90, frase_exata: [], expressao: [], palavra: [] },
+    pedido: { prioridade: 75, frase_exata: [], expressao: [], palavra: [] },
+    retirada: { prioridade: 70, frase_exata: [], expressao: [], palavra: [] },
+    delivery: { prioridade: 85, frase_exata: [], expressao: [], palavra: [] },
+    reserva: { prioridade: 50, frase_exata: [], expressao: [], palavra: [] },
+    endereco: { prioridade: 40, frase_exata: [], expressao: [], palavra: [] },
+    telefone: { prioridade: 30, frase_exata: [], expressao: [], palavra: [] }
+  },
+  respostas_operacionais: {
+    delivery: { texto: '', curta: '', completa: '' },
+    retirada: { texto: '', curta: '', completa: '' },
+    pedido: { texto: '', curta: '', completa: '' },
+    horario: { texto: '', curta: '', completa: '' },
+    endereco: { texto: '', curta: '', completa: '' },
+    telefone: { texto: '', curta: '', completa: '' },
+    reserva: { texto: '', curta: '', completa: '' },
+    atendente: { texto: '', curta: '', completa: '' }
+  }
+};
+
 app.get('/api/dados-negocio', (req, res) => {
   var dados = readJson('dados_negocio.json');
   if (!dados) {
-    dados = {
-      nome: '',
-      endereco: '',
-      telefone: '',
-      link_pedido_online: '',
-      site: '',
-      redes_sociais: { instagram: '', facebook: '', ifood: '' },
-      delivery_ativo: false,
-      retirada_ativa: true,
-      consumo_local_ativo: true,
-      politicas: { reserva_mesas: false, encomenda_almoco_desde: '08:00', encomenda_jantar_desde: '17:00' },
-      horarios: {},
-      mensagens_padrao: { saudacao: '', nao_entendi: '', oferecer_atendente: '', agradecimento: '', ausencia: '' },
-      palavras_chave: {
-        atendente: { prioridade: 100, frase_exata: [], expressao: [], palavra: [] },
-        horario: { prioridade: 90, frase_exata: [], expressao: [], palavra: [] },
-        pedido: { prioridade: 75, frase_exata: [], expressao: [], palavra: [] },
-        retirada: { prioridade: 70, frase_exata: [], expressao: [], palavra: [] },
-        delivery: { prioridade: 85, frase_exata: [], expressao: [], palavra: [] },
-        reserva: { prioridade: 50, frase_exata: [], expressao: [], palavra: [] },
-        endereco: { prioridade: 40, frase_exata: [], expressao: [], palavra: [] },
-        telefone: { prioridade: 30, frase_exata: [], expressao: [], palavra: [] }
-      },
-      respostas_operacionais: {
-        delivery: { texto: '', curta: '', completa: '' },
-        retirada: { texto: '', curta: '', completa: '' },
-        pedido: { texto: '', curta: '', completa: '' },
-        horario: { texto: '', curta: '', completa: '' },
-        endereco: { texto: '', curta: '', completa: '' },
-        telefone: { texto: '', curta: '', completa: '' },
-        reserva: { texto: '', curta: '', completa: '' },
-        atendente: { texto: '', curta: '', completa: '' }
-      }
-    };
+    dados = JSON.parse(JSON.stringify(DADOS_NEGOCIO_DEFAULTS));
+  } else {
+    dados = deepMergeDefaults(dados, DADOS_NEGOCIO_DEFAULTS);
   }
   res.json({ success: true, data: dados });
 });
@@ -549,10 +572,15 @@ app.post('/api/dados-negocio', (req, res) => {
   try {
     validarConfigSchema('dados_negocio.json', req.body);
     writeJson('dados_negocio.json', req.body);
-    // Sync endereco to config.json so it stays the canonical source
-    if (req.body.endereco) {
-      var config = readJson('config.json') || {};
-      config.endereco = req.body.endereco;
+    // Sync campos compartilhados para config.json
+    var config = readJson('config.json');
+    if (config) {
+      config.nome_negocio = req.body.nome || config.nome_negocio;
+      config.endereco = req.body.endereco || config.endereco;
+      config.telefone = req.body.telefone || config.telefone;
+      config.site = req.body.site !== undefined ? req.body.site : config.site;
+      config.redes_sociais = req.body.redes_sociais || config.redes_sociais;
+      config.link_pedido_online = req.body.link_pedido_online || config.link_pedido_online;
       writeJson('config.json', config);
     }
     res.json({ success: true });
